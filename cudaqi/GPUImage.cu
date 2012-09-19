@@ -137,9 +137,11 @@ void GPUImage::add(const GPUImage& src, cudaStream_t s)
 }
 
 
-static GPUImage* GPUImage::buildFrom8bitStrided(uint8_t* data, int pixelsPerLine, int w,int h)
+GPUImage* GPUImage::buildFrom8bitStrided(uint8_t* data, int pixelsPerLine, int w,int h)
 {
 	GPUImage* img = new GPUImage(w,h);
-	img->d_copyBuf = cudaMalloc(
+
+	return img;
 }
+
 

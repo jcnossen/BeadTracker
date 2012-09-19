@@ -3,15 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cudaqi", "cudaqi\cudaqi.vcxproj", "{5F8A98B0-52E1-4172-8B1C-151515B075DE}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cudaqi-labview", "cudaqi-labview\cudaqi-labview.vcxproj", "{25DD7050-EB3B-4D06-8122-834EE1560A3F}"
-	ProjectSection(ProjectDependencies) = postProject
-		{5F8A98B0-52E1-4172-8B1C-151515B075DE} = {5F8A98B0-52E1-4172-8B1C-151515B075DE}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cudaqi-test", "cudaqi-test\cudaqi-test.vcxproj", "{22D35759-BE8F-4F40-91DF-C5D322E4A7B1}"
-	ProjectSection(ProjectDependencies) = postProject
-		{5F8A98B0-52E1-4172-8B1C-151515B075DE} = {5F8A98B0-52E1-4172-8B1C-151515B075DE}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cudaqi-test", "cudaqi-test\cudaqi-test.vcxproj", "{BEC9EC33-3C02-4F31-BDA6-B8068A215AA9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,14 +15,10 @@ Global
 		{5F8A98B0-52E1-4172-8B1C-151515B075DE}.Debug|Win32.Build.0 = Debug|Win32
 		{5F8A98B0-52E1-4172-8B1C-151515B075DE}.Release|Win32.ActiveCfg = Release|Win32
 		{5F8A98B0-52E1-4172-8B1C-151515B075DE}.Release|Win32.Build.0 = Release|Win32
-		{25DD7050-EB3B-4D06-8122-834EE1560A3F}.Debug|Win32.ActiveCfg = Debug|Win32
-		{25DD7050-EB3B-4D06-8122-834EE1560A3F}.Debug|Win32.Build.0 = Debug|Win32
-		{25DD7050-EB3B-4D06-8122-834EE1560A3F}.Release|Win32.ActiveCfg = Release|Win32
-		{25DD7050-EB3B-4D06-8122-834EE1560A3F}.Release|Win32.Build.0 = Release|Win32
-		{22D35759-BE8F-4F40-91DF-C5D322E4A7B1}.Debug|Win32.ActiveCfg = Debug|Win32
-		{22D35759-BE8F-4F40-91DF-C5D322E4A7B1}.Debug|Win32.Build.0 = Debug|Win32
-		{22D35759-BE8F-4F40-91DF-C5D322E4A7B1}.Release|Win32.ActiveCfg = Release|Win32
-		{22D35759-BE8F-4F40-91DF-C5D322E4A7B1}.Release|Win32.Build.0 = Release|Win32
+		{BEC9EC33-3C02-4F31-BDA6-B8068A215AA9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BEC9EC33-3C02-4F31-BDA6-B8068A215AA9}.Debug|Win32.Build.0 = Debug|Win32
+		{BEC9EC33-3C02-4F31-BDA6-B8068A215AA9}.Release|Win32.ActiveCfg = Release|Win32
+		{BEC9EC33-3C02-4F31-BDA6-B8068A215AA9}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

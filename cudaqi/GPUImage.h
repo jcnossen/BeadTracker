@@ -1,6 +1,7 @@
 #pragma once
-#include <cstdint>
-
+#ifndef _fundtypes_H
+	#include <cstdint>
+#endif
 
 class GPUImage
 {

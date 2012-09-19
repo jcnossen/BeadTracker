@@ -5,14 +5,17 @@
 
 #include <Windows.h>
 #include "utils.h"
+#include "../cudaqi/GPUBase.h"
 #include "../cudaqi/GPUImage.h"
 
 #define CALLCONV _FUNCC
 
-class ImageProcessor
-{
-	uint8_t *
+#pragma pack(push, 4)
+struct vector2f {
+	float x,y;
 };
+#pragma pack(pop)
+
 
 std::string SPrintf(const char *fmt, ...) {
 	va_list ap;
@@ -51,9 +54,9 @@ DLL_EXPORT Image* CALLCONV copy_image(Image* image)
 	return output;
 }
 
-DLL_EXPORT void CALLCONV compute_com(Image *img, float* pos)
+DLL_EXPORT void CALLCONV compute_com(GPUImage* img, float* pos)
 {
-	ImageInfo info;
+/*	ImageInfo info;
 	imaqGetImageInfo(img, &info);
 
 	void* p = imaqGetPixelAddress(img, Point());
@@ -65,8 +68,9 @@ DLL_EXPORT void CALLCONV compute_com(Image *img, float* pos)
 			for (int x=0;x<info.xRes;x++) {
 			}
 		}
-	}
+	}*/
 }
+
 
 
 
@@ -83,5 +87,16 @@ DLL_EXPORT GPUImage* CALLCONV copy_to_gpu(Image* img)
 
 	GPUImage* gpuImg = GPUImage::buildFrom8bitStrided((uint8_t*)info.imageStart, info.pixelsPerLine, info.xRes, info.yRes);
 	return gpuImg;
+}
+
+
+DLL_EXPORT void CALLCONV free_gpu_image(GPUImage* img)
+{
+	delete img;
+}
+
+DLL_EXPORT void CALLCONV xcor_localize(GPUImage* img, const vector2f& initial, vector2f& position)
+{
+
 }
 
