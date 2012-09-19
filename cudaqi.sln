@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cudaqi", "cudaqi\cudaqi.vcxproj", "{5F8A98B0-52E1-4172-8B1C-151515B075DE}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cudaqi-labview", "cudaqi-labview\cudaqi-labview.vcxproj", "{25DD7050-EB3B-4D06-8122-834EE1560A3F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5F8A98B0-52E1-4172-8B1C-151515B075DE} = {5F8A98B0-52E1-4172-8B1C-151515B075DE}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
