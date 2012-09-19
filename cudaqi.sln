@@ -8,6 +8,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cudaqi-labview", "cudaqi-la
 		{5F8A98B0-52E1-4172-8B1C-151515B075DE} = {5F8A98B0-52E1-4172-8B1C-151515B075DE}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cudaqi-test", "cudaqi-test\cudaqi-test.vcxproj", "{22D35759-BE8F-4F40-91DF-C5D322E4A7B1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5F8A98B0-52E1-4172-8B1C-151515B075DE} = {5F8A98B0-52E1-4172-8B1C-151515B075DE}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -22,6 +27,10 @@ Global
 		{25DD7050-EB3B-4D06-8122-834EE1560A3F}.Debug|Win32.Build.0 = Debug|Win32
 		{25DD7050-EB3B-4D06-8122-834EE1560A3F}.Release|Win32.ActiveCfg = Release|Win32
 		{25DD7050-EB3B-4D06-8122-834EE1560A3F}.Release|Win32.Build.0 = Release|Win32
+		{22D35759-BE8F-4F40-91DF-C5D322E4A7B1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{22D35759-BE8F-4F40-91DF-C5D322E4A7B1}.Debug|Win32.Build.0 = Debug|Win32
+		{22D35759-BE8F-4F40-91DF-C5D322E4A7B1}.Release|Win32.ActiveCfg = Release|Win32
+		{22D35759-BE8F-4F40-91DF-C5D322E4A7B1}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

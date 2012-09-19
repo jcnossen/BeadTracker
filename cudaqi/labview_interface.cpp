@@ -5,15 +5,14 @@
 
 #include <Windows.h>
 #include "utils.h"
+#include "../cudaqi/GPUImage.h"
 
 #define CALLCONV _FUNCC
 
-struct Position
+class ImageProcessor
 {
-	float x,y,z;
+	uint8_t *
 };
-
-
 
 std::string SPrintf(const char *fmt, ...) {
 	va_list ap;
@@ -28,10 +27,9 @@ std::string SPrintf(const char *fmt, ...) {
 
 
 
-DLL_EXPORT uintptr_t CALLCONV copy_image(uintptr_t srcPtr)
+DLL_EXPORT Image* CALLCONV copy_image(Image* image)
 {
 	ImageInfo info, dstInfo;
-	Image* image = (Image*)srcPtr;
 	imaqGetImageInfo(image, &info);
 
 	Image* output = imaqCreateImage(IMAQ_IMAGE_U8, 0);
@@ -39,10 +37,8 @@ DLL_EXPORT uintptr_t CALLCONV copy_image(uintptr_t srcPtr)
 	imaqGetImageInfo(output, &dstInfo);
 
 	uint8_t *src = (uint8_t*)imaqGetPixelAddress(image, Point());
-	uint8_t *dst = (uint8_t*)imaqGetPixelAddress(output, Point());
 	for (int y=0;y<info.yRes;y++) {
 		src += info.pixelsPerLine;
-		dst += info.pixelsPerLine;
 
 		for (int x=0;x<info.xRes;x++) {
 			Point pt = {x,y};
@@ -52,13 +48,11 @@ DLL_EXPORT uintptr_t CALLCONV copy_image(uintptr_t srcPtr)
 		}
 	}
 
-	return (uintptr_t)output;
+	return output;
 }
 
-DLL_EXPORT void CALLCONV compute_com(uintptr_t *imagePtr, float* pos)
+DLL_EXPORT void CALLCONV compute_com(Image *img, float* pos)
 {
-	Image* img = (Image*)imagePtr;
-	
 	ImageInfo info;
 	imaqGetImageInfo(img, &info);
 
@@ -76,17 +70,18 @@ DLL_EXPORT void CALLCONV compute_com(uintptr_t *imagePtr, float* pos)
 
 
 
-DLL_EXPORT uintptr_t * CALLCONV test_image()
-{
-	Image* img = imaqCreateImage(IMAQ_IMAGE_U8, 0);
-
-//	imaqSet
-
-	return (uintptr_t*)img;
-}
-
 DLL_EXPORT void CALLCONV testMsg() 
 {
 	MessageBox(0, "hi", "Msg:", MB_OK);
+}
+
+
+DLL_EXPORT GPUImage* CALLCONV copy_to_gpu(Image* img)
+{
+	ImageInfo info;
+	imaqGetImageInfo(img, &info);
+
+	GPUImage* gpuImg = GPUImage::buildFrom8bitStrided((uint8_t*)info.imageStart, info.pixelsPerLine, info.xRes, info.yRes);
+	return gpuImg;
 }
 

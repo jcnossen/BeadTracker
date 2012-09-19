@@ -1,12 +1,12 @@
 #pragma once
-
+#include <cstdint>
 
 
 class GPUImage
 {
 public:
-	GPUImage() { w=h=0; d_img=0; }
-	GPUImage(int w,int h) { init(w,h); }
+	GPUImage() { w=h=0; d_img=0; d_copyBuf=0; }
+	GPUImage(int w, int h) { init(w,h); }
 	GPUImage(int w) { init(w,w); }
 	~GPUImage() {free();}
 
@@ -42,8 +42,10 @@ public:
 
 	void add(const GPUImage& src, cudaStream_t s=0);
 
+	static GPUImage* buildFrom8bitStrided(uint8_t* data, int pixelsPerLine, int w,int h);
 private:
 	int w,h;
 	float* d_img;
-};
 
+	uint8_t* d_copyBuf;
+};

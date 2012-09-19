@@ -12,6 +12,10 @@ License: GPL
 
 void GPUImage::free()
 {
+	if (d_copyBuf) {
+		cudaFree(d_copyBuf);
+		d_copyBuf=0;
+	}
 	if (d_img) {
 		cudaFree(d_img);
 		d_img=0;
@@ -132,4 +136,10 @@ void GPUImage::add(const GPUImage& src, cudaStream_t s)
 	NPP_CALL(nppsAdd_32f_I(src.d_img, d_img, w*h));
 }
 
+
+static GPUImage* GPUImage::buildFrom8bitStrided(uint8_t* data, int pixelsPerLine, int w,int h)
+{
+	GPUImage* img = new GPUImage(w,h);
+	img->d_copyBuf = cudaMalloc(
+}
 
