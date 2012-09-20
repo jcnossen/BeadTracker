@@ -1,20 +1,16 @@
 #include "nivision.h"
-#include "../cudaqi/cudaqi.h"
 #include "extcode.h"
 #include "niimaq.h"
 
 #include <Windows.h>
 #include "utils.h"
-#include "../cudaqi/GPUBase.h"
-#include "../cudaqi/GPUImage.h"
+#include "GPUBase.h"
+
+#include "tracker.h"
 
 #define CALLCONV _FUNCC
 
-#pragma pack(push, 4)
-struct vector2f {
-	float x,y;
-};
-#pragma pack(pop)
+static std::string lastErrorMsg;
 
 
 std::string SPrintf(const char *fmt, ...) {
@@ -28,6 +24,17 @@ std::string SPrintf(const char *fmt, ...) {
 	return buf;
 }
 
+
+DLL_EXPORT Tracker* CALLCONV create_tracker(int w,int h)
+{
+	return new Tracker(w,h);
+}
+
+DLL_EXPORT void CALLCONV free_tracker(Tracker* tracker)
+{
+	if (tracker->isValid())
+		delete tracker;
+}
 
 
 DLL_EXPORT Image* CALLCONV copy_image(Image* image)
@@ -80,22 +87,9 @@ DLL_EXPORT void CALLCONV testMsg()
 }
 
 
-DLL_EXPORT GPUImage* CALLCONV copy_to_gpu(Image* img)
-{
-	ImageInfo info;
-	imaqGetImageInfo(img, &info);
-
-	GPUImage* gpuImg = GPUImage::buildFrom8bitStrided((uint8_t*)info.imageStart, info.pixelsPerLine, info.xRes, info.yRes);
-	return gpuImg;
-}
 
 
-DLL_EXPORT void CALLCONV free_gpu_image(GPUImage* img)
-{
-	delete img;
-}
-
-DLL_EXPORT void CALLCONV xcor_localize(GPUImage* img, const vector2f& initial, vector2f& position)
+DLL_EXPORT void CALLCONV xcor_localize(Tracker* tracker, const vector2f& initial, vector2f& position)
 {
 
 }
