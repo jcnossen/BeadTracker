@@ -7,8 +7,8 @@
 #include <windows.h>
 #include <cstdarg>
 
-#include "../cudaqi/utils.h"
-#include "../cudaqi/Array2D.h"
+#include "../cudatrack/utils.h"
+#include "../cudatrack/Array2D.h"
 
 #include <thrust/functional.h>
 
@@ -116,35 +116,59 @@ void testLinearArray()
 	dbgout(SPrintf("GPU result: %f. CPU result: %f\n", result, cpuResult));
 }
 
+static DWORD startTime = 0;
+void BeginMeasure() { startTime = GetTickCount(); }
+void EndMeasure(const std::string& msg) {
+	DWORD endTime = GetTickCount();
+	dbgout(SPrintf("%s: %d ms\n", msg.c_str(), (endTime-startTime)));
+}
+
 int main()
 {
-
 //	testLinearArray();
+	int W=1000, H=100;
+	int NumRuns = 1;
 
-	int W=10, H=30;
-
-	double* d = new double[W*H];
-	double sum = 0.0;
-	double comX=0.0, comY=0.0;
-	for (int y=0;y<H;y++) {
+	float* d = new float[W*H];
+	for (int y=0;y<H;y++) 
 		for(int x=0;x<W;x++) 
-		{
-			double v = d[y*W+x] = rand() / (float)RAND_MAX * 10.0f;
-			sum += v;
-			comX += v*x;
-			comY += v*y;
+			d[y*W+x] = rand() / (float)RAND_MAX * 10.0f;
+	Array2D<float> a(W,H, d);
+
+	float sum = 0.0;
+	BeginMeasure();
+	for (int run=0;run<NumRuns;run++) {
+		float comX=0.0, comY=0.0;
+		for (int y=0;y<H;y++) {
+			for(int x=0;x<W;x++) 
+			{
+				float value=d[y*W+x];
+				sum += value;
+//				comX += v*x;
+	//			comY += v*y;
+			}
 		}
+//		comX /= sum;
+	//	comY /= sum;
 	}
-	comX /= sum;
-	comY /= sum;
+	EndMeasure("CPU sum");
 
-	Array2D<double> a(W,H, d);
-	
-	double result = a.sum();
-	dbgout(SPrintf("GPU result: %f, CPU result: %f\n", result, sum ));
-	dbgout(SPrintf("COMX: GPU: %f, CPU: %f\n", a.momentX()/result, comX ));
-	dbgout(SPrintf("COMY: GPU: %f, CPU: %f\n", a.momentY()/result, comY ));
+	/*texture<float, cudaTextureType1D, cudaReadModeNormalizedFloat> tex;
+	a.bindTexture(tex);
 
-		
+	cudaUnbindTexture(&tex);*/
+
+	Array2D<float>::reducer_buffer rbuf(a);
+	/*BeginMeasure();
+	for (int run=0;run<NumRuns;run++) {
+		double result = a.sum(rbuf);
+//		double momentX = a.momentX();
+	//	double momentY = a.momentY();
+	}
+	EndMeasure("GPU sum");*/
+	dbgout(SPrintf("GPU result: %f, CPU result: %f\n", a.sum(rbuf), sum));
+//	dbgout(SPrintf("COMX: GPU: %f, CPU: %f\n", a.momentX()/result, comX ));
+//	dbgout(SPrintf("COMY: GPU: %f, CPU: %f\n", a.momentY()/result, comY ));
+
 	return 0;
 }

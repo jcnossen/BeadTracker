@@ -61,7 +61,7 @@ DLL_EXPORT Image* CALLCONV copy_image(Image* image)
 	return output;
 }
 
-DLL_EXPORT void CALLCONV compute_com(GPUImage* img, float* pos)
+DLL_EXPORT void CALLCONV compute_com(void* img, float* pos)
 {
 /*	ImageInfo info;
 	imaqGetImageInfo(img, &info);

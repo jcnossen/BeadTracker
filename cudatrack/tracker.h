@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdint.h>
 
 #define TRACKER_MAGIC 0xf843e49a
 
@@ -10,16 +9,19 @@ struct vector2f {
 };
 #pragma pack(pop)
 
-typedef uint32_t uint;
+typedef unsigned int uint;
+typedef unsigned char uchar;
 
+template<typename T>
+class Array2D;
 
 class Tracker
 {
 public:
-	uint32_t magic; // magic ID, to recognise invalid objects passed from labview
-	float* d_buf;
-	uint8_t* d_original;
-	uint32_t width, height;
+	uint magic; // magic ID, to recognise invalid objects passed from labview
+	uint width, height;
+	Array2D<uchar>* original;
+	Array2D<float>* sampleBuffer;
 
 	Tracker(uint w,uint h);
 	~Tracker();
@@ -27,6 +29,6 @@ public:
 
 	vector2f XCorLocalize(vector2f initial);
 	vector2f ComputeCOM();
-	void setImage(uint8_t* image);
+	void setImage(uchar* image);
 };
 

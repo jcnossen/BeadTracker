@@ -11,12 +11,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{BEC9EC33-3C02-4F31-BDA6-B8068A215AA9}</ProjectGuid>
-    <RootNamespace>cudaqi_test</RootNamespace>
+    <ProjectGuid>{5F8A98B0-52E1-4172-8B1C-151515B075DE}</ProjectGuid>
+    <RootNamespace>cudaqi</RootNamespace>
+    <ProjectName>cudatrack</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -39,6 +40,9 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>labview/cintools;$(IncludePath);labview/vision/Include;labview/imaq/Include</IncludePath>
+    <OutDir>$(ProjectDir)</OutDir>
+    <TargetName>cudatrack-debug</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -47,11 +51,13 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cublas.lib;cufft.lib;npp.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>labview/vision/Lib/MSVC;labview/imaq/Lib;labview/cintools;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
@@ -78,13 +84,18 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="kernel.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="test.cu" />
+    <CudaCompile Include="tracker.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\cudaqi\Array2D.h" />
+    <ClInclude Include="Array2D.h" />
+    <ClInclude Include="cudaqi.h" />
+    <ClInclude Include="cuda_shared_mem.h" />
+    <ClInclude Include="GPUBase.h" />
+    <ClInclude Include="tracker.h" />
+    <ClInclude Include="utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="labview_interface.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
