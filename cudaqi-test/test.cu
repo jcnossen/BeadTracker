@@ -10,13 +10,24 @@
 #include "../cudaqi/utils.h"
 #include "../cudaqi/Array2D.h"
 
+#include <thrust/functional.h>
+
 void dbgout(std::string s);
+std::string SPrintf(const char *fmt, ...);
+
+void throwCudaError(cudaError_t err)
+{
+	std::string msg = SPrintf("CUDA error: %s", cudaGetErrorString(err));
+	dbgout(msg);
+	throw std::runtime_error(msg);
+}
 
 
-extern __shared__ float sdata[];
 
 __global__ void sumArrayKernel(const float* src, float *blockResults, int N)
 {
+	float* sdata = SharedMemory<float>();
+
     unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
 	sdata[threadIdx.x] = i<N ? src[i] : 0;
 	unsigned int tid = threadIdx.x;
@@ -74,33 +85,6 @@ float sumHostArray(float* data, int length)
 	return result;
 }
 
-
-__global__ void reduceArray2D(const float* src, size_t spitch, float* out, size_t dpitch, size_t width, size_t height)
-{
-
-}
-
-template<int BlockSize>
-dim3 computeBlocksize(size_t w,size_t h) {
-	return dim3 ( (a.w + BlockSize - 1) / BlockSize, (a.h + BlockSize - 1) / BlockSize , 1);
-}
-
-float sumArray2D(Array2D<float> & a)
-{
-	const int blockSize = 32;
-	const int cpuThreshold = 256;
-	// Allocate memory for per-block results
-	dim3 nBlocks = computeBlocksize<blockSize>(a.w,a.h);
-	Array2D<float> blockResults(nBlocks.x, nBlocks.y);
-
-	dim3 sz(a.w, a.h, 1);
-	while (sz.x * sz.y > cpuThreshold) {
-		nBlocks = computeBlocksize<blockSize>(sz.x, sz.y);
-		reduceArray2D<<<nBlocks, dim3(blockSize, blockSize,1), sizeof(float)*blockSize*blockSize>>> (a.data, a.pitch, blockResults.data, blockResults.pitch, sz.x, sz.y);
-		sz = nBlocks;
-	}
-}
-
 std::string SPrintf(const char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
@@ -137,19 +121,30 @@ int main()
 
 //	testLinearArray();
 
-	int W=256, H=256;
+	int W=10, H=30;
 
-	float* d = new float[W*H];
+	double* d = new double[W*H];
 	double sum = 0.0;
-	for(int x=0;x<W*H;x++) {
-		d[x] = x%1024;
-		sum += (double)d[x];
+	double comX=0.0, comY=0.0;
+	for (int y=0;y<H;y++) {
+		for(int x=0;x<W;x++) 
+		{
+			double v = d[y*W+x] = rand() / (float)RAND_MAX * 10.0f;
+			sum += v;
+			comX += v*x;
+			comY += v*y;
+		}
 	}
+	comX /= sum;
+	comY /= sum;
 
-	Array2D<float> a(W,H, d);
-	float result = sumArray2D(a);
-
+	Array2D<double> a(W,H, d);
+	
+	double result = a.sum();
 	dbgout(SPrintf("GPU result: %f, CPU result: %f\n", result, sum ));
+	dbgout(SPrintf("COMX: GPU: %f, CPU: %f\n", a.momentX()/result, comX ));
+	dbgout(SPrintf("COMY: GPU: %f, CPU: %f\n", a.momentY()/result, comY ));
+
 		
 	return 0;
 }

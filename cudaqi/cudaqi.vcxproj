@@ -83,14 +83,13 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="GPUImage.cu" />
     <CudaCompile Include="tracker.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Array2D.h" />
     <ClInclude Include="cudaqi.h" />
+    <ClInclude Include="cuda_shared_mem.h" />
     <ClInclude Include="GPUBase.h" />
-    <ClInclude Include="GPUImage.h" />
     <ClInclude Include="tracker.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
