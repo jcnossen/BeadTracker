@@ -12,19 +12,16 @@
 
 #include <thrust/functional.h>
 
-void dbgout(std::string s);
-std::string SPrintf(const char *fmt, ...);
+#include "../cudatrack/tracker.h"
 
-void throwCudaError(cudaError_t err)
+#pragma pack(push,4)
+typedef struct TestItem 
 {
-	std::string msg = SPrintf("CUDA error: %s", cudaGetErrorString(err));
-	dbgout(msg);
-	throw std::runtime_error(msg);
-}
+	float a,b;
+};
+#pragma pack(pop)
 
-
-
-__global__ void sumArrayKernel(const float* src, float *blockResults, int N)
+__global__ void sumArrayKernel(const float* src, float *blockResults, int N, TestItem x)
 {
 	float* sdata = SharedMemory<float>();
 
@@ -57,7 +54,10 @@ float sumDeviceArray(float *d_data, int length)
 	d_out = d_blockResults;
 	while (curLength > cpuThreshold) {
 		numBlocks = (curLength + blockSize - 1) / blockSize;
-		sumArrayKernel<<<dim3(numBlocks,1,1), dim3(blockSize, 1,1), blockSize*sizeof(float)>>>(d_data, d_out, curLength);
+		TestItem ti;
+		 ti.a = 12; ti.b = 123;
+		 float2 Y = { 1,2};
+		sumArrayKernel<<<dim3(numBlocks,1,1), dim3(blockSize, 1,1), blockSize*sizeof(float)>>>(d_data, d_out, curLength, ti);
 		// now reduced to 
 		curLength = numBlocks;
 		std::swap(d_data, d_out);
@@ -85,21 +85,6 @@ float sumHostArray(float* data, int length)
 	return result;
 }
 
-std::string SPrintf(const char *fmt, ...) {
-	va_list ap;
-	va_start(ap, fmt);
-
-	char buf[512];
-	VSNPRINTF(buf, sizeof(buf), fmt, ap);
-
-	va_end(ap);
-	return buf;
-}
-
-void dbgout(std::string s) {
-	OutputDebugString(s.c_str());
-}
-
 
 void testLinearArray()
 {
@@ -125,8 +110,17 @@ void EndMeasure(const std::string& msg) {
 
 int main()
 {
-//	testLinearArray();
-	int W=1000, H=100;
+	testLinearArray();
+
+
+	Tracker tracker(512,512);
+
+	tracker.loadTestImage(256,256, 10);
+	vector2f COM = tracker.ComputeCOM();
+	vector2f xcor = tracker.XCorLocalize(COM);
+
+	/*
+	int W=2024, H=1024;
 	int NumRuns = 1;
 
 	float* d = new float[W*H];
@@ -148,27 +142,11 @@ int main()
 	//			comY += v*y;
 			}
 		}
-//		comX /= sum;
-	//	comY /= sum;
 	}
 	EndMeasure("CPU sum");
 
-	/*texture<float, cudaTextureType1D, cudaReadModeNormalizedFloat> tex;
-	a.bindTexture(tex);
-
-	cudaUnbindTexture(&tex);*/
-
 	Array2D<float>::reducer_buffer rbuf(a);
-	/*BeginMeasure();
-	for (int run=0;run<NumRuns;run++) {
-		double result = a.sum(rbuf);
-//		double momentX = a.momentX();
-	//	double momentY = a.momentY();
-	}
-	EndMeasure("GPU sum");*/
 	dbgout(SPrintf("GPU result: %f, CPU result: %f\n", a.sum(rbuf), sum));
-//	dbgout(SPrintf("COMX: GPU: %f, CPU: %f\n", a.momentX()/result, comX ));
-//	dbgout(SPrintf("COMY: GPU: %f, CPU: %f\n", a.momentY()/result, comY ));
-
+*/
 	return 0;
 }

@@ -79,7 +79,18 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <CudaCompile Include="..\cudatrack\tracker.cu" />
     <CudaCompile Include="test.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\cudatrack\Array2D.h" />
+    <ClInclude Include="..\cudatrack\cuda_shared_mem.h" />
+    <ClInclude Include="..\cudatrack\GPUBase.h" />
+    <ClInclude Include="..\cudatrack\tracker.h" />
+    <ClInclude Include="..\cudatrack\utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\cudatrack\utils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

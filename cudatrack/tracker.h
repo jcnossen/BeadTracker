@@ -12,16 +12,16 @@ struct vector2f {
 typedef unsigned int uint;
 typedef unsigned char uchar;
 
-template<typename T>
-class Array2D;
+// Stores all buffer variables needed for the tracker. 
+class TrackerBuffer;
 
 class Tracker
 {
 public:
 	uint magic; // magic ID, to recognise invalid objects passed from labview
 	uint width, height;
-	Array2D<uchar>* original;
-	Array2D<float>* sampleBuffer;
+
+	TrackerBuffer* buffer;
 
 	Tracker(uint w,uint h);
 	~Tracker();
@@ -29,6 +29,8 @@ public:
 
 	vector2f XCorLocalize(vector2f initial);
 	vector2f ComputeCOM();
-	void setImage(uchar* image);
+	void setImage(uchar* image, uint pitchInBytes);
+	void loadTestImage(float xpos, float ypos, float S);
+	void copyToHost(uchar* data, uint pitchInBytes);
 };
 
