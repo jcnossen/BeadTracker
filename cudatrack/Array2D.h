@@ -275,14 +275,16 @@ public:
 	Array2D<TCompute> blockResults1;
 	Array2D<TCompute> blockResults2;
 	TCompute* hostBuf;
+	cudaStream_t stream;
 
 	enum {
-		blockSize = 32,
+		blockSize = 64,
 		cpuThreshold = 32
 	};
 
 	reducer_buffer(size_t width, size_t height) {
 		init(width,height);
+		cudaStreamCreate(&stream);
 	}
 
 	void init(size_t width, size_t height) {
@@ -295,6 +297,7 @@ public:
 	~reducer_buffer()
 	{
 		delete[] hostBuf;
+		cudaStreamDestroy(stream);
 	}
 };
 
@@ -313,13 +316,13 @@ typename TCompute ReduceArray2D(Array2D<T, TCompute>& a, reducer_buffer<TCompute
 	int sharedMemSize = (blockSize > 32) ? blockSize*sizeof(TCompute) : 64*sizeof(TCompute); // required by kernel for unrolled code
 	int nBlockX = (width + blockSize - 1) / blockSize;
 	dim3 nBlocks(nBlockX, a.h, 1);
-	reduceArray2D_k<T, TCompute, TBinOp, blockSize, TPixelOp > <<<nBlocks, nThreads, sharedMemSize>>> (a.data, a.pitch/sizeof(T), output->data, width);
+	reduceArray2D_k<T, TCompute, TBinOp, blockSize, TPixelOp > <<<nBlocks, nThreads, sharedMemSize, rbuf.stream>>> (a.data, a.pitch/sizeof(T), output->data, width);
 	while (nBlocks.x * nBlocks.y > reducer_buffer<TCompute>::cpuThreshold) {
 		width = nBlocks.x*nBlocks.y;
 		nBlocks = dim3( (width + blockSize - 1)/blockSize, 1 ,1);
 		std::swap(output, input);
 
-		reduceArray2D_k<TCompute, TCompute, TBinOp, blockSize, pixel_value<TCompute> > <<<nBlocks, nThreads, sharedMemSize>>> (input->data, input->pitch/sizeof(TCompute), output->data, width);
+		reduceArray2D_k<TCompute, TCompute, TBinOp, blockSize, pixel_value<TCompute> > <<<nBlocks, nThreads, sharedMemSize, rbuf.stream>>> (input->data, input->pitch/sizeof(TCompute), output->data, width);
 	} 
 
 	// Copy to host memory. 

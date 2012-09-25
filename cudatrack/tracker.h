@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cuda_runtime.h>
 
 #define TRACKER_MAGIC 0xf843e49a
 

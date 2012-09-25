@@ -22,25 +22,13 @@ public:
 	reducer_buffer<float> reduceBuffer;
 
 	TrackerBuffer(uint w,uint h) : reduceBuffer(w,h) {
-		image = 0;
+		image = new Array2D<pixel_t,float>(w, h);
 	}
 	~TrackerBuffer()
 	{
 		if (image) delete image;
 	}
 };
-
-template<typename T, typename TC>
-static vector2f ComputeCOM(Array2D<T, TC>* image, reducer_buffer<TC>& reduceBuffer)
-{
-	vector2f com;
-	com.x = image->momentX(reduceBuffer);
-	com.y = image->momentY(reduceBuffer);
-	float sum = image->sum(reduceBuffer);
-	com.x /= sum;
-	com.y /= sum;
-	return com;
-}
 
 Tracker::Tracker(uint w, uint h) {
 	magic = TRACKER_MAGIC;
@@ -51,10 +39,11 @@ Tracker::Tracker(uint w, uint h) {
 }
 
 Tracker::~Tracker() {
+	delete buffer;
 }
 
 void Tracker::setImage(pixel_t* data, uint pitchInBytes) {
-	
+	buffer->image->set(data, pitchInBytes);
 }
 
 
@@ -75,9 +64,6 @@ struct TestImgComputePixel {
 
 void Tracker::loadTestImage(float xpos, float ypos, float S)
 {
-	if (!buffer->image) {
-		buffer->image = new Array2D<pixel_t,float>(width, height);
-	}
 	TestImgComputePixel pixel_op = { xpos, ypos, 1.0f/S };
 
 	// generate
@@ -108,7 +94,13 @@ vector2f Tracker::ComputeCOM()
 	if (!buffer->image)
 		return vector2f();
 
-	return ::ComputeCOM(buffer->image, buffer->reduceBuffer);
+	vector2f com;
+	com.x = buffer->image->momentX(buffer->reduceBuffer);
+	com.y = buffer->image->momentY(buffer->reduceBuffer);
+	float sum = buffer->image->sum(buffer->reduceBuffer);
+	com.x /= sum;
+	com.y /= sum;
+	return com;
 }
 
 vector2f Tracker::XCorLocalize(vector2f initial)

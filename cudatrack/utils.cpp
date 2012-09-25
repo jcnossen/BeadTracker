@@ -25,4 +25,5 @@ std::string SPrintf(const char *fmt, ...) {
 
 void dbgout(std::string s) {
 	OutputDebugString(s.c_str());
+	printf(s.c_str());
 }

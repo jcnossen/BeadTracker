@@ -16,91 +16,15 @@
 
 #include "nivision.h" // write PNG file
 
-/*
-__global__ void sumArrayKernel(const float* src, float *blockResults, int N)
-{
-	float* sdata = SharedMemory<float>();
 
-    unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
-	sdata[threadIdx.x] = i<N ? src[i] : 0;
-	unsigned int tid = threadIdx.x;
-
-	__syncthreads();
-
-	for (unsigned int k=blockDim.x/2;k>=1;k>>=1) {
-		if(tid < k) {
-			sdata[tid] = sdata[tid] + sdata[tid+k];
-		}
-		__syncthreads();
-	}
-
-	blockResults[blockIdx.x] = sdata[0];
-
-	//printf(" Hi %d " , i);
-}
-
-float sumDeviceArray(float *d_data, int length)
-{
-	const int blockSize = 256;
-	const int cpuThreshold = 128;
-
-	int numBlocks = (length + blockSize - 1) / blockSize;
-	float* d_blockResults, *d_out;
-	cudaMalloc(&d_blockResults, sizeof(float)*numBlocks);
-	int curLength = length;
-
-	d_out = d_blockResults;
-	while (curLength > cpuThreshold) {
-		numBlocks = (curLength + blockSize - 1) / blockSize;
-		sumArrayKernel<<<dim3(numBlocks,1,1), dim3(blockSize, 1,1), blockSize*sizeof(float)>>>(d_data, d_out, curLength);
-		// now reduced to 
-		curLength = numBlocks;
-		std::swap(d_data, d_out);
-	}
-
-	float resultValues[cpuThreshold];
-	cudaMemcpy(resultValues, d_data, sizeof(float)*curLength, cudaMemcpyDeviceToHost);
-	cudaFree(d_blockResults);
-
-	float result = 0.0f;
-	for (int x=0;x<curLength;x++)
-		result += resultValues[x];
-	return result;
-}
-
-float sumHostArray(float* data, int length)
-{
-	float *d_data;
-	cudaMalloc(&d_data, length*4);
-	cudaMemcpy(d_data, data, length*4, cudaMemcpyHostToDevice);
-
-	float result = sumDeviceArray(d_data, length);	
-
-	cudaFree(d_data);
-	return result;
-}
-
-
-void testLinearArray()
-{
-	int N = 10;
-	float *d = new float[N];
-	
-	for (int x=0;x<N;x++)
-		d[x] = rand() / (float)RAND_MAX * 10.0f;
-	
-	float result = sumHostArray(d, N);
-	float cpuResult = 0.0f;
-	for (int x=0;x<N;x++)
-		cpuResult += d[x];
-	dbgout(SPrintf("GPU result: %f. CPU result: %f\n", result, cpuResult));
-}*/
 
 static DWORD startTime = 0;
 void BeginMeasure() { startTime = GetTickCount(); }
-void EndMeasure(const std::string& msg) {
+DWORD EndMeasure(const std::string& msg) {
 	DWORD endTime = GetTickCount();
-	dbgout(SPrintf("%s: %d ms\n", msg.c_str(), (endTime-startTime)));
+	DWORD dt = endTime-startTime;
+	dbgout(SPrintf("%s: %d ms\n", msg.c_str(), dt));
+	return dt;
 }
 
 void saveImage(Array2D<pixel_t, float>& img, const char* filename)
@@ -135,6 +59,49 @@ void saveImage(Array2D<pixel_t, float>& img, const char* filename)
 	imaqDispose(dst);
 }
 
+vector2f ComputeCOM(pixel_t* data, uint w,uint h)
+{
+	float sum=0.0f;
+	float momentX=0.0f;
+	float momentY=0.0f;
+
+	for (uint y=0;y<h;y++)
+		for(uint x=0;x<w;x++)
+		{
+			pixel_t v = data[y*w+x];
+			sum += v;
+			momentX += x*v;
+			momentY += y*v;
+		}
+	vector2f com;
+	com.x = momentX / sum;
+	com.y = momentY / sum;
+	return com;
+}
+
+void BenchmarkCOM(Tracker& tracker)
+{
+	BeginMeasure();
+	int N=10000;
+	for (int k=0;k<N;k++)  {
+		vector2f COM = tracker.ComputeCOM();
+	}
+	DWORD dt = EndMeasure("GPU COM");
+	dbgout(SPrintf("GPU: %d COMs per second\n", (int)(N * 1000 / dt)));
+
+
+	pixel_t* data = new pixel_t[tracker.width * tracker.height];
+	tracker.copyToHost(data, sizeof(pixel_t)*tracker.width);
+	BeginMeasure();
+	for (int k=0;k<N;k++)  {
+		vector2f COM = ComputeCOM(data, tracker.width, tracker.height);
+	}
+	dt = EndMeasure("CPU COM");
+	dbgout(SPrintf("CPU: %d COMs per second\n", (int)(N * 1000 / dt)));
+	delete[] data;
+}
+
+
 std::string getPath(const char *file)
 {
 	std::string s = file;
@@ -151,7 +118,7 @@ int main(int argc, char *argv[])
 
 	std::string path = getPath(argv[0]);
 
-	Tracker tracker(64,64);
+	Tracker tracker(150,150);
 
 	tracker.loadTestImage(5,5, 1);
 	/*
@@ -166,12 +133,13 @@ int main(int argc, char *argv[])
 	reducer_buffer<float> rbuf(10,10);
 	float sumGPU = tmp.sum(rbuf);
 	dbgout(SPrintf("SumCPU: %f, SUMGPU: %f\n", sumCPU, sumGPU));*/
-	
+
+	BenchmarkCOM(tracker);
+
+
 	Array2D<pixel_t, float>* data = (Array2D<pixel_t, float>*)tracker.getCurrentBufferImage();
 	saveImage(*data, (path + "\\testImg.png").c_str());
-	
-	vector2f COM = tracker.ComputeCOM();
-	dbgout(SPrintf("COM: %f, %f\n", COM.x,COM.y));
+	//dbgout(SPrintf("COM: %f, %f\n", COM.x,COM.y));
 //	vector2f xcor = tracker.XCorLocalize(COM);
 
 

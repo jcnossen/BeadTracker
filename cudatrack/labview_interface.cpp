@@ -96,6 +96,7 @@ DLL_EXPORT void CALLCONV set_image(Tracker* tracker, Image* img)
 {
 	ImageInfo info;
 	imaqGetImageInfo(img, &info);
-	//if (info.imageType == IMAQ_IMAGE_U8)
-//		tracker->setImage( (uchar*)info.imageStart, info.pixelsPerLine);
+	if (info.imageType == IMAQ_IMAGE_U8 && info.xRes == tracker->width && info.yRes == tracker->height)
+		tracker->setImage( (uchar*)info.imageStart, info.pixelsPerLine);
+
 }
