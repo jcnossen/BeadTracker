@@ -103,11 +103,11 @@ void EndMeasure(const std::string& msg) {
 	dbgout(SPrintf("%s: %d ms\n", msg.c_str(), (endTime-startTime)));
 }
 
-void saveImage(Array2D<float>& img, const char* filename)
+void saveImage(Array2D<pixel_t, float>& img, const char* filename)
 {
-	pixel_t *data = new pixel_t[img.w * img.h];
-	img.copyToHost(data);
-
+	pixel_t *norm = new pixel_t[img.w * img.h];
+	img.copyToHost(norm);
+	/*
 	pixel_t maxv = data[0];
 	pixel_t minv = data[0];
 	for (int k=0;k<img.w*img.h;k++) {
@@ -117,11 +117,10 @@ void saveImage(Array2D<float>& img, const char* filename)
 	ushort *norm = new ushort[img.w*img.h];
 	for (int k=0;k<img.w*img.h;k++)
 		norm[k] = ((1<<16)-1) * (data[k]-minv) / (maxv-minv);
-
-	Image* dst = imaqCreateImage(IMAQ_IMAGE_U16, 0);
+		*/
+	Image* dst = imaqCreateImage(IMAQ_IMAGE_U8, 0);
 	imaqSetImageSize(dst, img.w, img.h);
 	imaqArrayToImage(dst, norm, img.w, img.h);
-	delete[] data;
 	delete[] norm;
 
 	ImageInfo info;
@@ -152,10 +151,10 @@ int main(int argc, char *argv[])
 
 	std::string path = getPath(argv[0]);
 
-	Tracker tracker(256,256);
+	Tracker tracker(64,64);
 
-	tracker.loadTestImage(128,128, 30);
-
+	tracker.loadTestImage(5,5, 1);
+	/*
 	Array2D<float> tmp(10,10);
 	float tmpdata[100];
 	float sumCPU=0.0f;
@@ -166,8 +165,7 @@ int main(int argc, char *argv[])
 	tmp.set(tmpdata, sizeof(float)*10);
 	reducer_buffer<float> rbuf(10,10);
 	float sumGPU = tmp.sum(rbuf);
-
-	dbgout(SPrintf("SumCPU: %f, SUMGPU: %f\n", sumCPU, sumGPU));
+	dbgout(SPrintf("SumCPU: %f, SUMGPU: %f\n", sumCPU, sumGPU));*/
 	
 	Array2D<pixel_t, float>* data = (Array2D<pixel_t, float>*)tracker.getCurrentBufferImage();
 	saveImage(*data, (path + "\\testImg.png").c_str());

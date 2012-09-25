@@ -60,7 +60,7 @@ void Tracker::setImage(pixel_t* data, uint pitchInBytes) {
 
 struct TestImgComputePixel {
 	float xpos, ypos, S;
-	__device__ __host__ float operator()(float value, uint x, uint y) {
+	float compute(uint x, uint y) {
 /*		if (x==0&&y==0)
 			printf("value: %f", value);
 */
@@ -79,10 +79,28 @@ void Tracker::loadTestImage(float xpos, float ypos, float S)
 		buffer->image = new Array2D<pixel_t,float>(width, height);
 	}
 	TestImgComputePixel pixel_op = { xpos, ypos, 1.0f/S };
-	buffer->image->applyPerPixel(pixel_op);
-	/*float maxValue = buffer->image->maximum(buffer->reduceBuffer);
-	float minValue = buffer->image->maximum(buffer->reduceBuffer);
-	buffer->image->multiplyAdd(1.0f / (maxValue-minValue), -minValue / (maxValue-minValue ));*/
+
+	// generate
+	float* buf = new float[width*height];
+	for (uint y=0;y<height;y++)
+		for(uint x=0;x<width;x++)
+			buf[y*width+x] = pixel_op.compute(x,y);
+
+	// normalize
+	float minv, maxv;
+	minv=maxv=buf[0];
+	for (int k=0;k<width*height;k++) {
+		minv=std::min(minv, buf[k]);
+		maxv=std::max(maxv, buf[k]);
+	}
+	// convert to uchar
+	uchar *ibuf = new uchar[width*height];
+	for (int k=0;k<width*height;k++)
+		ibuf[k]= 255.0f * (buf[k]-minv)/(maxv-minv);
+	delete[] buf;
+
+	buffer->image->set(ibuf, sizeof(pixel_t)*width);
+	delete[] ibuf;
 }
 
 vector2f Tracker::ComputeCOM()

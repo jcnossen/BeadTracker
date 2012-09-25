@@ -13,7 +13,7 @@ typedef unsigned int uint;
 typedef unsigned char uchar;
 
 // This also needs to correspond to the LabView code creating the image!
-typedef float pixel_t;
+typedef uchar pixel_t;
 
 // Stores all buffer variables needed for the tracker. 
 class TrackerBuffer;

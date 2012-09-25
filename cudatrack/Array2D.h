@@ -177,6 +177,13 @@ public:
 		return ReduceArray2D<T, TCompute, thrust::minimum<TCompute>, pixel_value<TCompute> >(*this, r);
 	}
 
+	void normalize(reducer_buffer<TCompute>& r)
+	{
+		float maxValue = maximum(r);
+		float minValue = minimum(r);
+		multiplyAdd(1.0f / (maxValue-minValue), -minValue / (maxValue-minValue ));
+	}
+
 	void bindTexture(texture<T, cudaTextureType1D, cudaReadModeNormalizedFloat>& tex)
 	{
 		cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<T>();
@@ -315,14 +322,12 @@ typename TCompute ReduceArray2D(Array2D<T, TCompute>& a, reducer_buffer<TCompute
 		reduceArray2D_k<TCompute, TCompute, TBinOp, blockSize, pixel_value<TCompute> > <<<nBlocks, nThreads, sharedMemSize>>> (input->data, input->pitch/sizeof(TCompute), output->data, width);
 	} 
 
-	// Copy to host memory. Block results are now in 'input' due to last std::swap
-//	input->copyToHost(rbuf.hostBuf);
-	TCompute* results=output->allocAndCopyToHost();
+	// Copy to host memory. 
+	output->copyToHost(rbuf.hostBuf);
 	TCompute resultValue = 0.0f;
 	TBinOp binary_op;
-	for (int x=0;x<width;x++) {
-		resultValue = binary_op(resultValue, results[x]);
+	for (int x=0;x<nBlocks.x;x++) {
+		resultValue = binary_op(resultValue, rbuf.hostBuf[x]);
 	}
-	delete[] results;
 	return resultValue;
 }
