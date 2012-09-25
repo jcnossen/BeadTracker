@@ -17,6 +17,7 @@ inline void cudaCheck(cudaError_t err) {
 }
 
 
+
 template<typename T>
 class pixel_value
 {
@@ -46,7 +47,17 @@ public:
 	}
 };
 
-
+template<typename T, typename TFirstOp, typename TSecondOp>
+class pixel_math_combiner
+{
+public:
+	T a, b;
+	__host__ __device__ T operator()(const T& value, const unsigned int x, const unsigned int y) {
+		TFirstOp first;
+		TSecondOp second;
+		return second(first(value, a), b);
+	}
+};
 
 template<typename T, typename TPixelOp>
 __global__ void apply_pixel_op(T* data, uint pitch, uint width, uint height, TPixelOp pixel_op)
@@ -55,6 +66,7 @@ __global__ void apply_pixel_op(T* data, uint pitch, uint width, uint height, TPi
 	uint y = threadIdx.y + blockIdx.y * blockDim.y;
 	if (x < width && y < height)
 	{
+		//TPixelOp pixel_op;
 		data[y * pitch + x] = pixel_op(data[y * pitch + x], x, y);
 	}
 }
@@ -102,6 +114,20 @@ public:
 		cudaCheck(cudaMallocPitch(&data, &pitch, w*sizeof(T), h));
 		if (host_pitch==0) host_pitch = w*sizeof(T);
 		cudaCheck(cudaMemcpy2D(data, pitch, host_data, host_pitch, w*sizeof(T), h, cudaMemcpyHostToDevice));
+	}
+
+	Array2D(const Array2D& cp) {
+		init(cp.w, cp.h);
+		cudaCheck(cudaMemcpy2D(data, pitch, cp.data, cp.pitch, w*sizeof(T), h, cudaMemcpyDeviceToDevice));
+	}
+
+	Array2D& operator=(const Array2D& cp) {
+		if (w != cp.w || h!=cp.h) {
+			if (data) cudaFree(data);
+			init(cp.w,cp.h);
+		}
+		cudaCheck(cudaMemcpy2D(data, pitch, cp.data, cp.pitch, w*sizeof(T), h, cudaMemcpyDeviceToDevice));
+		return *this;
 	}
 
 	void init(int width, int height)
@@ -175,15 +201,23 @@ public:
 		dim3 nThreads(BlockW, 1,1);
 		dim3 nBlocks = compute_nBlocks(nThreads);
 		apply_pixel_op<T, TPixelOp> <<<nThreads, nBlocks, 0>>> (data, pitch/sizeof(T), w, h, pixel_op);
-
-		/*T* d = allocAndCopyToHost();
+		/*
+		T* d = allocAndCopyToHost();
 		for (int y=0;y<h;y++)
 			for (int x=0;x<w;x++)
-				d[y*w+x] = pixel_op(d[y*w+x],x,y);
+				d[y*w+x] = pixel_op(d[y*w+x],x,y,pixel_op.data());
 		set(d, sizeof(T)*w);
 		delete[] d;*/
 	}
 
+	// does pixel = pixel * a + b
+	void multiplyAdd(T a, T b)
+	{
+		pixel_math_combiner< T, thrust::multiplies<T>, thrust::plus<T> > combiner;
+		combiner.a = a;
+		combiner.b = b;
+		applyPerPixel(combiner);
+	}
 
 };
 
@@ -271,7 +305,7 @@ typename TCompute ReduceArray2D(Array2D<T, TCompute>& a, reducer_buffer<TCompute
 	int width = a.w;
 	int sharedMemSize = (blockSize > 32) ? blockSize*sizeof(TCompute) : 64*sizeof(TCompute); // required by kernel for unrolled code
 	int nBlockX = (width + blockSize - 1) / blockSize;
-	dim3 nBlocks(nBlockX, input->h, 1);
+	dim3 nBlocks(nBlockX, a.h, 1);
 	reduceArray2D_k<T, TCompute, TBinOp, blockSize, TPixelOp > <<<nBlocks, nThreads, sharedMemSize>>> (a.data, a.pitch/sizeof(T), output->data, width);
 	while (nBlocks.x * nBlocks.y > reducer_buffer<TCompute>::cpuThreshold) {
 		width = nBlocks.x*nBlocks.y;

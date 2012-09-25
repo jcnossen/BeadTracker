@@ -12,6 +12,9 @@ struct vector2f {
 typedef unsigned int uint;
 typedef unsigned char uchar;
 
+// This also needs to correspond to the LabView code creating the image!
+typedef float pixel_t;
+
 // Stores all buffer variables needed for the tracker. 
 class TrackerBuffer;
 
@@ -29,8 +32,9 @@ public:
 
 	vector2f XCorLocalize(vector2f initial);
 	vector2f ComputeCOM();
-	void setImage(uchar* image, uint pitchInBytes);
+	void setImage(pixel_t* image, uint pitchInBytes);
 	void loadTestImage(float xpos, float ypos, float S);
-	void copyToHost(uchar* data, uint pitchInBytes);
+	void copyToHost(pixel_t* data, uint pitchInBytes);
+	void* getCurrentBufferImage();
 };
 

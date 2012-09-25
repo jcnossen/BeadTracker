@@ -18,7 +18,7 @@ template<typename T> void safeCudaFree(T*& ptr) {
 class TrackerBuffer
 {
 public:
-	Array2D<uchar, float>* image;
+	Array2D<pixel_t, float>* image;
 	reducer_buffer<float> reduceBuffer;
 
 	TrackerBuffer(uint w,uint h) : reduceBuffer(w,h) {
@@ -53,9 +53,10 @@ Tracker::Tracker(uint w, uint h) {
 Tracker::~Tracker() {
 }
 
-void Tracker::setImage(uchar* data, uint pitchInBytes) {
+void Tracker::setImage(pixel_t* data, uint pitchInBytes) {
 	
 }
+
 
 struct TestImgComputePixel {
 	float xpos, ypos, S;
@@ -66,8 +67,8 @@ struct TestImgComputePixel {
 		float X = x + 0.5f - xpos;
 		float Y = y + 0.5f - ypos;
 		float r = sqrtf(X*X+Y*Y)+1;
-		float v = sinf( (r-10)*2*3.141593f/S);
-		return v*v / (r * r / S);
+		float v = sinf( (r-10)*2*3.141593f*S);
+		return v*v / (r * r * S);
 	}
 };
 
@@ -75,12 +76,13 @@ struct TestImgComputePixel {
 void Tracker::loadTestImage(float xpos, float ypos, float S)
 {
 	if (!buffer->image) {
-		buffer->image = new Array2D<uchar,float>(width, height);
+		buffer->image = new Array2D<pixel_t,float>(width, height);
 	}
-	TestImgComputePixel pixel_op = { xpos, ypos, S };
+	TestImgComputePixel pixel_op = { xpos, ypos, 1.0f/S };
 	buffer->image->applyPerPixel(pixel_op);
-	float maxValue = buffer->image->maximum(buffer->reduceBuffer);
+	/*float maxValue = buffer->image->maximum(buffer->reduceBuffer);
 	float minValue = buffer->image->maximum(buffer->reduceBuffer);
+	buffer->image->multiplyAdd(1.0f / (maxValue-minValue), -minValue / (maxValue-minValue ));*/
 }
 
 vector2f Tracker::ComputeCOM()
@@ -95,11 +97,15 @@ vector2f Tracker::XCorLocalize(vector2f initial)
 {
 	vector2f estimate;
 
-	return estimate;
+	return initial;
 }
 
-void Tracker::copyToHost(uchar* data, uint pitchInBytes)
+void Tracker::copyToHost(pixel_t* data, uint pitchInBytes)
 {
 	if (buffer->image)
 		buffer->image->copyToHost(data, pitchInBytes);
+}
+
+void* Tracker::getCurrentBufferImage() {
+	return buffer->image;
 }

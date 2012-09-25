@@ -80,8 +80,8 @@ DLL_EXPORT void CALLCONV generate_test_image(Tracker* tracker, float xpos, float
 
 DLL_EXPORT void CALLCONV get_current_image(Tracker* tracker, Image* target)
 {
-	uchar *data = new uchar[tracker->width*tracker->height];
-	tracker->copyToHost(data, tracker->width*sizeof(uchar));
+	pixel_t *data = new pixel_t[tracker->width*tracker->height];
+	tracker->copyToHost(data, tracker->width*sizeof(pixel_t));
 
 	int width, height;
 	imaqGetImageSize(target, &width, &height);
@@ -96,6 +96,6 @@ DLL_EXPORT void CALLCONV set_image(Tracker* tracker, Image* img)
 {
 	ImageInfo info;
 	imaqGetImageInfo(img, &info);
-	if (info.imageType == IMAQ_IMAGE_U8)
-		tracker->setImage( (uchar*)info.imageStart, info.pixelsPerLine);
+	//if (info.imageType == IMAQ_IMAGE_U8)
+//		tracker->setImage( (uchar*)info.imageStart, info.pixelsPerLine);
 }

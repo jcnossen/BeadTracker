@@ -14,14 +14,10 @@
 
 #include "../cudatrack/tracker.h"
 
-#pragma pack(push,4)
-typedef struct TestItem 
-{
-	float a,b;
-};
-#pragma pack(pop)
+#include "nivision.h" // write PNG file
 
-__global__ void sumArrayKernel(const float* src, float *blockResults, int N, TestItem x)
+/*
+__global__ void sumArrayKernel(const float* src, float *blockResults, int N)
 {
 	float* sdata = SharedMemory<float>();
 
@@ -39,6 +35,8 @@ __global__ void sumArrayKernel(const float* src, float *blockResults, int N, Tes
 	}
 
 	blockResults[blockIdx.x] = sdata[0];
+
+	//printf(" Hi %d " , i);
 }
 
 float sumDeviceArray(float *d_data, int length)
@@ -54,10 +52,7 @@ float sumDeviceArray(float *d_data, int length)
 	d_out = d_blockResults;
 	while (curLength > cpuThreshold) {
 		numBlocks = (curLength + blockSize - 1) / blockSize;
-		TestItem ti;
-		 ti.a = 12; ti.b = 123;
-		 float2 Y = { 1,2};
-		sumArrayKernel<<<dim3(numBlocks,1,1), dim3(blockSize, 1,1), blockSize*sizeof(float)>>>(d_data, d_out, curLength, ti);
+		sumArrayKernel<<<dim3(numBlocks,1,1), dim3(blockSize, 1,1), blockSize*sizeof(float)>>>(d_data, d_out, curLength);
 		// now reduced to 
 		curLength = numBlocks;
 		std::swap(d_data, d_out);
@@ -88,7 +83,7 @@ float sumHostArray(float* data, int length)
 
 void testLinearArray()
 {
-	int N = 78233;
+	int N = 10;
 	float *d = new float[N];
 	
 	for (int x=0;x<N;x++)
@@ -99,7 +94,7 @@ void testLinearArray()
 	for (int x=0;x<N;x++)
 		cpuResult += d[x];
 	dbgout(SPrintf("GPU result: %f. CPU result: %f\n", result, cpuResult));
-}
+}*/
 
 static DWORD startTime = 0;
 void BeginMeasure() { startTime = GetTickCount(); }
@@ -108,45 +103,79 @@ void EndMeasure(const std::string& msg) {
 	dbgout(SPrintf("%s: %d ms\n", msg.c_str(), (endTime-startTime)));
 }
 
-int main()
+void saveImage(Array2D<float>& img, const char* filename)
 {
-	testLinearArray();
+	pixel_t *data = new pixel_t[img.w * img.h];
+	img.copyToHost(data);
 
-
-	Tracker tracker(512,512);
-
-	tracker.loadTestImage(256,256, 10);
-	vector2f COM = tracker.ComputeCOM();
-	vector2f xcor = tracker.XCorLocalize(COM);
-
-	/*
-	int W=2024, H=1024;
-	int NumRuns = 1;
-
-	float* d = new float[W*H];
-	for (int y=0;y<H;y++) 
-		for(int x=0;x<W;x++) 
-			d[y*W+x] = rand() / (float)RAND_MAX * 10.0f;
-	Array2D<float> a(W,H, d);
-
-	float sum = 0.0;
-	BeginMeasure();
-	for (int run=0;run<NumRuns;run++) {
-		float comX=0.0, comY=0.0;
-		for (int y=0;y<H;y++) {
-			for(int x=0;x<W;x++) 
-			{
-				float value=d[y*W+x];
-				sum += value;
-//				comX += v*x;
-	//			comY += v*y;
-			}
-		}
+	pixel_t maxv = data[0];
+	pixel_t minv = data[0];
+	for (int k=0;k<img.w*img.h;k++) {
+		maxv = max(maxv, data[k]);
+		minv = min(minv, data[k]);
 	}
-	EndMeasure("CPU sum");
+	ushort *norm = new ushort[img.w*img.h];
+	for (int k=0;k<img.w*img.h;k++)
+		norm[k] = ((1<<16)-1) * (data[k]-minv) / (maxv-minv);
 
-	Array2D<float>::reducer_buffer rbuf(a);
-	dbgout(SPrintf("GPU result: %f, CPU result: %f\n", a.sum(rbuf), sum));
-*/
+	Image* dst = imaqCreateImage(IMAQ_IMAGE_U16, 0);
+	imaqSetImageSize(dst, img.w, img.h);
+	imaqArrayToImage(dst, norm, img.w, img.h);
+	delete[] data;
+	delete[] norm;
+
+	ImageInfo info;
+	imaqGetImageInfo(dst, &info);
+	int success = imaqWriteFile(dst, filename, 0);
+	if (!success) {
+		char *errStr = imaqGetErrorText(imaqGetLastError());
+		std::string msg = SPrintf("IMAQ WriteFile error: %s\n", errStr);
+		imaqDispose(errStr);
+		dbgout(msg);
+	}
+	imaqDispose(dst);
+}
+
+std::string getPath(const char *file)
+{
+	std::string s = file;
+	int pos = s.length()-1;
+	while (pos>0 && s[pos]!='\\' && s[pos]!= '/' )
+		pos--;
+	
+	return s.substr(0, pos);
+}
+
+int main(int argc, char *argv[])
+{
+//	testLinearArray();
+
+	std::string path = getPath(argv[0]);
+
+	Tracker tracker(256,256);
+
+	tracker.loadTestImage(128,128, 30);
+
+	Array2D<float> tmp(10,10);
+	float tmpdata[100];
+	float sumCPU=0.0f;
+	for (int k=0;k<100;k++) {
+		tmpdata[k]=k;
+		sumCPU =tmpdata[k]+sumCPU;
+	}
+	tmp.set(tmpdata, sizeof(float)*10);
+	reducer_buffer<float> rbuf(10,10);
+	float sumGPU = tmp.sum(rbuf);
+
+	dbgout(SPrintf("SumCPU: %f, SUMGPU: %f\n", sumCPU, sumGPU));
+	
+	Array2D<pixel_t, float>* data = (Array2D<pixel_t, float>*)tracker.getCurrentBufferImage();
+	saveImage(*data, (path + "\\testImg.png").c_str());
+	
+	vector2f COM = tracker.ComputeCOM();
+	dbgout(SPrintf("COM: %f, %f\n", COM.x,COM.y));
+//	vector2f xcor = tracker.XCorLocalize(COM);
+
+
 	return 0;
 }
