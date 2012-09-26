@@ -70,7 +70,7 @@ extern "C"
 
 /* IMPORTANT: for Windows compilers, you should add a line
 */
-#define FFTW_DLL
+//#define FFTW_DLL
 /*
    here and in kernel/ifftw.h if you are compiling/using FFTW as a
    DLL, in order to do the proper importing/exporting, or
