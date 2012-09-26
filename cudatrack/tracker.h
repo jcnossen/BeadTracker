@@ -4,11 +4,6 @@
 
 #define TRACKER_MAGIC 0xf843e49a
 
-#pragma pack(push, 4)
-struct vector2f {
-	float x,y;
-};
-#pragma pack(pop)
 
 typedef unsigned int uint;
 typedef unsigned char uchar;
@@ -32,10 +27,12 @@ public:
 	bool isValid() { return magic==TRACKER_MAGIC; }
 
 	vector2f XCorLocalize(vector2f initial);
-	vector2f ComputeCOM();
+	vector2f computeCOM();
+	vector2f computeBgCorrectedCOM();
 	void setImage(pixel_t* image, uint pitchInBytes);
 	void loadTestImage(float xpos, float ypos, float S);
 	void copyToHost(pixel_t* data, uint pitchInBytes);
 	void* getCurrentBufferImage();
+	pixel_t computeMedianPixelValue();
 };
 

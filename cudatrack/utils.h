@@ -49,3 +49,9 @@ typedef unsigned char uchar;
 void dbgout(std::string s);
 std::string SPrintf(const char *fmt, ...);
 
+
+#pragma pack(push, 4)
+struct vector2f {
+	float x,y;
+};
+#pragma pack(pop)

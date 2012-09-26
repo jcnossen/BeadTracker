@@ -16,6 +16,7 @@
 
 #include "nivision.h" // write PNG file
 
+using namespace gpuArray;
 
 
 static DWORD startTime = 0;
@@ -81,17 +82,34 @@ vector2f ComputeCOM(pixel_t* data, uint w,uint h)
 
 void BenchmarkCOM(Tracker& tracker)
 {
-	BeginMeasure();
-	int N=10000;
-	for (int k=0;k<N;k++)  {
-		vector2f COM = tracker.ComputeCOM();
-	}
-	DWORD dt = EndMeasure("GPU COM");
-	dbgout(SPrintf("GPU: %d COMs per second\n", (int)(N * 1000 / dt)));
-
-
+	int N=1000;
+	DWORD dt;
 	pixel_t* data = new pixel_t[tracker.width * tracker.height];
 	tracker.copyToHost(data, sizeof(pixel_t)*tracker.width);
+	pixel_t* tmp = new pixel_t[tracker.width * tracker.height];
+
+	BeginMeasure();
+	for (int k=0;k<N;k++)  {
+		tracker.computeMedianPixelValue();
+	}
+	dt = EndMeasure("GPU Median");
+	dbgout(SPrintf("GPU: %d medians per second\n", (int)(N * 1000 / dt)));
+
+	BeginMeasure();
+	for (int k=0;k<N;k++)  {
+		memcpy(tmp, data, sizeof(pixel_t)*tracker.width*tracker.height);
+		std::sort(tmp, tmp+(tracker.width*tracker.height));
+	}
+	dt = EndMeasure("CPU Median");
+	dbgout(SPrintf("CPU: %d medians per second\n", (int)(N * 1000 / dt)));
+
+	BeginMeasure();
+	for (int k=0;k<N;k++)  {
+		vector2f COM = tracker.computeCOM();
+	}
+	dt = EndMeasure("GPU COM");
+	dbgout(SPrintf("GPU: %d COMs per second\n", (int)(N * 1000 / dt)));
+
 	BeginMeasure();
 	for (int k=0;k<N;k++)  {
 		vector2f COM = ComputeCOM(data, tracker.width, tracker.height);
@@ -99,7 +117,9 @@ void BenchmarkCOM(Tracker& tracker)
 	dt = EndMeasure("CPU COM");
 	dbgout(SPrintf("CPU: %d COMs per second\n", (int)(N * 1000 / dt)));
 	delete[] data;
+	delete[] tmp;
 }
+
 
 
 std::string getPath(const char *file)

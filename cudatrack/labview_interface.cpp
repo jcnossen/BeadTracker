@@ -52,7 +52,7 @@ DLL_EXPORT Image* CALLCONV copy_image(Image* image)
 
 DLL_EXPORT void CALLCONV compute_com(Tracker* tracker, float* pos)
 {
-	vector2f com = tracker->ComputeCOM();
+	vector2f com = tracker->computeCOM();
 	pos[0] = com.x;
 	pos[1] = com.y;
 }

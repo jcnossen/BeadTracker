@@ -4,6 +4,7 @@ Contains the CUDA code to apply per-pixel calculations to arrays and sum them by
 */
 #include <cuda_runtime.h>
 #include <thrust/functional.h>
+#include <thrust/device_vector.h>
 
 #include "cuda_shared_mem.h"
 
@@ -16,13 +17,15 @@ inline void cudaCheck(cudaError_t err) {
 		throwCudaError(err);
 }
 
+#define SHAREDCODE __host__ __device__
 
+namespace gpuArray {
 
 template<typename T>
 class pixel_value
 {
 public:
-	__host__ __device__ T operator()(const T& value, const unsigned int x, const unsigned int y) {
+	SHAREDCODE T operator()(const T& value, const unsigned int x, const unsigned int y) {
 		return value;
 	}
 };
@@ -32,7 +35,7 @@ template<typename T>
 class pixel_COM_x
 {
 public:
-	__host__ __device__ T operator()(const T& value, const unsigned int x, const unsigned int y) {
+	SHAREDCODE T operator()(const T& value, const unsigned int x, const unsigned int y) {
 		return value * x;
 	}
 };
@@ -42,7 +45,7 @@ template<typename T>
 class pixel_COM_y
 {
 public:
-	__host__ __device__ T operator()(const T& value, const unsigned int x, const unsigned int y) {
+	SHAREDCODE T operator()(const T& value, const unsigned int x, const unsigned int y) {
 		return value * y;
 	}
 };
@@ -51,13 +54,25 @@ template<typename T, typename TFirstOp, typename TSecondOp>
 class pixel_math_combiner
 {
 public:
-	T a, b;
-	__host__ __device__ T operator()(const T& value, const unsigned int x, const unsigned int y) {
-		TFirstOp first;
-		TSecondOp second;
-		return second(first(value, a), b);
+	TFirstOp first;
+	TSecondOp second;
+	SHAREDCODE T operator()(const T& value, const unsigned int x, const unsigned int y) {
+		return second(first(value, x, y), x, y);
 	}
 };
+
+// Converts a binary functor to a pixel op
+template<typename T, typename TBinaryOp>
+class pixel_value_binary_adapter
+{
+public:
+	T operand;
+	SHAREDCODE T operator()(const T& value, const unsigned int x, const unsigned int y) { 
+		TBinaryOp op;
+		return op(value, operand); 
+	}
+};
+
 
 template<typename T, typename TPixelOp>
 __global__ void apply_pixel_op(T* data, uint pitch, uint width, uint height, TPixelOp pixel_op)
@@ -78,7 +93,7 @@ template<typename T>
 struct reducer_buffer;
 
 template<typename T, typename TCompute, typename TBinOp, typename TPixelOp>
-typename TCompute ReduceArray2D(Array2D<T, TCompute>& a, typename reducer_buffer<TCompute>& rbuf);
+typename TCompute ReduceArray2D(Array2D<T, TCompute>& a, typename reducer_buffer<TCompute>& rbuf, TPixelOp pixel_op);
 
 
 /* 
@@ -155,26 +170,34 @@ public:
 		cudaCheck(cudaMemcpy2D(data, pitch, src, srcPitch, w*sizeof(T), h, cudaMemcpyHostToDevice));
 	}
 
+private:
+	template<typename TReduceOp, typename TPixelOp>
+	TCompute ReduceArrayHelper(reducer_buffer<TCompute>& r, TReduceOp reduce_op, TPixelOp pixel_op)
+	{
+		return ReduceArray2D<T, TCompute, TReduceOp, TPixelOp >(*this, r, pixel_op);
+	}
+
+public:
 
 	TCompute sum(reducer_buffer<TCompute>& r)
 	{
-		return ReduceArray2D<T, TCompute, thrust::plus<TCompute>, pixel_value<TCompute> >(*this, r);
+		return ReduceArrayHelper(r, thrust::plus<TCompute>(), pixel_value<TCompute>());
 	}
 	TCompute momentX(reducer_buffer<TCompute>& r)
 	{
-		return ReduceArray2D<T, TCompute, thrust::plus<TCompute>, pixel_COM_x<TCompute> >(*this, r);
+		return ReduceArray2D<T, TCompute, thrust::plus<TCompute>, pixel_COM_x<TCompute> >(*this, r, pixel_COM_x<TCompute>());
 	}
 	TCompute momentY(reducer_buffer<TCompute>& r)
 	{
-		return ReduceArray2D<T, TCompute, thrust::plus<TCompute>, pixel_COM_y<TCompute> >(*this, r);
+		return ReduceArray2D<T, TCompute, thrust::plus<TCompute>, pixel_COM_y<TCompute> >(*this, r, pixel_COM_y<TCompute>());
 	}
 	TCompute maximum(reducer_buffer<TCompute>& r)
 	{
-		return ReduceArray2D<T, TCompute, thrust::maximum<TCompute>, pixel_value<TCompute> >(*this, r);
+		return ReduceArray2D<T, TCompute, thrust::maximum<TCompute>, pixel_value<TCompute> >(*this, r, pixel_value<TCompute>());
 	}
 	TCompute minimum(reducer_buffer<TCompute>& r)
 	{
-		return ReduceArray2D<T, TCompute, thrust::minimum<TCompute>, pixel_value<TCompute> >(*this, r);
+		return ReduceArray2D<T, TCompute, thrust::minimum<TCompute>, pixel_value<TCompute> >(*this, r, pixel_value<TCompute>());
 	}
 
 	void normalize(reducer_buffer<TCompute>& r)
@@ -220,23 +243,31 @@ public:
 	// does pixel = pixel * a + b
 	void multiplyAdd(T a, T b)
 	{
-		pixel_math_combiner< T, thrust::multiplies<T>, thrust::plus<T> > combiner;
-		combiner.a = a;
-		combiner.b = b;
+		pixel_value_binary_adapter<T, thrust::multiplies<T> > mul = {a};
+		pixel_value_binary_adapter<T, thrust::plus<T> > add = {b};
+		pixel_math_combiner< T,pixel_value_binary_adapter< T, thrust::multiplies<T> > , 
+			pixel_value_binary_adapter<T, thrust::plus<T> > > combiner;
+		combiner.first = mul; 
+		combiner.second = add;
 		applyPerPixel(combiner);
 	}
-
+	
+	void copyTo(thrust::device_vector<T>& dst)
+	{
+		if(dst.size() != w*h) dst.resize(w*h);
+		T* ptr = thrust::raw_pointer_cast(&dst[0]);
+		cudaMemcpy2D(ptr, sizeof(T)*w, data, pitch, sizeof(T)*w, h, cudaMemcpyDeviceToDevice);
+	}
 };
 
 template<typename T, typename TOut, typename TBinaryFunc, unsigned int blockSize, typename TPixelOp>
-__global__ void reduceArray2D_k(const T* src, size_t spitch, TOut* out, size_t width)
+__global__ void reduceArray2D_k(const T* src, size_t spitch, TOut* out, size_t width, TPixelOp pixel_op)
 {
 	TOut* sdata = SharedMemory<TOut>();
 
 	int tid = threadIdx.x;
 	int xpos = threadIdx.x + blockIdx.x * blockSize;
 
-	TPixelOp pixel_op;
 	sdata[threadIdx.x] = xpos < width ? pixel_op(src[ spitch * blockIdx.y + xpos ], xpos, blockIdx.y) : 0;
 
 	__syncthreads();
@@ -303,7 +334,7 @@ public:
 
 
 template<typename T, typename TCompute, typename TBinOp, typename TPixelOp>
-typename TCompute ReduceArray2D(Array2D<T, TCompute>& a, reducer_buffer<TCompute>& rbuf)
+typename TCompute ReduceArray2D(Array2D<T, TCompute>& a, reducer_buffer<TCompute>& rbuf, TPixelOp pixel_op)
 {
 	// Allocate memory for per-block results
 	Array2D<TCompute> *output = &rbuf.blockResults1, *input = &rbuf.blockResults2;
@@ -316,13 +347,14 @@ typename TCompute ReduceArray2D(Array2D<T, TCompute>& a, reducer_buffer<TCompute
 	int sharedMemSize = (blockSize > 32) ? blockSize*sizeof(TCompute) : 64*sizeof(TCompute); // required by kernel for unrolled code
 	int nBlockX = (width + blockSize - 1) / blockSize;
 	dim3 nBlocks(nBlockX, a.h, 1);
-	reduceArray2D_k<T, TCompute, TBinOp, blockSize, TPixelOp > <<<nBlocks, nThreads, sharedMemSize, rbuf.stream>>> (a.data, a.pitch/sizeof(T), output->data, width);
+	reduceArray2D_k<T, TCompute, TBinOp, blockSize, TPixelOp > <<<nBlocks, nThreads, sharedMemSize, rbuf.stream>>> (a.data, a.pitch/sizeof(T), output->data, width, pixel_op);
 	while (nBlocks.x * nBlocks.y > reducer_buffer<TCompute>::cpuThreshold) {
 		width = nBlocks.x*nBlocks.y;
 		nBlocks = dim3( (width + blockSize - 1)/blockSize, 1 ,1);
 		std::swap(output, input);
 
-		reduceArray2D_k<TCompute, TCompute, TBinOp, blockSize, pixel_value<TCompute> > <<<nBlocks, nThreads, sharedMemSize, rbuf.stream>>> (input->data, input->pitch/sizeof(TCompute), output->data, width);
+		reduceArray2D_k<TCompute, TCompute, TBinOp, blockSize, pixel_value<TCompute> > <<<nBlocks, nThreads, sharedMemSize, rbuf.stream>>> 
+			(input->data, input->pitch/sizeof(TCompute), output->data, width, pixel_value<TCompute>());
 	} 
 
 	// Copy to host memory. 
@@ -334,3 +366,5 @@ typename TCompute ReduceArray2D(Array2D<T, TCompute>& a, reducer_buffer<TCompute
 	}
 	return resultValue;
 }
+
+} // end of gpuArray namespace

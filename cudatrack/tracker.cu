@@ -4,8 +4,22 @@
 
 #include <stdio.h>
 
+#include "utils.h"
 #include "tracker.h"
 #include "Array2D.h"
+
+#include <thrust/device_vector.h>
+#include <thrust/sort.h>
+
+using namespace gpuArray;
+
+void throwCudaError(cudaError_t err)
+{
+	std::string msg = SPrintf("CUDA error: %s", cudaGetErrorString(err));
+	dbgout(msg);
+	throw std::runtime_error(msg);
+}
+
 
 
 template<typename T> void safeCudaFree(T*& ptr) {
@@ -20,12 +34,16 @@ class TrackerBuffer
 public:
 	Array2D<pixel_t, float>* image;
 	reducer_buffer<float> reduceBuffer;
+	thrust::device_vector<pixel_t> sortBuf;
+	pixel_t* h_image;
 
 	TrackerBuffer(uint w,uint h) : reduceBuffer(w,h) {
 		image = new Array2D<pixel_t,float>(w, h);
+		h_image = new pixel_t[w*h];
 	}
 	~TrackerBuffer()
 	{
+		if (h_image) delete[] h_image;
 		if (image) delete image;
 	}
 };
@@ -86,13 +104,31 @@ void Tracker::loadTestImage(float xpos, float ypos, float S)
 	delete[] buf;
 
 	buffer->image->set(ibuf, sizeof(pixel_t)*width);
+	memcpy(buffer->h_image, ibuf, sizeof(pixel_t)*width*height);
 	delete[] ibuf;
 }
 
-vector2f Tracker::ComputeCOM()
+vector2f Tracker::computeCOM()
 {
 	if (!buffer->image)
 		return vector2f();
+
+	vector2f com;
+	com.x = buffer->image->momentX(buffer->reduceBuffer);
+	com.y = buffer->image->momentY(buffer->reduceBuffer);
+	float sum = buffer->image->sum(buffer->reduceBuffer);
+	com.x /= sum;
+	com.y /= sum;
+	return com;
+}
+
+
+vector2f Tracker::computeBgCorrectedCOM()
+{
+	if (!buffer->image)
+		return vector2f();
+
+	pixel_t median = computeMedianPixelValue();
 
 	vector2f com;
 	com.x = buffer->image->momentX(buffer->reduceBuffer);
@@ -118,4 +154,11 @@ void Tracker::copyToHost(pixel_t* data, uint pitchInBytes)
 
 void* Tracker::getCurrentBufferImage() {
 	return buffer->image;
+}
+
+pixel_t Tracker::computeMedianPixelValue() {
+	buffer->image->copyTo(buffer->sortBuf);
+	thrust::sort(buffer->sortBuf.begin(), buffer->sortBuf.end());
+	pixel_t median = buffer->sortBuf[buffer->sortBuf.size()/2];
+	return median;
 }

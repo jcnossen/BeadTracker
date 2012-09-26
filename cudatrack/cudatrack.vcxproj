@@ -40,7 +40,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>labview/cintools;$(IncludePath);labview/vision/Include;labview/imaq/Include</IncludePath>
+    <IncludePath>../labview/cintools;../labview/vision/Include;../labview/imaq/Include</IncludePath>
     <OutDir>$(ProjectDir)</OutDir>
     <TargetName>cudatrack-debug</TargetName>
   </PropertyGroup>
@@ -95,6 +95,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="cpu_tracker.cpp" />
     <ClCompile Include="labview_interface.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
