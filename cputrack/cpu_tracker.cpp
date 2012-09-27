@@ -14,6 +14,8 @@ CPU only tracker
 #include "fftw-3.3.2/fftw3.h"
 #include <complex>
 
+#include "LsqQuadraticFit.h"
+
 #define CALLCONV _FUNCC
 
 /* lv_prolog.h and lv_epilog.h set up the correct alignment for LabVIEW data. */
@@ -57,7 +59,7 @@ CPUTracker::CPUTracker(uint w,uint h)
 	width = w;
 	height = h;
 
-	xcorw = 64;
+	xcorw = 128;
 	xc = new float[xcorw];
 	xc_r = new float[xcorw];
 
@@ -90,8 +92,9 @@ vector2f CPUTracker::ComputeXCor(ushort* data, uint w,uint h,uint pitch, vector2
 {
 	// extract the image
 	vector2f pos;
-
 	int sl = 32;
+	float scale = (1.0f/(sl*2*float(1<<16)-1));
+
 	int xmid = (int)( initial.x );
 	int ymid = (int)( initial.y );
 
@@ -99,23 +102,23 @@ vector2f CPUTracker::ComputeXCor(ushort* data, uint w,uint h,uint pitch, vector2
 	int ymin = initial.y - xcorw/2;
 
 	// generate X position xcor array (summing over y range)
-	for (int x=0;x<xcorw;x++) {
-		xc [x] = 0.0f;
+	for (uint x=0;x<xcorw;x++) {
+		float s = 0.0f;
 		for (int y=ymid-sl;y<ymid+sl;y++)
-			xc [x] += ((ushort*) ((uchar*)data + (y*pitch)))[x + xmin];
-		xc_r [xcorw-x-1] = xc [x];
-
-		graphResult[x] = xc[x] / ( sl*2 );
+			s += ((ushort*) ((uchar*)data + (y*pitch)))[x + xmin];
+		xc [x] = s*scale;
+		xc_r [xcorw-x-1] = xc[x];
 	}
 
 	XCorFFTHelper();
 	pos.x = initial.x + 0.5f * ComputeMaxInterp();
 
 	// generate Y position xcor array (summing over x range)
-	for (int y=0;y<xcorw;y++) {
-		xc [y] = 0.0f;
+	for (uint y=0;y<xcorw;y++) {
+		float s = 0.0f; 
 		for (int x=xmid-sl;x<xmid+sl;x++) 
-			xc [y] += ((ushort*) ((uchar*)data + ( (y+ymin)*pitch)))[x];
+			s += ((ushort*) ((uchar*)data + ( (y+ymin)*pitch)))[x];
+		xc[y] = s*scale;
 		xc_r [xcorw-y-1] = xc[y];
 	}
 
@@ -136,6 +139,8 @@ void CPUTracker::XCorFFTHelper()
 	}
 
 	fftwf_execute_dft_c2r(fft_plan_bw, (fftwf_complex*)fft_out, result);
+
+	memcpy(graphResult, result, sizeof(float)*xcorw);
 }
 
 float CPUTracker::ComputeMaxInterp()
@@ -148,8 +153,12 @@ float CPUTracker::ComputeMaxInterp()
 			iMax = k;
 		}
 	}
+	
+	float xs[] = {-2, -1, 0, 1, 2};
+	LsqSqQuadFit<float> qfit(5, xs, &result[iMax-2]);
+	float interpMax = qfit.maxPos();
 
-	return iMax;
+	return iMax + interpMax;
 }
 
 
