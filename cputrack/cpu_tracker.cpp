@@ -9,11 +9,8 @@ CPU only tracker
 #include "niimaq.h"
 
 #include <Windows.h>
-#include "utils.h"
 
-#include "fftw-3.3.2/fftw3.h"
-#include <complex>
-
+#include "cpu_tracker.h"
 #include "LsqQuadraticFit.h"
 
 #define CALLCONV _FUNCC
@@ -28,31 +25,7 @@ typedef LVFloatArray **TD1Hdl;
 #include "lv_epilog.h"
 
 
-typedef uchar pixel_t;
-typedef std::complex<float> complexf;
-
-class CPUTracker
-{
-public:
-	uint width, height;
-
-	complexf *fft_out, *fft_revout;
-	float *result;
-	fftwf_plan fft_plan_fw, fft_plan_bw;
-
-	float* graphResult;
-
-	uint xcorw;
-	float *xc, *xc_r;
-
-	CPUTracker(uint w,uint h);
-	~CPUTracker();
-	vector2f ComputeXCor(ushort* data, uint w, uint h, uint pitch, vector2f initial);
-	void XCorFFTHelper();
-	// Compute the interpolated index of the maximum value in the result array
-	float ComputeMaxInterp();
-};
-
+const float XCorScale = 0.5f;
 
 CPUTracker::CPUTracker(uint w,uint h)
 {
@@ -60,17 +33,21 @@ CPUTracker::CPUTracker(uint w,uint h)
 	height = h;
 
 	xcorw = 128;
-	xc = new float[xcorw];
-	xc_r = new float[xcorw];
 
-	graphResult = new float[xcorw];
+	X_xc.resize(xcorw);
+	X_xcr.resize(xcorw);
+	X_result.resize(xcorw);
+	Y_xc.resize(xcorw);
+	Y_xcr.resize(xcorw);
+	Y_result.resize(xcorw);
 
 	fft_revout = new complexf[xcorw];
 	fft_out = new complexf[xcorw];
-	result = new float[xcorw];
 
-	fft_plan_fw = fftwf_plan_dft_r2c_1d(xcorw, xc, (fftwf_complex*) fft_out, FFTW_ESTIMATE);
-	fft_plan_bw = fftwf_plan_dft_c2r_1d(xcorw, (fftwf_complex*)fft_out, result, FFTW_ESTIMATE);
+	fft_plan_fw = fftwf_plan_dft_r2c_1d(xcorw, &X_xc[0], (fftwf_complex*) fft_out, FFTW_ESTIMATE);
+	fft_plan_bw = fftwf_plan_dft_c2r_1d(xcorw, (fftwf_complex*)fft_out, &X_result[0], FFTW_ESTIMATE);
+
+	srcImage = new float [w*h];
 }
 
 CPUTracker::~CPUTracker()
@@ -80,85 +57,97 @@ CPUTracker::~CPUTracker()
 
 	delete[] fft_revout;
 	delete[] fft_out;
-	delete[] result;
-
-	delete[] xc;
-	delete[] xc_r;
-
-	delete[] graphResult;
+	delete[] srcImage;
 }
 
-vector2f CPUTracker::ComputeXCor(ushort* data, uint w,uint h,uint pitch, vector2f initial)
+const inline float interp(float a, float b, float x) { return a + (b-a)*x; }
+
+float CPUTracker::interpolate(float x,float y)
+{
+	int rx=x, ry=y;
+	float v00 = getPixel(rx,ry);
+	float v01 = getPixel(rx+1,ry);
+	float v10 = getPixel(rx,ry+1);
+	float v11 = getPixel(rx+1,ry+1);
+
+	float v0 = interp (v00, v10, x-rx);
+	float v1 = interp (v01, v11, x-rx);
+
+	return interp (v0, v1, y-ry);
+}
+
+vector2f CPUTracker::ComputeXCor(vector2f initial)
 {
 	// extract the image
-	vector2f pos;
-	int sl = 32;
-	float scale = (1.0f/(sl*2*float(1<<16)-1));
+	float scale = (1.0f/(XCorProfileLen*float(1<<16)-1));
 
-	int xmid = (int)( initial.x );
-	int ymid = (int)( initial.y );
-
-	int xmin = initial.x - xcorw/2;
-	int ymin = initial.y - xcorw/2;
+	float xmin = initial.x - XCorScale * xcorw/2;
+	float ymin = initial.y - XCorScale * xcorw/2;
 
 	// generate X position xcor array (summing over y range)
 	for (uint x=0;x<xcorw;x++) {
 		float s = 0.0f;
-		for (int y=ymid-sl;y<ymid+sl;y++)
-			s += ((ushort*) ((uchar*)data + (y*pitch)))[x + xmin];
-		xc [x] = s*scale;
-		xc_r [xcorw-x-1] = xc[x];
+		for (int y=0;y<XCorProfileLen;y++)
+			s += interpolate(x * XCorScale + xmin, y * XCorScale + initial.y - XCorScale * XCorProfileLen/2);
+		X_xc [x] = s*scale;
+		X_xcr [xcorw-x-1] = X_xc[x];
 	}
 
-	XCorFFTHelper();
-	pos.x = initial.x + 0.5f * ComputeMaxInterp();
+	XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
+	float offsetX = ComputeMaxInterp(X_result) - (float)xcorw/2;
 
 	// generate Y position xcor array (summing over x range)
 	for (uint y=0;y<xcorw;y++) {
 		float s = 0.0f; 
-		for (int x=xmid-sl;x<xmid+sl;x++) 
-			s += ((ushort*) ((uchar*)data + ( (y+ymin)*pitch)))[x];
-		xc[y] = s*scale;
-		xc_r [xcorw-y-1] = xc[y];
+		for (int x=0;x<XCorProfileLen;x++) 
+			s += interpolate(x * XCorScale + initial.x - XCorProfileLen/2 * XCorScale, y * XCorScale + ymin);
+		Y_xc[y] = s*scale;
+		Y_xcr [xcorw-y-1] = Y_xc[y];
 	}
 
-	XCorFFTHelper();
-	pos.y = initial.y + 0.5f * ComputeMaxInterp();
+	XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
+	float offsetY = ComputeMaxInterp(Y_result) - (float)xcorw/2;
+
+	dbgout(SPrintf("offsetX: %f, offsetY: %f\n", offsetX, offsetY));
+
+	vector2f pos;
+	pos.x = initial.x + offsetX * XCorScale;
+	pos.y = initial.y + offsetY * XCorScale;
 	return pos;
 }
 
-void CPUTracker::XCorFFTHelper()
+void CPUTracker::XCorFFTHelper(float* xc, float* xcr, float* result)
 {
 	// need to optimize this: the DFT of the reverse sequence should be calculatable from the known DFT (right?)
 	fftwf_execute_dft_r2c(fft_plan_fw, xc, (fftwf_complex*)fft_out);
-	fftwf_execute_dft_r2c(fft_plan_fw, xc_r, (fftwf_complex*)fft_revout);
+	fftwf_execute_dft_r2c(fft_plan_fw, xcr, (fftwf_complex*)fft_revout);
 
 	// Multiply with conjugate of reverse
-	for (int x=0;x<xcorw;x++) {
+	for (uint x=0;x<xcorw;x++) {
 		fft_out[x] *= complexf(fft_revout[x].real(), -fft_revout[x].imag());
 	}
 
-	fftwf_execute_dft_c2r(fft_plan_bw, (fftwf_complex*)fft_out, result);
-
-	memcpy(graphResult, result, sizeof(float)*xcorw);
+	fftwf_execute_dft_c2r(fft_plan_bw, (fftwf_complex*)fft_out, xc);
+	for (uint x=0;x<xcorw;x++)
+		result[x] = xc[ (x+xcorw/2) % xcorw ];
 }
 
-float CPUTracker::ComputeMaxInterp()
+float CPUTracker::ComputeMaxInterp(const std::vector<float>& r)
 {
 	uint iMax=0;
 	float vMax=0;
-	for (uint k=0;k<xcorw;k++) {
-		if (result[k]>vMax) {
-			vMax = result[k];
+	for (uint k=0;k<r.size();k++) {
+		if (r[k]>vMax) {
+			vMax = r[k];
 			iMax = k;
 		}
 	}
 	
 	float xs[] = {-2, -1, 0, 1, 2};
-	LsqSqQuadFit<float> qfit(5, xs, &result[iMax-2]);
+	LsqSqQuadFit<float> qfit(5, xs, &r[iMax-2]);
 	float interpMax = qfit.maxPos();
 
-	return iMax + interpMax;
+	return (float)iMax - interpMax * 0.5f;
 }
 
 
@@ -172,7 +161,7 @@ vector2f ComputeCOM(TPixel* data, uint w,uint h)
 	for (uint y=0;y<h;y++)
 		for(uint x=0;x<w;x++)
 		{
-			pixel_t v = data[w*y+x];
+			TPixel v = data[w*y+x];
 			sum += v;
 			momentX += x*v;
 			momentY += y*v;
@@ -185,25 +174,23 @@ vector2f ComputeCOM(TPixel* data, uint w,uint h)
 
 
 template<typename TPixel>
-float* bgcorrect(TPixel* data, uint w, uint h, uint srcpitch, float* pMedian)
+void CPUTracker::bgcorrect(TPixel* data, uint w, uint h, uint srcpitch, float* pMedian)
 {
-	float* dst = new float[w*h];
 	TPixel* sortbuf = new TPixel[w*h];
 	for (uint y=0;y<h;y++) {
 		for (uint x=0;x<w;x++) {
 			sortbuf[y*w+x] = ((TPixel*)((uchar*)data + y*srcpitch)) [x];
-			dst[y*w+x] = sortbuf[y*w+x];
+			srcImage[y*w+x] = sortbuf[y*w+x];
 		}
 	}
 	std::sort(sortbuf, sortbuf+(w*h));
 	float median = sortbuf[w*h/2];
 	for (uint k=0;k<w*h;k++) {
-		float v = dst[k]-median;
-		dst[k]=v*v;
+		float v = srcImage[k]-median;
+		srcImage[k]=v*v;
 	}
 	delete[] sortbuf;
 	if (pMedian) *pMedian = median;
-	return dst;
 }
 
 template<typename TPixel>
@@ -223,12 +210,12 @@ ushort* floatToNormalizedUShort(float *data, uint w,uint h)
 {
 	float maxv = data[0];
 	float minv = data[0];
-	for (int k=0;k<w*h;k++) {
+	for (uint k=0;k<w*h;k++) {
 		maxv = max(maxv, data[k]);
 		minv = min(minv, data[k]);
 	}
 	ushort *norm = new ushort[w*h];
-	for (int k=0;k<w*h;k++)
+	for (uint k=0;k<w*h;k++)
 		norm[k] = ((1<<16)-1) * (data[k]-minv) / (maxv-minv);
 	return norm;
 }
@@ -262,7 +249,7 @@ DLL_EXPORT void CALLCONV generate_test_image(Image *img, uint w, uint h, float x
 			float X = x - xp;
 			float Y = y - yp;
 			float r = sqrtf(X*X+Y*Y)+1;
-			float v = 0.1 + sinf( (r-10)*2*3.141593f*S) / r;
+			float v = 0.1 + sinf( (r-10)/5) * expf(-r*S);
 			d[y*w+x] = v;
 		}
 
@@ -282,50 +269,54 @@ DLL_EXPORT void CALLCONV destroy_cpu_tracker(CPUTracker* tracker)
 	delete tracker;
 }
 
-
-DLL_EXPORT void CALLCONV copy_crosscorrelation_result(CPUTracker* tracker, TD1Hdl resultArray)
+void copyToLVArray (TD1Hdl r, const std::vector<float>& a)
 {
-	if (!resultArray)
-		return;
+	LVFloatArray* dst = *r;
 
-	LVFloatArray* dst = *resultArray;
+	uint len = min( dst->dimSize, a.size () );
+	for (uint i=0;i<a.size();i++)
+		dst->elt[i] = a[i];
+}
 
-	int len = min ( (*resultArray)->dimSize, tracker->xcorw );
-	for (int i=0;i<tracker->xcorw;i++)
-		dst->elt[i] = tracker->graphResult[i];
+DLL_EXPORT void CALLCONV copy_crosscorrelation_result(CPUTracker* tracker, TD1Hdl x_result, TD1Hdl y_result, TD1Hdl x_xc, TD1Hdl y_xc)
+{
+	if (x_result) copyToLVArray (x_result, tracker->X_result);
+	if (y_result) copyToLVArray (y_result, tracker->Y_result);
+	if (x_xc) copyToLVArray (x_xc, tracker->X_xc);
+	if (y_xc) copyToLVArray (y_xc, tracker->Y_xc);
 }
 
 DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* COM, float* xcor,  float* median, Image* dbgImg)
 {
 	ImageInfo info;
 	imaqGetImageInfo(img, &info);
-	float* bgcorrected = 0;
+
+	if (info.xRes != tracker->width || info.yRes != tracker->height)
+		return;
 
 	if (info.imageType == IMAQ_IMAGE_U8)
-		bgcorrected = bgcorrect( (uchar*)info.imageStart, info.xRes, info.yRes, info.pixelsPerLine, median);
+		tracker->bgcorrect((uchar*)info.imageStart, info.xRes, info.yRes, info.pixelsPerLine, median);
 	else if(info.imageType == IMAQ_IMAGE_U16)
-		bgcorrected = bgcorrect( (ushort*)info.imageStart, info.xRes, info.yRes, info.pixelsPerLine*2, median);
+		tracker->bgcorrect((ushort*)info.imageStart, info.xRes, info.yRes, info.pixelsPerLine*2, median);
+	else 
+		return;
 
-	if (bgcorrected) {
-		normalize(bgcorrected, info.xRes, info.yRes);
-		vector2f com = ComputeCOM(bgcorrected, info.xRes, info.yRes);
-		
-		if (dbgImg) {
-			uchar* cv = new uchar[info.xRes*info.yRes];
-			for (int k=0;k<info.xRes*info.yRes;k++)
-				cv[k]= (uchar)(255.0f * bgcorrected[k]);
-			imaqArrayToImage(dbgImg, cv, info.xRes, info.yRes);
-			delete[] cv;
-		}
+	normalize(tracker->srcImage, info.xRes, info.yRes);
+	vector2f com = ComputeCOM(tracker->srcImage, info.xRes, info.yRes);
 
-		COM[0] = com.x;
-		COM[1] = com.y;
-
-		vector2f xcorpos = tracker->ComputeXCor( (ushort*)info.imageStart, info.xRes, info.yRes, info.pixelsPerLine*2, com);
-		delete[] bgcorrected;
-
-		xcor[0] = xcorpos.x;
-		xcor[1] = xcorpos.y;
+	if (dbgImg) {
+		uchar* cv = new uchar[info.xRes*info.yRes];
+		for (int k=0;k<info.xRes*info.yRes;k++)
+			cv[k]= (uchar)(255.0f * tracker->srcImage[k]);
+		imaqArrayToImage(dbgImg, cv, info.xRes, info.yRes);
+		delete[] cv;
 	}
+
+	COM[0] = com.x;
+	COM[1] = com.y;
+
+	vector2f xcorpos = tracker->ComputeXCor(com);
+	xcor[0] = xcorpos.x;
+	xcor[1] = xcorpos.y;
 }
 

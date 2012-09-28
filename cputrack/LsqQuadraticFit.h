@@ -5,14 +5,14 @@ class LsqSqQuadFit
 {
 public:
 
-	int numPts;
-	T *X;
-	T *Y;
+	uint numPts;
+	const T *X;
+	const T *Y;
 
 	T a,b,c;
 	T s40, s30, s20, s10, s21, s11, s01;
 
-	LsqSqQuadFit(int numPts, T* xval, T* yval) : numPts(numPts), X(xval), Y(yval)
+	LsqSqQuadFit(uint numPts, const T* xval, const T* yval) : numPts(numPts), X(xval), Y(yval)
 	{
 		computeSums();
         //notation sjk to mean the sum of x_i^j*y_i^k. 
