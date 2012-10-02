@@ -16,6 +16,8 @@
 
 #include "nivision.h" // write PNG file
 
+#include "../cputrack/LsqQuadraticFit.h"
+
 using namespace gpuArray;
 
 
@@ -162,6 +164,13 @@ int main(int argc, char *argv[])
 	//dbgout(SPrintf("COM: %f, %f\n", COM.x,COM.y));
 //	vector2f xcor = tracker.XCorLocalize(COM);
 
+	float x[] = { -2, -1 , 0, 1, 2, 3,  };
+	float y[sizeof(x)/sizeof(float)];
+	for (int k=0;k<6;k++)
+		y[k]=-x[k]*x[k]*2 + x[k]*4 - 10;
+
+	LsqSqQuadFit<float> qfit(6, x, y);
+	dbgout( SPrintf("A: %f, B: %f, C: %f. Max:%f\n", qfit.a, qfit.b, qfit.c, qfit.maxPos()));
 
 	return 0;
 }
