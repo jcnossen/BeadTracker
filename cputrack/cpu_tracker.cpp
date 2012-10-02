@@ -259,12 +259,12 @@ DLL_EXPORT void CALLCONV generate_test_image(Image *img, uint w, uint h, float x
 }
 
 
-DLL_EXPORT CPUTracker* CALLCONV create_cpu_tracker(uint w, uint h)
+DLL_EXPORT CPUTracker* CALLCONV create_tracker(uint w, uint h)
 {
 	return new CPUTracker(w,h);
 }
 
-DLL_EXPORT void CALLCONV destroy_cpu_tracker(CPUTracker* tracker)
+DLL_EXPORT void CALLCONV destroy_tracker(CPUTracker* tracker)
 {
 	delete tracker;
 }
