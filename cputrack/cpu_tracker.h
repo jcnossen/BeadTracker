@@ -28,7 +28,7 @@ public:
 
 	CPUTracker(uint w,uint h);
 	~CPUTracker();
-	vector2f ComputeXCor(vector2f initial);
+	vector2f ComputeXCor(vector2f initial, int iterations);
 	void XCorFFTHelper(float* xc, float* xcr, float* result);
 	// Compute the interpolated index of the maximum value in the result array
 	float ComputeMaxInterp(const std::vector<float>& v);

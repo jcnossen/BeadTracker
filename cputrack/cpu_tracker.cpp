@@ -25,14 +25,14 @@ typedef LVFloatArray **TD1Hdl;
 #include "lv_epilog.h"
 
 
-const float XCorScale = 0.5f;
+const float XCorScale = 0.25f;
 
 CPUTracker::CPUTracker(uint w,uint h)
 {
 	width = w;
 	height = h;
 
-	xcorw = 128;
+	xcorw = 64;
 
 	X_xc.resize(xcorw);
 	X_xcr.resize(xcorw);
@@ -76,43 +76,48 @@ float CPUTracker::interpolate(float x,float y)
 	return interp (v0, v1, y-ry);
 }
 
-vector2f CPUTracker::ComputeXCor(vector2f initial)
+vector2f CPUTracker::ComputeXCor(vector2f initial, int iterations)
 {
 	// extract the image
 	float scale = (1.0f/(XCorProfileLen*float(1<<16)-1));
+	vector2f pos = initial;
 
-	float xmin = initial.x - XCorScale * xcorw/2;
-	float ymin = initial.y - XCorScale * xcorw/2;
+	for (int k=0;k<iterations;k++) {
 
-	// generate X position xcor array (summing over y range)
-	for (uint x=0;x<xcorw;x++) {
-		float s = 0.0f;
-		for (int y=0;y<XCorProfileLen;y++)
-			s += interpolate(x * XCorScale + xmin, y * XCorScale + initial.y - XCorScale * XCorProfileLen/2);
-		X_xc [x] = s*scale;
-		X_xcr [xcorw-x-1] = X_xc[x];
+		float xmin = pos.x - XCorScale * xcorw/2;
+		float ymin = pos.y - XCorScale * xcorw/2;
+
+		// generate X position xcor array (summing over y range)
+		for (uint x=0;x<xcorw;x++) {
+			float s = 0.0f;
+			for (int y=0;y<XCorProfileLen;y++)
+				s += interpolate(x * XCorScale + xmin, y * XCorScale + pos.y - XCorScale * XCorProfileLen/2);
+			X_xc [x] = s*scale;
+			X_xcr [xcorw-x-1] = X_xc[x];
+		}
+
+		XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
+		float offsetX = ComputeMaxInterp(X_result) - (float)xcorw/2 - 1;
+
+		// generate Y position xcor array (summing over x range)
+		for (uint y=0;y<xcorw;y++) {
+			float s = 0.0f; 
+			for (int x=0;x<XCorProfileLen;x++) 
+				s += interpolate(x * XCorScale + pos.x - XCorProfileLen/2 * XCorScale, y * XCorScale + ymin);
+			Y_xc[y] = s*scale;
+			Y_xcr [xcorw-y-1] = Y_xc[y];
+		}
+
+		XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
+		float offsetY = ComputeMaxInterp(Y_result) - (float)xcorw/2 - 1;
+
+	//	dbgout(SPrintf("[%d] offsetX: %f, offsetY: %f\n", k, offsetX, offsetY));
+		pos.x -= offsetX * XCorScale;
+		pos.y -= offsetY * XCorScale;
+
 	}
 
-	XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
-	float offsetX = ComputeMaxInterp(X_result) - (float)xcorw/2;
 
-	// generate Y position xcor array (summing over x range)
-	for (uint y=0;y<xcorw;y++) {
-		float s = 0.0f; 
-		for (int x=0;x<XCorProfileLen;x++) 
-			s += interpolate(x * XCorScale + initial.x - XCorProfileLen/2 * XCorScale, y * XCorScale + ymin);
-		Y_xc[y] = s*scale;
-		Y_xcr [xcorw-y-1] = Y_xc[y];
-	}
-
-	XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
-	float offsetY = ComputeMaxInterp(Y_result) - (float)xcorw/2;
-
-	dbgout(SPrintf("offsetX: %f, offsetY: %f\n", offsetX, offsetY));
-
-	vector2f pos;
-	pos.x = initial.x + offsetX * XCorScale;
-	pos.y = initial.y + offsetY * XCorScale;
 	return pos;
 }
 
@@ -274,6 +279,7 @@ void copyToLVArray (TD1Hdl r, const std::vector<float>& a)
 	LVFloatArray* dst = *r;
 
 	uint len = min( dst->dimSize, a.size () );
+//	dbgout(SPrintf("copying %d elements to Labview array\n", len));
 	for (uint i=0;i<a.size();i++)
 		dst->elt[i] = a[i];
 }
@@ -286,7 +292,7 @@ DLL_EXPORT void CALLCONV copy_crosscorrelation_result(CPUTracker* tracker, TD1Hd
 	if (y_xc) copyToLVArray (y_xc, tracker->Y_xc);
 }
 
-DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* COM, float* xcor,  float* median, Image* dbgImg)
+DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* COM, float* xcor,  float* median, Image* dbgImg, int xcor_iterations)
 {
 	ImageInfo info;
 	imaqGetImageInfo(img, &info);
@@ -315,7 +321,7 @@ DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* 
 	COM[0] = com.x;
 	COM[1] = com.y;
 
-	vector2f xcorpos = tracker->ComputeXCor(com);
+	vector2f xcorpos = tracker->ComputeXCor(com, xcor_iterations);
 	xcor[0] = xcorpos.x;
 	xcor[1] = xcorpos.y;
 }
