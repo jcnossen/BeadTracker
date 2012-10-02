@@ -66,8 +66,8 @@ float CPUTracker::interpolate(float x,float y)
 {
 	int rx=x, ry=y;
 	float v00 = getPixel(rx,ry);
-	float v01 = getPixel(rx,ry+1);
 	float v10 = getPixel(rx+1,ry);
+	float v01 = getPixel(rx,ry+1);
 	float v11 = getPixel(rx+1,ry+1);
 
 	float v0 = interp (v00, v10, x-rx);
