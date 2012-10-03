@@ -127,18 +127,10 @@ DLL_EXPORT void CALLCONV testMsg()
 }
 
 
-
-
 DLL_EXPORT void CALLCONV xcor_localize(Tracker* tracker, const vector2f& initial, vector2f& position)
 {
 
 }
-
-/*
-DLL_EXPORT void CALLCONV generate_test_image(Tracker* tracker, float xpos, float ypos, float S)
-{
-	tracker->loadTestImage(xpos, ypos, S);
-}*/
 
 DLL_EXPORT void CALLCONV get_current_image(Tracker* tracker, Image* target)
 {
