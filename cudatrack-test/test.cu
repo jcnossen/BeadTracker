@@ -16,10 +16,9 @@
 
 #include "nivision.h" // write PNG file
 
-#include "../cputrack/LsqQuadraticFit.h"
+#include "../cudatrack/LsqQuadraticFit.h"
 
 using namespace gpuArray;
-
 
 static DWORD startTime = 0;
 void BeginMeasure() { startTime = GetTickCount(); }
@@ -154,10 +153,9 @@ int main(int argc, char *argv[])
 	tmp.set(tmpdata, sizeof(float)*10);
 	reducer_buffer<float> rbuf(10,10);
 	float sumGPU = tmp.sum(rbuf);
-	dbgout(SPrintf("SumCPU: %f, SUMGPU: %f\n", sumCPU, sumGPU));*/
-
+	dbgout(SPrintf("SumCPU: %f, SUMGPU: %f\n", sumCPU, sumGPU));
+	*/
 	BenchmarkCOM(tracker);
-
 
 	Array2D<pixel_t, float>* data = (Array2D<pixel_t, float>*)tracker.getCurrentBufferImage();
 	saveImage(*data, (path + "\\testImg.png").c_str());
@@ -168,7 +166,7 @@ int main(int argc, char *argv[])
 	float y[sizeof(x)/sizeof(float)];
 	for (int k=0;k<6;k++)
 		y[k]=-x[k]*x[k]*2 + x[k]*4 - 10;
-
+	
 	LsqSqQuadFit<float> qfit(6, x, y);
 	dbgout( SPrintf("A: %f, B: %f, C: %f. Max:%f\n", qfit.a, qfit.b, qfit.c, qfit.maxPos()));
 

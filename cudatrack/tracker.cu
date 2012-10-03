@@ -11,6 +11,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
 
+#define LSQ_FDECL __host__ __device__
+#include "LsqQuadraticFit.h"
+
 using namespace gpuArray;
 
 void throwCudaError(cudaError_t err)
@@ -142,6 +145,13 @@ vector2f Tracker::computeBgCorrectedCOM()
 vector2f Tracker::XCorLocalize(vector2f initial)
 {
 	vector2f estimate;
+
+	// bind the image as texture
+	texture<pixel_t, cudaTextureType1D, cudaReadModeNormalizedFloat> tex;
+
+	buffer->image->bindTexture(tex);
+
+	buffer->image->unbindTexture(tex);
 
 	return initial;
 }

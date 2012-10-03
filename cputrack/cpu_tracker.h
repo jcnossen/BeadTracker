@@ -13,7 +13,7 @@ const int XCorProfileLen = 16;
 class CPUTracker
 {
 public:
-	uint width, height;
+	int width, height;
 
 	float *srcImage;
 	float getPixel(int x, int y) { return srcImage[width*y+x]; }
@@ -22,7 +22,7 @@ public:
 	complexf *fft_out, *fft_revout;
 	fftwf_plan fft_plan_fw, fft_plan_bw;
 
-	uint xcorw;
+	int xcorw;
 	std::vector<float> X_xc, X_xcr, X_result;
 	std::vector<float> Y_xc, Y_xcr, Y_result;
 

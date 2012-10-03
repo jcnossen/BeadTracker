@@ -10,8 +10,69 @@
 
 #define CALLCONV _FUNCC
 
-static std::string lastErrorMsg;
+/* lv_prolog.h and lv_epilog.h set up the correct alignment for LabVIEW data. */
+#include "lv_prolog.h"
+struct LVFloatArray {
+	int32_t dimSize;
+	float elt[1];
+};
+typedef LVFloatArray **TD1Hdl;
+#include "lv_epilog.h"
 
+
+
+ushort* floatToNormalizedUShort(float *data, uint w,uint h)
+{
+	float maxv = data[0];
+	float minv = data[0];
+	for (uint k=0;k<w*h;k++) {
+		maxv = max(maxv, data[k]);
+		minv = min(minv, data[k]);
+	}
+	ushort *norm = new ushort[w*h];
+	for (uint k=0;k<w*h;k++)
+		norm[k] = ((1<<16)-1) * (data[k]-minv) / (maxv-minv);
+	return norm;
+}
+
+DLL_EXPORT void CALLCONV generate_test_image(Image *img, uint w, uint h, float xp, float yp, float size)
+{
+	float S = 1.0f/size;
+	float *d = new float[w*h];
+	for (uint y=0;y<h;y++)
+		for (uint x=0;x<w;x++) {
+			float X = x - xp;
+			float Y = y - yp;
+			float r = sqrtf(X*X+Y*Y)+1;
+			float v = 0.1 + sinf( (r-10)/5) * expf(-r*S);
+			d[y*w+x] = v;
+		}
+
+	ushort* result = floatToNormalizedUShort(d, w, h);
+	imaqArrayToImage(img, result, w,h);
+	delete[] result;
+}
+
+
+
+void copyToLVArray (TD1Hdl r, const std::vector<float>& a)
+{
+	LVFloatArray* dst = *r;
+
+	int len = min( dst->dimSize, a.size () );
+//	dbgout(SPrintf("copying %d elements to Labview array\n", len));
+	for (uint i=0;i<a.size();i++)
+		dst->elt[i] = a[i];
+}
+
+
+DLL_EXPORT void CALLCONV copy_crosscorrelation_result(Tracker* tracker, TD1Hdl x_result, TD1Hdl y_result, TD1Hdl x_xc, TD1Hdl y_xc)
+{
+}
+
+DLL_EXPORT void CALLCONV localize_image(Tracker* tracker, Image* img, float* COM, float* xcor,  float* median, Image* dbgImg, int xcor_iterations)
+{
+}
 
 DLL_EXPORT Tracker* CALLCONV create_tracker(int w,int h)
 {
@@ -73,10 +134,11 @@ DLL_EXPORT void CALLCONV xcor_localize(Tracker* tracker, const vector2f& initial
 
 }
 
+/*
 DLL_EXPORT void CALLCONV generate_test_image(Tracker* tracker, float xpos, float ypos, float S)
 {
 	tracker->loadTestImage(xpos, ypos, S);
-}
+}*/
 
 DLL_EXPORT void CALLCONV get_current_image(Tracker* tracker, Image* target)
 {

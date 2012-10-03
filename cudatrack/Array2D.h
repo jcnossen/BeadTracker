@@ -218,6 +218,11 @@ public:
 		size_t offset;
 		cudaBindTexture2D(&offset, &tex, data, &channelDesc, w, h, pitch);
 	}
+	
+	void unbindTexture(texture<T, cudaTextureType1D, cudaReadModeNormalizedFloat>& tex)
+	{
+		cudaUnbindTexture(&tex);
+	}
 
 	dim3 compute_nBlocks(dim3 numThreads)
 	{

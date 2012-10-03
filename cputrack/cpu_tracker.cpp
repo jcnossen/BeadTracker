@@ -11,7 +11,7 @@ CPU only tracker
 #include <Windows.h>
 
 #include "cpu_tracker.h"
-#include "LsqQuadraticFit.h"
+#include "../cudatrack/LsqQuadraticFit.h"
 
 #define CALLCONV _FUNCC
 
@@ -25,7 +25,7 @@ typedef LVFloatArray **TD1Hdl;
 #include "lv_epilog.h"
 
 
-const float XCorScale = 0.25f;
+const float XCorScale = 0.5f;
 
 CPUTracker::CPUTracker(uint w,uint h)
 {
@@ -87,27 +87,34 @@ vector2f CPUTracker::ComputeXCor(vector2f initial, int iterations)
 		float xmin = pos.x - XCorScale * xcorw/2;
 		float ymin = pos.y - XCorScale * xcorw/2;
 
+	//	dbgout(SPrintf("[%d]: xmin: %.1f, ymin: %.1f, \n", k, xmin, ymin));
+
 		// generate X position xcor array (summing over y range)
-		for (uint x=0;x<xcorw;x++) {
+		for (int x=0;x<xcorw;x++) {
 			float s = 0.0f;
 			for (int y=0;y<XCorProfileLen;y++)
-				s += interpolate(x * XCorScale + xmin, y * XCorScale + pos.y - XCorScale * XCorProfileLen/2);
+				s += interpolate(x * XCorScale + xmin, pos.y + XCorScale * (y - XCorProfileLen/2));
 			X_xc [x] = s*scale;
 			X_xcr [xcorw-x-1] = X_xc[x];
 		}
 
+	//	dbgout(SPrintf("\t: X FFT\n"));
+
 		XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
 		float offsetX = ComputeMaxInterp(X_result) - (float)xcorw/2 - 1;
 
+//dbgout(SPrintf("\t: offsetX: %f\n", offsetX));
+
 		// generate Y position xcor array (summing over x range)
-		for (uint y=0;y<xcorw;y++) {
+		for (int y=0;y<xcorw;y++) {
 			float s = 0.0f; 
 			for (int x=0;x<XCorProfileLen;x++) 
-				s += interpolate(x * XCorScale + pos.x - XCorProfileLen/2 * XCorScale, y * XCorScale + ymin);
+				s += interpolate(pos.x + XCorScale * (x - XCorProfileLen/2), y * XCorScale + ymin);
 			Y_xc[y] = s*scale;
 			Y_xcr [xcorw-y-1] = Y_xc[y];
 		}
 
+	//	dbgout(SPrintf("\t: Y FFT\n", offsetX));
 		XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
 		float offsetY = ComputeMaxInterp(Y_result) - (float)xcorw/2 - 1;
 
@@ -128,12 +135,12 @@ void CPUTracker::XCorFFTHelper(float* xc, float* xcr, float* result)
 	fftwf_execute_dft_r2c(fft_plan_fw, xcr, (fftwf_complex*)fft_revout);
 
 	// Multiply with conjugate of reverse
-	for (uint x=0;x<xcorw;x++) {
+	for (int x=0;x<xcorw;x++) {
 		fft_out[x] *= complexf(fft_revout[x].real(), -fft_revout[x].imag());
 	}
 
 	fftwf_execute_dft_c2r(fft_plan_bw, (fftwf_complex*)fft_out, xc);
-	for (uint x=0;x<xcorw;x++)
+	for (int x=0;x<xcorw;x++)
 		result[x] = xc[ (x+xcorw/2) % xcorw ];
 }
 
@@ -266,6 +273,7 @@ DLL_EXPORT void CALLCONV generate_test_image(Image *img, uint w, uint h, float x
 
 DLL_EXPORT CPUTracker* CALLCONV create_tracker(uint w, uint h)
 {
+	Sleep(300);
 	return new CPUTracker(w,h);
 }
 
@@ -278,7 +286,7 @@ void copyToLVArray (TD1Hdl r, const std::vector<float>& a)
 {
 	LVFloatArray* dst = *r;
 
-	uint len = min( dst->dimSize, a.size () );
+	int len = min( dst->dimSize, a.size () );
 //	dbgout(SPrintf("copying %d elements to Labview array\n", len));
 	for (uint i=0;i<a.size();i++)
 		dst->elt[i] = a[i];

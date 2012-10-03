@@ -1,4 +1,10 @@
 
+#pragma once
+
+#ifndef LSQ_FDECL
+#define LSQ_FDECL
+#endif
+
 
 template<typename T>
 class LsqSqQuadFit
@@ -12,7 +18,7 @@ public:
 	T a,b,c;
 	T s40, s30, s20, s10, s21, s11, s01;
 
-	LsqSqQuadFit(uint numPts, const T* xval, const T* yval) : numPts(numPts), X(xval), Y(yval)
+	LSQ_FDECL LsqSqQuadFit(uint numPts, const T* xval, const T* yval) : numPts(numPts), X(xval), Y(yval)
 	{
 		computeSums();
         //notation sjk to mean the sum of x_i^j*y_i^k. 
@@ -46,12 +52,12 @@ public:
                 (s40 * (s20 * s00 - s10 * s10) - s30 * (s30 * s00 - s10 * s20) + s20 * (s30 * s10 - s20 * s20));
 	}
     
-	T compute(T pos)
+	LSQ_FDECL T compute(T pos)
 	{
 		return a*pos*pos + b*pos + c;
 	}
 
-	T maxPos()
+	LSQ_FDECL T maxPos()
 	{
 		return -b/(2*a);
 	}
@@ -70,7 +76,7 @@ public:
 private:
 
     /*helper methods*/
-    T computeSums() // get sum of x
+    LSQ_FDECL T computeSums() // get sum of x
     {
         T Sx = 0, Sy = 0;
 		T Sx2 = 0, Sx3 = 0;
