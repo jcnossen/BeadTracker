@@ -2,6 +2,7 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
+#include <cassert>
 #include <cstdlib>
 #include <stdio.h>
 #include <windows.h>
@@ -142,19 +143,28 @@ int main(int argc, char *argv[])
 	Tracker tracker(150,150);
 
 	tracker.loadTestImage(5,5, 1);
-	/*
-	Array2D<float> tmp(10,10);
-	float tmpdata[100];
+	
+	Array2D<float> tmp(10,2);
+	float *tmpdata=new float[tmp.w*tmp.h];
 	float sumCPU=0.0f;
-	for (int k=0;k<100;k++) {
-		tmpdata[k]=k;
-		sumCPU =tmpdata[k]+sumCPU;
+	for (int y=0;y<tmp.h;y++){
+		for (int x=0;x<tmp.w;x++) {
+			tmpdata[y*tmp.w+x]=x;
+			sumCPU += x;
+		}
 	}
-	tmp.set(tmpdata, sizeof(float)*10);
-	reducer_buffer<float> rbuf(10,10);
+	tmp.set(tmpdata, sizeof(float)*tmp.w);
+
+	float* checkmem=new float[tmp.w*tmp.h];
+	tmp.copyToHost(checkmem);
+	assert (memcmp(checkmem, tmpdata, sizeof(float)*tmp.w*tmp.h)==0);
+	delete[] checkmem;
+
+	delete[] tmpdata;
+	reducer_buffer<float> rbuf(tmp.w,tmp.h);
 	float sumGPU = tmp.sum(rbuf);
 	dbgout(SPrintf("SumCPU: %f, SUMGPU: %f\n", sumCPU, sumGPU));
-	*/
+	
 	BenchmarkCOM(tracker);
 
 	Array2D<pixel_t, float>* data = (Array2D<pixel_t, float>*)tracker.getCurrentBufferImage();
