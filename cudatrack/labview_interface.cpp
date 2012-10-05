@@ -51,6 +51,7 @@ DLL_EXPORT void CALLCONV generate_test_image(Image *img, uint w, uint h, float x
 	ushort* result = floatToNormalizedUShort(d, w, h);
 	imaqArrayToImage(img, result, w,h);
 	delete[] result;
+	delete[] d;
 }
 
 
