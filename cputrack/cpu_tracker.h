@@ -1,7 +1,7 @@
 #pragma once
 #include "../cudatrack/utils.h"
 
-#include "fftw-3.3.2/fftw3.h"
+#include "fftw/fftw3.h"
 #include <complex>
 #include <vector>
 

@@ -46,14 +46,16 @@ CPUTracker::CPUTracker(uint w,uint h)
 
 	fft_plan_fw = fftwf_plan_dft_r2c_1d(xcorw, &X_xc[0], (fftwf_complex*) fft_out, FFTW_ESTIMATE);
 	fft_plan_bw = fftwf_plan_dft_c2r_1d(xcorw, (fftwf_complex*)fft_out, &X_result[0], FFTW_ESTIMATE);
-
+	
 	srcImage = new float [w*h];
 }
 
 CPUTracker::~CPUTracker()
 {
-	fftwf_destroy_plan(fft_plan_fw);
-	fftwf_destroy_plan(fft_plan_bw);
+	if (fft_plan_fw) 
+		fftwf_destroy_plan(fft_plan_fw);
+	if (fft_plan_bw)
+		fftwf_destroy_plan(fft_plan_bw);
 
 	delete[] fft_revout;
 	delete[] fft_out;
@@ -188,21 +190,31 @@ vector2f ComputeCOM(TPixel* data, uint w,uint h)
 template<typename TPixel>
 void CPUTracker::bgcorrect(TPixel* data, uint w, uint h, uint srcpitch, float* pMedian)
 {
-	TPixel* sortbuf = new TPixel[w*h];
+	float median;
+	if (pMedian && *pMedian<0.0f) {
+		//TPixel* sortbuf = new TPixel[w*h/4];
+		float total = 0.0f;
+		for (uint y=0;y<h/4;y++) {
+			for (uint x=0;x<w;x++) {
+				//sortbuf[y*w+x] = ((TPixel*)((uchar*)data + y*4*srcpitch)) [x]; 
+				total += ((TPixel*)((uchar*)data + y*4*srcpitch)) [x];
+			}
+		}
+
+		//std::sort(sortbuf, sortbuf+(w*h/4));
+//		median = *pMedian = sortbuf[w*h/8];
+		median = *pMedian = total / (w*h/4);
+		//delete[] sortbuf;
+	} else
+		median = *pMedian;
+
 	for (uint y=0;y<h;y++) {
 		for (uint x=0;x<w;x++) {
-			sortbuf[y*w+x] = ((TPixel*)((uchar*)data + y*srcpitch)) [x];
-			srcImage[y*w+x] = sortbuf[y*w+x];
+			TPixel pixelValue = ((TPixel*)((uchar*)data + y*srcpitch)) [x];
+			float v = pixelValue-median;
+			srcImage[y*w+x]=v*v;
 		}
 	}
-	std::sort(sortbuf, sortbuf+(w*h));
-	float median = sortbuf[w*h/2];
-	for (uint k=0;k<w*h;k++) {
-		float v = srcImage[k]-median;
-		srcImage[k]=v*v;
-	}
-	delete[] sortbuf;
-	if (pMedian) *pMedian = median;
 }
 
 template<typename TPixel>
@@ -254,83 +266,115 @@ void saveImage(float* data, uint w, uint h, const char* filename)
 
 DLL_EXPORT void CALLCONV generate_test_image(Image *img, uint w, uint h, float xp, float yp, float size)
 {
-	float S = 1.0f/size;
-	float *d = new float[w*h];
-	for (uint y=0;y<h;y++)
-		for (uint x=0;x<w;x++) {
-			float X = x - xp;
-			float Y = y - yp;
-			float r = sqrtf(X*X+Y*Y)+1;
-			float v = 0.1 + sinf( (r-10)/5) * expf(-r*S);
-			d[y*w+x] = v;
-		}
+	try {
+		float S = 1.0f/size;
+		float *d = new float[w*h];
+		for (uint y=0;y<h;y++)
+			for (uint x=0;x<w;x++) {
+				float X = x - xp;
+				float Y = y - yp;
+				float r = sqrtf(X*X+Y*Y)+1;
+				float v = 0.1 + sinf( (r-10)/5) * expf(-r*S);
+				d[y*w+x] = v;
+			}
 
-	ushort* result = floatToNormalizedUShort(d, w, h);
-	imaqArrayToImage(img, result, w,h);
-	delete[] result;
+		ushort* result = floatToNormalizedUShort(d, w, h);
+		imaqArrayToImage(img, result, w,h);
+		delete[] result;
+		delete[] d;
+	}
+	catch(const std::exception& e)
+	{
+		dbgout("Exception: " + std::string(e.what()) + "\n");
+	}
 }
 
 
 DLL_EXPORT CPUTracker* CALLCONV create_tracker(uint w, uint h)
 {
-	Sleep(300);
-	return new CPUTracker(w,h);
+	try {
+		Sleep(300);
+		return new CPUTracker(w,h);
+	}
+	catch(const std::exception& e)
+	{
+		dbgout("Exception: " + std::string(e.what()) + "\n");
+		return 0;
+	}
 }
 
 DLL_EXPORT void CALLCONV destroy_tracker(CPUTracker* tracker)
 {
-	delete tracker;
+	try {
+		delete tracker;
+	}
+	catch(const std::exception& e)
+	{
+		dbgout("Exception: " + std::string(e.what()) + "\n");
+	}
 }
 
 void copyToLVArray (TD1Hdl r, const std::vector<float>& a)
 {
 	LVFloatArray* dst = *r;
 
-	int len = min( dst->dimSize, a.size () );
+	size_t len = min( dst->dimSize, a.size () );
 //	dbgout(SPrintf("copying %d elements to Labview array\n", len));
-	for (uint i=0;i<a.size();i++)
+	for (size_t i=0;i<a.size();i++)
 		dst->elt[i] = a[i];
 }
 
 DLL_EXPORT void CALLCONV copy_crosscorrelation_result(CPUTracker* tracker, TD1Hdl x_result, TD1Hdl y_result, TD1Hdl x_xc, TD1Hdl y_xc)
 {
-	if (x_result) copyToLVArray (x_result, tracker->X_result);
-	if (y_result) copyToLVArray (y_result, tracker->Y_result);
-	if (x_xc) copyToLVArray (x_xc, tracker->X_xc);
-	if (y_xc) copyToLVArray (y_xc, tracker->Y_xc);
+	try {
+		if (x_result) copyToLVArray (x_result, tracker->X_result);
+		if (y_result) copyToLVArray (y_result, tracker->Y_result);
+		if (x_xc) copyToLVArray (x_xc, tracker->X_xc);
+		if (y_xc) copyToLVArray (y_xc, tracker->Y_xc);
+	}
+	catch(const std::exception& e)
+	{
+		dbgout("Exception: " + std::string(e.what()) + "\n");
+	}
 }
 
 DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* COM, float* xcor,  float* median, Image* dbgImg, int xcor_iterations)
 {
-	ImageInfo info;
-	imaqGetImageInfo(img, &info);
+	try {
+		ImageInfo info;
+		imaqGetImageInfo(img, &info);
 
-	if (info.xRes != tracker->width || info.yRes != tracker->height)
-		return;
+		if (info.xRes != tracker->width || info.yRes != tracker->height)
+			return;
 
-	if (info.imageType == IMAQ_IMAGE_U8)
-		tracker->bgcorrect((uchar*)info.imageStart, info.xRes, info.yRes, info.pixelsPerLine, median);
-	else if(info.imageType == IMAQ_IMAGE_U16)
-		tracker->bgcorrect((ushort*)info.imageStart, info.xRes, info.yRes, info.pixelsPerLine*2, median);
-	else 
-		return;
+		if (info.imageType == IMAQ_IMAGE_U8)
+			tracker->bgcorrect((uchar*)info.imageStart, info.xRes, info.yRes, info.pixelsPerLine, median);
+		else if(info.imageType == IMAQ_IMAGE_U16)
+			tracker->bgcorrect((ushort*)info.imageStart, info.xRes, info.yRes, info.pixelsPerLine*2, median);
+		else 
+			return;
 
-	normalize(tracker->srcImage, info.xRes, info.yRes);
-	vector2f com = ComputeCOM(tracker->srcImage, info.xRes, info.yRes);
+		normalize(tracker->srcImage, info.xRes, info.yRes);
+		vector2f com = ComputeCOM(tracker->srcImage, info.xRes, info.yRes);
 
-	if (dbgImg) {
-		uchar* cv = new uchar[info.xRes*info.yRes];
-		for (int k=0;k<info.xRes*info.yRes;k++)
-			cv[k]= (uchar)(255.0f * tracker->srcImage[k]);
-		imaqArrayToImage(dbgImg, cv, info.xRes, info.yRes);
-		delete[] cv;
+		if (dbgImg) {
+			uchar* cv = new uchar[info.xRes*info.yRes];
+			for (int k=0;k<info.xRes*info.yRes;k++)
+				cv[k]= (uchar)(255.0f * tracker->srcImage[k]);
+			imaqArrayToImage(dbgImg, cv, info.xRes, info.yRes);
+			delete[] cv;
+		}
+
+		COM[0] = com.x;
+		COM[1] = com.y;
+
+		vector2f xcorpos = tracker->ComputeXCor(com, xcor_iterations);
+		xcor[0] = xcorpos.x;
+		xcor[1] = xcorpos.y;
 	}
-
-	COM[0] = com.x;
-	COM[1] = com.y;
-
-	vector2f xcorpos = tracker->ComputeXCor(com, xcor_iterations);
-	xcor[0] = xcorpos.x;
-	xcor[1] = xcorpos.y;
+	catch(const std::exception& e)
+	{
+		dbgout("Exception: " + std::string(e.what()) + "\n");
+	}
 }
 
