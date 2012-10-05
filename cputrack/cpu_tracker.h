@@ -35,6 +35,8 @@ public:
 	void SetImage(float* srcImage);
 
 	template<typename TPixel>
-	void bgcorrect(TPixel* data, uint w, uint h, uint srcpitch, float* pMedian);
+	float ComputeMedian(TPixel* data, uint w, uint h, uint srcpitch, float* pMedian);
+	vector2f ComputeCOM(TPixel* data, uint w, uint h, uint srcpitch, float median);
 
+	void Normalize();
 };

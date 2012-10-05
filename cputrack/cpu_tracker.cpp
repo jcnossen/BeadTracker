@@ -166,7 +166,7 @@ float CPUTracker::ComputeMaxInterp(const std::vector<float>& r)
 
 
 template<typename TPixel>
-vector2f ComputeCOM(TPixel* data, uint w,uint h)
+vector2f CPUTracker::ComputeCOM(TPixel* data, uint w, uint h, uint srcpitch, float median)
 {
 	float sum=0;
 	float momentX=0;
@@ -175,7 +175,9 @@ vector2f ComputeCOM(TPixel* data, uint w,uint h)
 	for (uint y=0;y<h;y++)
 		for(uint x=0;x<w;x++)
 		{
-			TPixel v = data[w*y+x];
+			TPixel pixelValue = ((TPixel*)((uchar*)data + y*srcpitch)) [x];
+			float v = pixelValue-median;
+			v *= v;
 			sum += v;
 			momentX += x*v;
 			momentY += y*v;
@@ -188,10 +190,10 @@ vector2f ComputeCOM(TPixel* data, uint w,uint h)
 
 
 template<typename TPixel>
-void CPUTracker::bgcorrect(TPixel* data, uint w, uint h, uint srcpitch, float* pMedian)
+float CPUTracker::ComputeMedian(TPixel* data, uint w, uint h, uint srcpitch, float* pMedian)
 {
 	float median;
-	if (pMedian && *pMedian<0.0f) {
+	if (!pMedian || *pMedian<0.0f) {
 		//TPixel* sortbuf = new TPixel[w*h/4];
 		float total = 0.0f;
 		for (uint y=0;y<h/4;y++) {
@@ -203,18 +205,13 @@ void CPUTracker::bgcorrect(TPixel* data, uint w, uint h, uint srcpitch, float* p
 
 		//std::sort(sortbuf, sortbuf+(w*h/4));
 //		median = *pMedian = sortbuf[w*h/8];
-		median = *pMedian = total / (w*h/4);
+		median = total / (w*h/4);
+		if (pMedian) *pMedian=median;
 		//delete[] sortbuf;
 	} else
 		median = *pMedian;
 
-	for (uint y=0;y<h;y++) {
-		for (uint x=0;x<w;x++) {
-			TPixel pixelValue = ((TPixel*)((uchar*)data + y*srcpitch)) [x];
-			float v = pixelValue-median;
-			srcImage[y*w+x]=v*v;
-		}
-	}
+	return median;
 }
 
 template<typename TPixel>
@@ -228,6 +225,11 @@ void normalize(TPixel* d, uint w,uint h)
 	}
 	for (uint k=0;k<w*h;k++)
 		d[k]=(d[k]-minv)/(maxv-minv);
+}
+
+void CPUTracker::Normalize()
+{
+	normalize(srcImage, width, height);
 }
 
 ushort* floatToNormalizedUShort(float *data, uint w,uint h)
@@ -338,7 +340,7 @@ DLL_EXPORT void CALLCONV copy_crosscorrelation_result(CPUTracker* tracker, TD1Hd
 	}
 }
 
-DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* COM, float* xcor,  float* median, Image* dbgImg, int xcor_iterations)
+DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* COM, float* xcor,  float* storedMedian, Image* dbgImg, int xcor_iterations)
 {
 	try {
 		ImageInfo info;
@@ -347,15 +349,22 @@ DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* 
 		if (info.xRes != tracker->width || info.yRes != tracker->height)
 			return;
 
-		if (info.imageType == IMAQ_IMAGE_U8)
-			tracker->bgcorrect((uchar*)info.imageStart, info.xRes, info.yRes, info.pixelsPerLine, median);
-		else if(info.imageType == IMAQ_IMAGE_U16)
-			tracker->bgcorrect((ushort*)info.imageStart, info.xRes, info.yRes, info.pixelsPerLine*2, median);
-		else 
+		vector2f com;
+		if (info.imageType == IMAQ_IMAGE_U8) {
+			uchar* imgData = (uchar*)info.imageStart;
+
+			tracker->SetImage(imgData, info.xRes, info.yRes, info.pixelsPerLine);
+			float median = tracker->SubtractMedian(storedMedian);
+			tracker->Normalize();
+			com = tracker->ComputeCOM();
+		} else if(info.imageType == IMAQ_IMAGE_U16) {
+			ushort* imgData = (ushort*)info.imageStart;
+			float median = tracker->ComputeMedian(imgData, info.xRes, info.yRes, info.pixelsPerLine*2, storedMedian);
+			tracker->Normalize();
+			com = tracker->ComputeCOM(imgData, info.xRes, info.yRes, info.pixelsPerLine*2, median);
+		} else
 			return;
 
-		normalize(tracker->srcImage, info.xRes, info.yRes);
-		vector2f com = ComputeCOM(tracker->srcImage, info.xRes, info.yRes);
 
 		if (dbgImg) {
 			uchar* cv = new uchar[info.xRes*info.yRes];
@@ -378,3 +387,28 @@ DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* 
 	}
 }
 
+DLL_EXPORT void CALLCONV set_image(CPUTracker* tracker, Image* img, int offsetX, int offsetY, float* median)
+{
+	try {
+		ImageInfo info;
+		imaqGetImageInfo(img, &info);
+
+		if (offsetX < 0 || offsetY < 0 || offsetX + tracker->width >= info.xRes || offsetY + tracker->height >= info.yRes)
+			return;
+
+		if (info.imageType == IMAQ_IMAGE_U8)
+			tracker->ComputeMedian((uchar*)info.imageStart + offsetX + info.pixelsPerLine * offsetY, tracker->width, tracker->height, info.pixelsPerLine, median);
+		else if(info.imageType == IMAQ_IMAGE_U16)
+			tracker->ComputeMedian((ushort*)info.imageStart, info.xRes, info.yRes, info.pixelsPerLine*2, median);
+		else 
+			return;
+	}
+	catch(const std::exception& e)
+	{
+		dbgout("Exception: " + std::string(e.what()) + "\n");
+	}
+}
+
+DLL_EXPORT void CALLCONV compute_Z_profile(CPUTracker* tracker, Image* img, float* center)
+{
+}
