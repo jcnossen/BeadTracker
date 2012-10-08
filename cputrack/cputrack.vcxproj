@@ -169,6 +169,7 @@
   <ItemGroup>
     <ClCompile Include="..\cudatrack\utils.cpp" />
     <ClCompile Include="cpu_tracker.cpp" />
+    <ClCompile Include="labview_interface.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cudatrack\LsqQuadraticFit.h" />

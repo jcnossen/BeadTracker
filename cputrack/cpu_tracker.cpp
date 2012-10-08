@@ -4,25 +4,11 @@ CPU only tracker
 
 */
 
-#include "nivision.h"
-#include "extcode.h"
-#include "niimaq.h"
-
 #include <Windows.h>
 
 #include "cpu_tracker.h"
 #include "../cudatrack/LsqQuadraticFit.h"
 
-#define CALLCONV _FUNCC
-
-/* lv_prolog.h and lv_epilog.h set up the correct alignment for LabVIEW data. */
-#include "lv_prolog.h"
-struct LVFloatArray {
-	int32_t dimSize;
-	float elt[1];
-};
-typedef LVFloatArray **TD1Hdl;
-#include "lv_epilog.h"
 
 
 const float XCorScale = 0.5f;
@@ -165,18 +151,16 @@ float CPUTracker::ComputeMaxInterp(const std::vector<float>& r)
 }
 
 
-template<typename TPixel>
-vector2f CPUTracker::ComputeCOM(TPixel* data, uint w, uint h, uint srcpitch, float median)
+vector2f CPUTracker::ComputeCOM(float median)
 {
 	float sum=0;
 	float momentX=0;
 	float momentY=0;
 
-	for (uint y=0;y<h;y++)
-		for(uint x=0;x<w;x++)
+	for (uint y=0;y<height;y++)
+		for(uint x=0;x<width;x++)
 		{
-			TPixel pixelValue = ((TPixel*)((uchar*)data + y*srcpitch)) [x];
-			float v = pixelValue-median;
+			float v = getPixel(x,y)-median;
 			v *= v;
 			sum += v;
 			momentX += x*v;
@@ -189,30 +173,6 @@ vector2f CPUTracker::ComputeCOM(TPixel* data, uint w, uint h, uint srcpitch, flo
 }
 
 
-template<typename TPixel>
-float CPUTracker::ComputeMedian(TPixel* data, uint w, uint h, uint srcpitch, float* pMedian)
-{
-	float median;
-	if (!pMedian || *pMedian<0.0f) {
-		//TPixel* sortbuf = new TPixel[w*h/4];
-		float total = 0.0f;
-		for (uint y=0;y<h/4;y++) {
-			for (uint x=0;x<w;x++) {
-				//sortbuf[y*w+x] = ((TPixel*)((uchar*)data + y*4*srcpitch)) [x]; 
-				total += ((TPixel*)((uchar*)data + y*4*srcpitch)) [x];
-			}
-		}
-
-		//std::sort(sortbuf, sortbuf+(w*h/4));
-//		median = *pMedian = sortbuf[w*h/8];
-		median = total / (w*h/4);
-		if (pMedian) *pMedian=median;
-		//delete[] sortbuf;
-	} else
-		median = *pMedian;
-
-	return median;
-}
 
 template<typename TPixel>
 void normalize(TPixel* d, uint w,uint h)
@@ -232,6 +192,8 @@ void CPUTracker::Normalize()
 	normalize(srcImage, width, height);
 }
 
+
+
 ushort* floatToNormalizedUShort(float *data, uint w,uint h)
 {
 	float maxv = data[0];
@@ -244,171 +206,4 @@ ushort* floatToNormalizedUShort(float *data, uint w,uint h)
 	for (uint k=0;k<w*h;k++)
 		norm[k] = ((1<<16)-1) * (data[k]-minv) / (maxv-minv);
 	return norm;
-}
-
-void saveImage(float* data, uint w, uint h, const char* filename)
-{
-	ushort* d = floatToNormalizedUShort(data,w,h);
-	Image* dst = imaqCreateImage(IMAQ_IMAGE_U16, 0);
-	imaqSetImageSize(dst, w, h);
-	imaqArrayToImage(dst, d, w, h);
-	delete[] d;
-
-	ImageInfo info;
-	imaqGetImageInfo(dst, &info);
-	int success = imaqWriteFile(dst, filename, 0);
-	if (!success) {
-		char *errStr = imaqGetErrorText(imaqGetLastError());
-		std::string msg = SPrintf("IMAQ WriteFile error: %s\n", errStr);
-		imaqDispose(errStr);
-		dbgout(msg);
-	}
-	imaqDispose(dst);
-}
-
-DLL_EXPORT void CALLCONV generate_test_image(Image *img, uint w, uint h, float xp, float yp, float size)
-{
-	try {
-		float S = 1.0f/size;
-		float *d = new float[w*h];
-		for (uint y=0;y<h;y++)
-			for (uint x=0;x<w;x++) {
-				float X = x - xp;
-				float Y = y - yp;
-				float r = sqrtf(X*X+Y*Y)+1;
-				float v = 0.1 + sinf( (r-10)/5) * expf(-r*S);
-				d[y*w+x] = v;
-			}
-
-		ushort* result = floatToNormalizedUShort(d, w, h);
-		imaqArrayToImage(img, result, w,h);
-		delete[] result;
-		delete[] d;
-	}
-	catch(const std::exception& e)
-	{
-		dbgout("Exception: " + std::string(e.what()) + "\n");
-	}
-}
-
-
-DLL_EXPORT CPUTracker* CALLCONV create_tracker(uint w, uint h)
-{
-	try {
-		Sleep(300);
-		return new CPUTracker(w,h);
-	}
-	catch(const std::exception& e)
-	{
-		dbgout("Exception: " + std::string(e.what()) + "\n");
-		return 0;
-	}
-}
-
-DLL_EXPORT void CALLCONV destroy_tracker(CPUTracker* tracker)
-{
-	try {
-		delete tracker;
-	}
-	catch(const std::exception& e)
-	{
-		dbgout("Exception: " + std::string(e.what()) + "\n");
-	}
-}
-
-void copyToLVArray (TD1Hdl r, const std::vector<float>& a)
-{
-	LVFloatArray* dst = *r;
-
-	size_t len = min( dst->dimSize, a.size () );
-//	dbgout(SPrintf("copying %d elements to Labview array\n", len));
-	for (size_t i=0;i<a.size();i++)
-		dst->elt[i] = a[i];
-}
-
-DLL_EXPORT void CALLCONV copy_crosscorrelation_result(CPUTracker* tracker, TD1Hdl x_result, TD1Hdl y_result, TD1Hdl x_xc, TD1Hdl y_xc)
-{
-	try {
-		if (x_result) copyToLVArray (x_result, tracker->X_result);
-		if (y_result) copyToLVArray (y_result, tracker->Y_result);
-		if (x_xc) copyToLVArray (x_xc, tracker->X_xc);
-		if (y_xc) copyToLVArray (y_xc, tracker->Y_xc);
-	}
-	catch(const std::exception& e)
-	{
-		dbgout("Exception: " + std::string(e.what()) + "\n");
-	}
-}
-
-DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* COM, float* xcor,  float* storedMedian, Image* dbgImg, int xcor_iterations)
-{
-	try {
-		ImageInfo info;
-		imaqGetImageInfo(img, &info);
-
-		if (info.xRes != tracker->width || info.yRes != tracker->height)
-			return;
-
-		vector2f com;
-		if (info.imageType == IMAQ_IMAGE_U8) {
-			uchar* imgData = (uchar*)info.imageStart;
-
-			tracker->SetImage(imgData, info.xRes, info.yRes, info.pixelsPerLine);
-			float median = tracker->SubtractMedian(storedMedian);
-			tracker->Normalize();
-			com = tracker->ComputeCOM();
-		} else if(info.imageType == IMAQ_IMAGE_U16) {
-			ushort* imgData = (ushort*)info.imageStart;
-			float median = tracker->ComputeMedian(imgData, info.xRes, info.yRes, info.pixelsPerLine*2, storedMedian);
-			tracker->Normalize();
-			com = tracker->ComputeCOM(imgData, info.xRes, info.yRes, info.pixelsPerLine*2, median);
-		} else
-			return;
-
-
-		if (dbgImg) {
-			uchar* cv = new uchar[info.xRes*info.yRes];
-			for (int k=0;k<info.xRes*info.yRes;k++)
-				cv[k]= (uchar)(255.0f * tracker->srcImage[k]);
-			imaqArrayToImage(dbgImg, cv, info.xRes, info.yRes);
-			delete[] cv;
-		}
-
-		COM[0] = com.x;
-		COM[1] = com.y;
-
-		vector2f xcorpos = tracker->ComputeXCor(com, xcor_iterations);
-		xcor[0] = xcorpos.x;
-		xcor[1] = xcorpos.y;
-	}
-	catch(const std::exception& e)
-	{
-		dbgout("Exception: " + std::string(e.what()) + "\n");
-	}
-}
-
-DLL_EXPORT void CALLCONV set_image(CPUTracker* tracker, Image* img, int offsetX, int offsetY, float* median)
-{
-	try {
-		ImageInfo info;
-		imaqGetImageInfo(img, &info);
-
-		if (offsetX < 0 || offsetY < 0 || offsetX + tracker->width >= info.xRes || offsetY + tracker->height >= info.yRes)
-			return;
-
-		if (info.imageType == IMAQ_IMAGE_U8)
-			tracker->ComputeMedian((uchar*)info.imageStart + offsetX + info.pixelsPerLine * offsetY, tracker->width, tracker->height, info.pixelsPerLine, median);
-		else if(info.imageType == IMAQ_IMAGE_U16)
-			tracker->ComputeMedian((ushort*)info.imageStart, info.xRes, info.yRes, info.pixelsPerLine*2, median);
-		else 
-			return;
-	}
-	catch(const std::exception& e)
-	{
-		dbgout("Exception: " + std::string(e.what()) + "\n");
-	}
-}
-
-DLL_EXPORT void CALLCONV compute_Z_profile(CPUTracker* tracker, Image* img, float* center)
-{
 }
