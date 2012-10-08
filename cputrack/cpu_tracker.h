@@ -8,7 +8,7 @@
 typedef uchar pixel_t;
 typedef std::complex<float> complexf;
 
-const int XCorProfileLen = 16;
+const int XCorProfileLen = 32;
 
 class CPUTracker
 {

@@ -18,7 +18,7 @@ CPUTracker::CPUTracker(int w, int h)
 	width = w;
 	height = h;
 
-	xcorw = 64;
+	xcorw = 128;
 
 	X_xc.resize(xcorw);
 	X_xcr.resize(xcorw);
