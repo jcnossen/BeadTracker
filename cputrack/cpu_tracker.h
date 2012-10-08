@@ -16,17 +16,17 @@ public:
 	int width, height;
 
 	float *srcImage;
-	float getPixel(int x, int y) { return srcImage[width*y+x]; }
-	float interpolate(float x,float y);
-
 	complexf *fft_out, *fft_revout;
 	fftwf_plan fft_plan_fw, fft_plan_bw;
+	std::vector<vector2f> radialDirs;
 
 	int xcorw;
 	std::vector<float> X_xc, X_xcr, X_result;
 	std::vector<float> Y_xc, Y_xcr, Y_result;
 
-	CPUTracker(uint w,uint h);
+	float getPixel(int x, int y) { return srcImage[width*y+x]; }
+	float interpolate(float x,float y);
+	CPUTracker(int w, int h);
 	~CPUTracker();
 	vector2f ComputeXCor(vector2f initial, int iterations);
 	void XCorFFTHelper(float* xc, float* xcr, float* result);
@@ -37,9 +37,9 @@ public:
 
 	vector2f ComputeCOM(float median);
 	void RemoveBackground(float median);
+	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float range, vector2f center);
 
 	void Normalize();
-
 };
 
 

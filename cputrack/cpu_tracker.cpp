@@ -13,7 +13,7 @@ CPU only tracker
 
 const float XCorScale = 0.5f;
 
-CPUTracker::CPUTracker(uint w,uint h)
+CPUTracker::CPUTracker(int w, int h)
 {
 	width = w;
 	height = h;
@@ -193,6 +193,34 @@ void CPUTracker::Normalize()
 }
 
 
+void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float range, vector2f center)
+{
+	if (radialDirs.size() != angularSteps) {
+		radialDirs.resize(angularSteps);
+		for (int j=0;j<angularSteps;j++) {
+			float ang = 2*3.141593f*j/(float)angularSteps;
+			vector2f d = { cosf(ang), sinf(ang) };
+			radialDirs[j] = d;
+		}
+	}
+
+	for (int i=0;i<radialSteps;i++)
+		dst[i]=0.0f;
+
+	float rstep = range / radialSteps;
+	for (int i=0;i<radialSteps; i++) {
+		float sum = 0.0f;
+
+		for (int a=0;a<angularSteps;a++) {
+			float x = center.x + radialDirs[a].x * rstep*i;
+			float y = center.y + radialDirs[a].y * rstep*i;
+			sum += interpolate(x,y)/float(1+i);
+		}
+
+		dst[i] = sum;
+	}
+}
+
 
 ushort* floatToNormalizedUShort(float *data, uint w,uint h)
 {
@@ -207,3 +235,5 @@ ushort* floatToNormalizedUShort(float *data, uint w,uint h)
 		norm[k] = ((1<<16)-1) * (data[k]-minv) / (maxv-minv);
 	return norm;
 }
+
+
