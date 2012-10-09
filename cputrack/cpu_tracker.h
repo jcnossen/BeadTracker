@@ -15,17 +15,22 @@ class CPUTracker
 public:
 	int width, height;
 
-	float *srcImage;
+	float *srcImage, *debugImage;
 	complexf *fft_out, *fft_revout;
 	fftwf_plan fft_plan_fw, fft_plan_bw;
 	std::vector<vector2f> radialDirs;
+
+	float* zlut; // zlut[plane * zlut_res + r]
+	int zlut_planes, zlut_res;
+	std::vector<float> rprof, rprof_diff;
 
 	int xcorw;
 	std::vector<float> X_xc, X_xcr, X_result;
 	std::vector<float> Y_xc, Y_xcr, Y_result;
 
+
 	float getPixel(int x, int y) { return srcImage[width*y+x]; }
-	float interpolate(float x,float y);
+	float Interpolate(float x,float y);
 	CPUTracker(int w, int h);
 	~CPUTracker();
 	vector2f ComputeXCor(vector2f initial, int iterations);
@@ -37,9 +42,11 @@ public:
 
 	vector2f ComputeCOM(float median);
 	void RemoveBackground(float median);
-	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float range, vector2f center);
+	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center);
 
-	void Normalize();
+	void Normalize(float *image=0);
+	void SetZLUT(float* data, int planes,int res);
+	float ComputeZ(vector2f center, int angularSteps, float radius); // radialSteps is given by zlut_res
 };
 
 

@@ -34,6 +34,10 @@ CPUTracker::CPUTracker(int w, int h)
 	fft_plan_bw = fftwf_plan_dft_c2r_1d(xcorw, (fftwf_complex*)fft_out, &X_result[0], FFTW_ESTIMATE);
 	
 	srcImage = new float [w*h];
+	debugImage = new float [w*h];
+
+	zlut = 0;
+	zlut_planes = zlut_res = 0;
 }
 
 CPUTracker::~CPUTracker()
@@ -46,11 +50,13 @@ CPUTracker::~CPUTracker()
 	delete[] fft_revout;
 	delete[] fft_out;
 	delete[] srcImage;
+	delete[] debugImage;
+	if (zlut) delete[] zlut;
 }
 
 const inline float interp(float a, float b, float x) { return a + (b-a)*x; }
 
-float CPUTracker::interpolate(float x,float y)
+float CPUTracker::Interpolate(float x,float y)
 {
 	int rx=x, ry=y;
 	float v00 = getPixel(rx,ry);
@@ -64,24 +70,43 @@ float CPUTracker::interpolate(float x,float y)
 	return interp (v0, v1, y-ry);
 }
 
+#ifdef _DEBUG
+	#define MARKPIXEL(x,y) (debugImage[ (int)(y)*width+ (int) (x)]+=maxValue*0.1f)
+#else
+	#define MARKPIXEL(x,y)
+#endif
+
 vector2f CPUTracker::ComputeXCor(vector2f initial, int iterations)
 {
 	// extract the image
 	float scale = (1.0f/(XCorProfileLen*float(1<<16)-1));
 	vector2f pos = initial;
 
-	for (int k=0;k<iterations;k++) {
+#ifdef _DEBUG
+	memcpy(debugImage, srcImage, sizeof(float)*width*height);
+	float maxValue = *std::max_element(srcImage,srcImage+width*height);
+#endif
 
+	for (int k=0;k<iterations;k++) {
 		float xmin = pos.x - XCorScale * xcorw/2;
 		float ymin = pos.y - XCorScale * xcorw/2;
+
+		if (xmin < 0 || ymin < 0 || xmin+xcorw/2*XCorScale>=width || ymin+xcorw/2*XCorScale>=height) {
+			vector2f z={};
+			return z;
+		}
 
 	//	dbgout(SPrintf("[%d]: xmin: %.1f, ymin: %.1f, \n", k, xmin, ymin));
 
 		// generate X position xcor array (summing over y range)
 		for (int x=0;x<xcorw;x++) {
 			float s = 0.0f;
-			for (int y=0;y<XCorProfileLen;y++)
-				s += interpolate(x * XCorScale + xmin, pos.y + XCorScale * (y - XCorProfileLen/2));
+			for (int y=0;y<XCorProfileLen;y++) {
+				float xp = x * XCorScale + xmin;
+				float yp = pos.y + XCorScale * (y - XCorProfileLen/2);
+				s += Interpolate(xp, yp);
+				MARKPIXEL(xp, yp);
+			}
 			X_xc [x] = s*scale;
 			X_xcr [xcorw-x-1] = X_xc[x];
 		}
@@ -96,8 +121,12 @@ vector2f CPUTracker::ComputeXCor(vector2f initial, int iterations)
 		// generate Y position xcor array (summing over x range)
 		for (int y=0;y<xcorw;y++) {
 			float s = 0.0f; 
-			for (int x=0;x<XCorProfileLen;x++) 
-				s += interpolate(pos.x + XCorScale * (x - XCorProfileLen/2), y * XCorScale + ymin);
+			for (int x=0;x<XCorProfileLen;x++) {
+				float xp = pos.x + XCorScale * (x - XCorProfileLen/2);
+				float yp = y * XCorScale + ymin;
+				s += Interpolate(xp, yp);
+				MARKPIXEL(xp,yp);
+			}
 			Y_xc[y] = s*scale;
 			Y_xcr [xcorw-y-1] = Y_xc[y];
 		}
@@ -109,7 +138,6 @@ vector2f CPUTracker::ComputeXCor(vector2f initial, int iterations)
 	//	dbgout(SPrintf("[%d] offsetX: %f, offsetY: %f\n", k, offsetX, offsetY));
 		pos.x -= offsetX * XCorScale;
 		pos.y -= offsetY * XCorScale;
-
 	}
 
 
@@ -142,12 +170,14 @@ float CPUTracker::ComputeMaxInterp(const std::vector<float>& r)
 			iMax = k;
 		}
 	}
+	if (iMax<2 || iMax>=r.size()-2)
+		return iMax; // on the edge, so we ignore the interpolation
 	
 	float xs[] = {-2, -1, 0, 1, 2};
 	LsqSqQuadFit<float> qfit(5, xs, &r[iMax-2]);
 	float interpMax = qfit.maxPos();
 
-	return (float)iMax - interpMax * 0.5f;
+	return (float)iMax - interpMax;
 }
 
 
@@ -187,9 +217,10 @@ void normalize(TPixel* d, uint w,uint h)
 		d[k]=(d[k]-minv)/(maxv-minv);
 }
 
-void CPUTracker::Normalize()
+void CPUTracker::Normalize(float* d)
 {
-	normalize(srcImage, width, height);
+	if (!d) d=srcImage;
+	normalize(d, width, height);
 }
 
 
@@ -214,11 +245,45 @@ void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSt
 		for (int a=0;a<angularSteps;a++) {
 			float x = center.x + radialDirs[a].x * rstep*i;
 			float y = center.y + radialDirs[a].y * rstep*i;
-			sum += interpolate(x,y)/float(1+i);
+			sum += Interpolate(x,y)*i;
 		}
 
-		dst[i] = sum;
+		dst[i] = sum/(float)angularSteps;
 	}
+}
+
+void CPUTracker::SetZLUT(float* data, int planes, int res)
+{
+	if (zlut) delete[] zlut;
+	zlut = new float[planes*res];
+	memcpy(zlut, data, sizeof(float)*planes*res);
+	zlut_planes = planes;
+	zlut_res = res;
+}
+
+
+float CPUTracker::ComputeZ(vector2f center, int angularSteps, float radius)
+{
+	// Compute the radial profile
+	if (rprof.size() != zlut_res)
+		rprof.resize(zlut_res);
+
+	ComputeRadialProfile(&rprof[0], zlut_res, angularSteps, radius, center);
+
+
+	// Now compare the radial profile to the profiles stored in Z
+	if (rprof_diff.size() != zlut_planes)
+		rprof_diff.resize(zlut_planes);
+	for (int k=0;k<zlut_planes;k++) {
+		float diffsum = 0.0f;
+		for (int r = 0; r<zlut_res;r++) {
+			float diff = rprof[r]-zlut[k*zlut_res+r];
+			diffsum += diff*diff;
+		}
+		rprof_diff[k] = -diffsum;
+	}
+
+	return ComputeMaxInterp(rprof_diff);
 }
 
 
@@ -235,5 +300,6 @@ ushort* floatToNormalizedUShort(float *data, uint w,uint h)
 		norm[k] = ((1<<16)-1) * (data[k]-minv) / (maxv-minv);
 	return norm;
 }
+
 
 
