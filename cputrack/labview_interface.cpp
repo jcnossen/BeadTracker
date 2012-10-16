@@ -80,11 +80,11 @@ DLL_EXPORT void CALLCONV generate_test_image(Image *img, uint w, uint h, float x
 }
 
 
-DLL_EXPORT CPUTracker* CALLCONV create_tracker(uint w, uint h)
+DLL_EXPORT CPUTracker* CALLCONV create_tracker(uint w, uint h, uint xcorw)
 {
 	try {
 		Sleep(300);
-		return new CPUTracker(w,h);
+		return new CPUTracker(w,h, xcorw);
 	}
 	catch(const std::exception& e)
 	{
@@ -106,8 +106,12 @@ DLL_EXPORT void CALLCONV destroy_tracker(CPUTracker* tracker)
 
 void copyToLVArray (ppFloatArray r, const std::vector<float>& a)
 {
-	LVFloatArray* dst = *r;
+	size_t wantedSize = sizeof(float)*a.size();
 
+	NumericArrayResize(9 /* codes for SGL type */, 1, (UHandle*)&r, wantedSize);
+
+	LVFloatArray* dst = *r;
+	dst->dimSize = a.size();
 	size_t len = min( dst->dimSize, a.size () );
 //	dbgout(SPrintf("copying %d elements to Labview array\n", len));
 	for (size_t i=0;i<a.size();i++)
@@ -260,4 +264,7 @@ DLL_EXPORT void CALLCONV get_debug_image(CPUTracker* tracker, Image* dbgImg)
 		delete[] d;
 	}
 }
+
+
+//DLL_EXPORT void CALLCONV compute_xcor_2D(CPUTracker* tracker, vector2f position, 
 

@@ -1,6 +1,7 @@
 #include "../cputrack/cpu_tracker.h"
 #include <Windows.h>
 #include <stdint.h>
+#include "../cputrack/random_distr.h"
 
 double getPreciseTime()
 {
@@ -12,13 +13,13 @@ double getPreciseTime()
 	return (double)time / (double)freq;
 }
 
-void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size)
+void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, float MaxPhotons)
 {
 	int w=tracker->width;
 	int h=tracker->height;
 	float S = 1.0f/size;
 	float *d =  tracker->srcImage; //new float[tracker->width*tracker->height];
-	for (int y=0;y<h;y++)
+	for (int y=0;y<h;y++) {
 		for (int x=0;x<w;x++) {
 			float X = x - xp;
 			float Y = y - yp;
@@ -26,6 +27,15 @@ void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size)
 			float v = 0.1 + sinf( (r-10)/5) * expf(-r*S);
 			d[y*w+x] = v;
 		}
+	}
+
+	if (MaxPhotons>0) {
+		tracker->Normalize();
+		for (int k=0;k<w*h;k++) {
+			d[k] = rand_poisson(d[k]*MaxPhotons);
+		}
+	}
+	tracker->Normalize();
 }
 
 
@@ -39,13 +49,14 @@ void Localize(CPUTracker* t, vector2f& com, vector2f& xcor)
 {
 	float median = ComputeMedian(t->srcImage, t->width, t->height, t->width*sizeof(float),0);
 	com = t->ComputeCOM(median);
-	xcor = t->ComputeXCor(com, 2);
+	vector2f initial = {com.x, com.y};
+	xcor = t->ComputeXCor(initial, 1);
 }
 
 int main()
 {
-	int N = 2000;
-	CPUTracker tracker(150,150);
+	int N = 500;
+	CPUTracker tracker(150,150, 128);
 
 	vector2f comdist={}, xcordist={};
 	double tloc = 0.0, tgen=0.0;
@@ -56,7 +67,7 @@ int main()
 		float yp = tracker.height/2+(randf() - 0.5) * 5;
 		float size = 20.0f;
 
-		GenerateTestImage(&tracker, xp, yp, size);
+		GenerateTestImage(&tracker, xp, yp, size, 200);
 		
 		double t1 = getPreciseTime();
 		vector2f com, xcor;

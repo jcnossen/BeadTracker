@@ -8,33 +8,37 @@
 typedef uchar pixel_t;
 typedef std::complex<float> complexf;
 
-const int XCorProfileLen = 32;
-
 class CPUTracker
 {
 public:
 	int width, height;
 
 	float *srcImage, *debugImage;
-	complexf *fft_out, *fft_revout;
+	complexf *fft_out;
 	fftwf_plan fft_plan_fw, fft_plan_bw;
 	std::vector<vector2f> radialDirs;
+
+	//----------- 2D Cross-Correlation variables
+	fftwf_plan plan_fw2D, plan_bw2D;
+	complexf* fft_out2D;
 
 	float* zlut; // zlut[plane * zlut_res + r]
 	int zlut_planes, zlut_res;
 	std::vector<float> rprof, rprof_diff;
 
 	int xcorw;
-	std::vector<float> X_xc, X_xcr, X_result;
-	std::vector<float> Y_xc, Y_xcr, Y_result;
-
+	std::vector<float> X_xc, X_result;
+	std::vector<float> Y_xc, Y_result;
 
 	float getPixel(int x, int y) { return srcImage[width*y+x]; }
 	float Interpolate(float x,float y);
-	CPUTracker(int w, int h);
+	CPUTracker(int w, int h, int xcorwindow=128);
 	~CPUTracker();
+	void setXCorWindow(int xcorwindow);
+
+	vector2f Compute2DXCor();
 	vector2f ComputeXCor(vector2f initial, int iterations);
-	void XCorFFTHelper(float* xc, float* xcr, float* result);
+	void XCorFFTHelper(float* xc, float* result);
 	// Compute the interpolated index of the maximum value in the result array
 	float ComputeMaxInterp(const std::vector<float>& v);
 	template<typename TPixel>
@@ -47,6 +51,7 @@ public:
 	void Normalize(float *image=0);
 	void SetZLUT(float* data, int planes,int res);
 	float ComputeZ(vector2f center, int angularSteps, float radius); // radialSteps is given by zlut_res
+	float ComputeMedian();
 };
 
 
@@ -92,4 +97,17 @@ float ComputeMedian(TPixel* data, uint w, uint h, uint srcpitch, float* pMedian)
 		median = *pMedian;
 
 	return median;
+}
+
+template<typename TPixel>
+void normalize(TPixel* d, uint w,uint h)
+{
+	TPixel maxv = d[0];
+	TPixel minv = d[0];
+	for (uint k=0;k<w*h;k++) {
+		maxv = max(maxv, d[k]);
+		minv = min(minv, d[k]);
+	}
+	for (uint k=0;k<w*h;k++)
+		d[k]=(d[k]-minv)/(maxv-minv);
 }
