@@ -156,8 +156,11 @@ DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* 
 		} else
 			return;
 
-		COM[0] = com.x;
-		COM[1] = com.y;
+//		COM[0] = com.x;
+	//	COM[1] = com.y;
+
+		com.x = info.xRes/2;
+		com.y = info.yRes/2;
 		
 		vector2f xcorpos = tracker->ComputeXCor(com, xcor_iterations);
 		xcor[0] = xcorpos.x;

@@ -38,13 +38,6 @@ void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, floa
 	tracker->Normalize();
 }
 
-
-float randf()
-{
-	return rand()/(float)RAND_MAX;
-}
-
-
 void Localize(CPUTracker* t, vector2f& com, vector2f& xcor)
 {
 	float median = ComputeMedian(t->srcImage, t->width, t->height, t->width*sizeof(float),0);
@@ -63,8 +56,8 @@ int main()
 	for (int k=0;k<N;k++)
 	{
 		double t0= getPreciseTime();
-		float xp = tracker.width/2+(randf() - 0.5) * 5;
-		float yp = tracker.height/2+(randf() - 0.5) * 5;
+		float xp = tracker.width/2+(rand_uniform<float>() - 0.5) * 5;
+		float yp = tracker.height/2+(rand_uniform<float>() - 0.5) * 5;
 		float size = 20.0f;
 
 		GenerateTestImage(&tracker, xp, yp, size, 200);

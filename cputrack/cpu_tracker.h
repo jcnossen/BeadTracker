@@ -14,7 +14,7 @@ public:
 	int width, height;
 
 	float *srcImage, *debugImage;
-	complexf *fft_out;
+	complexf *fft_out, *fft_revout;
 	fftwf_plan fft_plan_fw, fft_plan_bw;
 	std::vector<vector2f> radialDirs;
 
@@ -27,8 +27,8 @@ public:
 	std::vector<float> rprof, rprof_diff;
 
 	int xcorw;
-	std::vector<float> X_xc, X_result;
-	std::vector<float> Y_xc, Y_result;
+	std::vector<float> X_xc, X_xcr, X_result;
+	std::vector<float> Y_xc, Y_xcr, Y_result;
 
 	float getPixel(int x, int y) { return srcImage[width*y+x]; }
 	float Interpolate(float x,float y);
@@ -38,7 +38,8 @@ public:
 
 	vector2f Compute2DXCor();
 	vector2f ComputeXCor(vector2f initial, int iterations);
-	void XCorFFTHelper(float* xc, float* result);
+	vector2f ComputeXCorInterpolated(vector2f initial, int iterations);
+	void XCorFFTHelper(float* xc, float* xcr, float* result);
 	// Compute the interpolated index of the maximum value in the result array
 	float ComputeMaxInterp(const std::vector<float>& v);
 	template<typename TPixel>

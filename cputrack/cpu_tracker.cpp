@@ -10,7 +10,7 @@ CPU only tracker
 #include "../cudatrack/LsqQuadraticFit.h"
 
 const int XCorSumWidth = 32;
-const float XCorScale = 0.5f;
+const float XCorScale = 1.0f;
 
 CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 {
@@ -18,6 +18,7 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 	height = h;
 	xcorw = 0;
 	fft_out = 0;
+	fft_revout = 0;
 	fft_plan_fw = fft_plan_bw = 0;
 	setXCorWindow(xcorwindow);
 	
@@ -37,16 +38,20 @@ void CPUTracker::setXCorWindow(int xcorwindow)
 			fftwf_destroy_plan(fft_plan_bw);
 
 		delete[] fft_out;
+		delete[] fft_revout;
 	}
 	xcorw = xcorwindow;
 
 	if (xcorw>0) {
+		X_xcr.resize(xcorw);
+		Y_xcr.resize(xcorw);
 		X_xc.resize(xcorw);
 		X_result.resize(xcorw);
 		Y_xc.resize(xcorw);
 		Y_result.resize(xcorw);
 
 		fft_out = new complexf[xcorw];
+		fft_revout = new complexf[xcorw];
 
 		fft_plan_fw = fftwf_plan_dft_r2c_1d(xcorw, &X_xc[0], (fftwf_complex*) fft_out, FFTW_ESTIMATE);
 		fft_plan_bw = fftwf_plan_dft_c2r_1d(xcorw, (fftwf_complex*)fft_out, &X_result[0], FFTW_ESTIMATE);
@@ -83,7 +88,7 @@ float CPUTracker::Interpolate(float x,float y)
 	#define MARKPIXEL(x,y)
 #endif
 
-vector2f CPUTracker::ComputeXCor(vector2f initial, int iterations)
+vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 {
 	// extract the image
 	vector2f pos = initial;
@@ -114,11 +119,12 @@ vector2f CPUTracker::ComputeXCor(vector2f initial, int iterations)
 				MARKPIXEL(xp, yp);
 			}
 			X_xc [x] = s;
+			X_xcr [xcorw-x-1] = X_xc[x];
 		}
 
 	//	dbgout(SPrintf("\t: X FFT\n"));
 
-		XCorFFTHelper(&X_xc[0], &X_result[0]);
+		XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
 		float offsetX = - ( ComputeMaxInterp(X_result) - (float)xcorw/2); //ComputeMaxInterp(X_result) - (float)xcorw/2 - 1;
 
 //dbgout(SPrintf("\t: offsetX: %f\n", offsetX));
@@ -133,10 +139,11 @@ vector2f CPUTracker::ComputeXCor(vector2f initial, int iterations)
 				MARKPIXEL(xp,yp);
 			}
 			Y_xc[y] = s;
+			Y_xcr [xcorw-y-1] = Y_xc[y];
 		}
 
 	//	dbgout(SPrintf("\t: Y FFT\n", offsetX));
-		XCorFFTHelper(&Y_xc[0], &Y_result[0]);
+		XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
 		float offsetY = - ( ComputeMaxInterp(Y_result) - (float)xcorw/2);
 
 	//	dbgout(SPrintf("[%d] offsetX: %f, offsetY: %f\n", k, offsetX, offsetY));
@@ -148,16 +155,85 @@ vector2f CPUTracker::ComputeXCor(vector2f initial, int iterations)
 	return pos;
 }
 
-void CPUTracker::XCorFFTHelper(float* xc, float* result)
+
+vector2f CPUTracker::ComputeXCor(vector2f initial, int iterations)
+{
+	// extract the image
+	vector2f pos = initial;
+
+#ifdef _DEBUG
+	memcpy(debugImage, srcImage, sizeof(float)*width*height);
+	float maxValue = *std::max_element(srcImage,srcImage+width*height);
+#endif
+
+	for (int k=0;k<iterations;k++) {
+		float xmin = pos.x - xcorw/2;
+		float ymin = pos.y - xcorw/2;
+
+		if (xmin < 0 || ymin < 0 || xmin+xcorw/2*XCorScale>=width || ymin+xcorw/2*XCorScale>=height) {
+			vector2f z={};
+			return z;
+		}
+
+	//	dbgout(SPrintf("[%d]: xmin: %.1f, ymin: %.1f, \n", k, xmin, ymin));
+
+		// generate X position xcor array (summing over y range)
+		for (int x=0;x<xcorw;x++) {
+			float s = 0.0f;
+			for (int y=0;y<XCorSumWidth;y++) {
+				float xp = x * XCorScale + xmin;
+				float yp = pos.y + XCorScale * (y - XCorSumWidth/2);
+				s += Interpolate(xp, yp);
+				MARKPIXEL(xp, yp);
+			}
+			X_xc [x] = s;
+			X_xcr [xcorw-x-1] = X_xc[x];
+		}
+
+	//	dbgout(SPrintf("\t: X FFT\n"));
+
+		XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
+		float offsetX = - ( ComputeMaxInterp(X_result) - (float)xcorw/2); //ComputeMaxInterp(X_result) - (float)xcorw/2 - 1;
+
+//dbgout(SPrintf("\t: offsetX: %f\n", offsetX));
+
+		// generate Y position xcor array (summing over x range)
+		for (int y=0;y<xcorw;y++) {
+			float s = 0.0f; 
+			for (int x=0;x<XCorSumWidth;x++) {
+				float xp = pos.x + XCorScale * (x - XCorSumWidth/2);
+				float yp = y * XCorScale + ymin;
+				s += Interpolate(xp, yp);
+				MARKPIXEL(xp,yp);
+			}
+			Y_xc[y] = s;
+			Y_xcr [xcorw-y-1] = Y_xc[y];
+		}
+
+	//	dbgout(SPrintf("\t: Y FFT\n", offsetX));
+		XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
+		float offsetY = - ( ComputeMaxInterp(Y_result) - (float)xcorw/2);
+
+	//	dbgout(SPrintf("[%d] offsetX: %f, offsetY: %f\n", k, offsetX, offsetY));
+		pos.x -= offsetX * XCorScale;
+		pos.y -= offsetY * XCorScale;
+	}
+
+
+	return pos;
+}
+
+
+
+void CPUTracker::XCorFFTHelper(float* xc, float *xcr, float* result)
 {
 	// need to optimize this: the DFT of the reverse sequence should be calculatable from the known DFT (right?)
 	fftwf_execute_dft_r2c(fft_plan_fw, xc, (fftwf_complex*)fft_out);
+	fftwf_execute_dft_r2c(fft_plan_fw, xcr, (fftwf_complex*)fft_revout);
 
 	// Multiply with conjugate of reverse
 	for (int x=0;x<xcorw;x++) {
-		complexf v = fft_out[x];
-//		fft_out[x] *= complexf(fft_revout[x].real(), -fft_revout[x].imag());
-		fft_out[x] = v.real()*v.real() + v.imag()*v.imag();
+		fft_out[x] *= complexf(fft_revout[x].real(), -fft_revout[x].imag());
 	}
 
 	fftwf_execute_dft_c2r(fft_plan_bw, (fftwf_complex*)fft_out, xc);
@@ -182,7 +258,7 @@ float CPUTracker::ComputeMaxInterp(const std::vector<float>& r)
 	LsqSqQuadFit<float> qfit(5, xs, &r[iMax-2]);
 	float interpMax = qfit.maxPos();
 
-	return (float)iMax + interpMax * 0.5f;
+	return (float)iMax;// + interpMax;
 }
 
 
