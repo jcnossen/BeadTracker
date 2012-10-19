@@ -13,7 +13,7 @@ T rand_uniform()
 template<typename T>
 T rand_normal()
 {
-	T U0 = rand_uniform<T>();
+	T U0 = rand_uniform<T>()+(T)1e-9;
 	T U1 = rand_uniform<T>();
 
 	// Box-Muller transform

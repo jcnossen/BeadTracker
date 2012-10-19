@@ -49,13 +49,13 @@ void saveImage(float* data, uint w, uint h, const char* filename)
 	imaqDispose(dst);
 }
 
-DLL_EXPORT void CALLCONV generate_test_image(Image *img, uint w, uint h, float xp, float yp, float size, float photoncount)
+DLL_EXPORT void CALLCONV generate_test_image(Image *img, int w, int h, float xp, float yp, float size, float photoncount)
 {
 	try {
 		float S = 1.0f/size;
 		float *d = new float[w*h];
-		for (uint y=0;y<h;y++)
-			for (uint x=0;x<w;x++) {
+		for (int y=0;y<h;y++)
+			for (int x=0;x<w;x++) {
 				float X = x - xp;
 				float Y = y - yp;
 				float r = sqrtf(X*X+Y*Y)+1;
@@ -104,7 +104,8 @@ DLL_EXPORT void CALLCONV destroy_tracker(CPUTracker* tracker)
 	}
 }
 
-void copyToLVArray (ppFloatArray r, const std::vector<float>& a)
+template<typename T>
+void copyToLVArray (ppFloatArray r, const std::vector<T>& a)
 {
 	size_t wantedSize = sizeof(float)*a.size();
 
@@ -156,13 +157,13 @@ DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* 
 		} else
 			return;
 
-//		COM[0] = com.x;
-	//	COM[1] = com.y;
+		COM[0] = com.x;
+		COM[1] = com.y;
 
 		com.x = info.xRes/2;
 		com.y = info.yRes/2;
 		
-		vector2f xcorpos = tracker->ComputeXCor(com);//tracker->ComputeXCor(com, xcor_iterations);
+		vector2f xcorpos = tracker->ComputeXCorInterpolated(com, xcor_iterations);
 		xcor[0] = xcorpos.x;
 		xcor[1] = xcorpos.y;
 

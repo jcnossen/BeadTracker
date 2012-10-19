@@ -32,7 +32,8 @@ void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, floa
 	if (MaxPhotons>0) {
 		tracker->Normalize();
 		for (int k=0;k<w*h;k++) {
-			d[k] = rand_poisson(d[k]*MaxPhotons);
+			float r = rand_poisson(d[k]*MaxPhotons);
+			d[k] = r;
 		}
 	}
 	tracker->Normalize();
@@ -40,17 +41,27 @@ void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, floa
 
 void Localize(CPUTracker* t, vector2f& com, vector2f& xcor)
 {
-	float median = ComputeMedian(t->srcImage, t->width, t->height, t->width*sizeof(float),0);
-	com = t->ComputeCOM(median);
-	vector2f initial = {com.x, com.y};
-	xcor = t->ComputeXCor(initial);
 }
 
+void writeImageAsCSV(const char* file, float* d, int w,int h)
+{
+	FILE* f = fopen(file, "w");
+
+	for (int y=0;y<h;y++) {
+		for (int x=0;x<w;x++)
+		{
+			fprintf(f, "%f\t", d[y*w+x]);
+		}
+		fprintf(f, "\n");
+	}
+
+	fclose(f);
+}
 
 void SpeedTest()
 {
-	int N = 500;
-	CPUTracker tracker(150,150, 128);
+	int N = 1000;
+	CPUTracker tracker(150,150, 64);
 
 	// Speed test
 	vector2f comdist={}, xcordist={};
@@ -60,13 +71,19 @@ void SpeedTest()
 		double t0= getPreciseTime();
 		float xp = tracker.width/2+(rand_uniform<float>() - 0.5) * 5;
 		float yp = tracker.height/2+(rand_uniform<float>() - 0.5) * 5;
-		float size = 20.0f;
+		float size = 2.0f;
 
-		GenerateTestImage(&tracker, xp, yp, size, 200);
+		GenerateTestImage(&tracker, xp, yp, size, 500);
 		
 		double t1 = getPreciseTime();
-		vector2f com, xcor;
-		Localize(&tracker, com, xcor);
+		float median = tracker.ComputeMedian();
+		vector2f com = tracker.ComputeCOM(median);
+		vector2f initial = {com.x, com.y};
+		vector2f xcor = tracker.ComputeXCorInterpolated(initial,2);
+/*		if (k == 1) {
+			tracker.OutputDebugInfo();
+			writeImageAsCSV("test.csv", tracker.srcImage, tracker.width, tracker.height);
+		}*/
 
 		comdist.x += fabsf(com.x - xp);
 		comdist.y += fabsf(com.y - yp);
@@ -74,6 +91,8 @@ void SpeedTest()
 		xcordist.x += fabsf(xcor.x - xp);
 		xcordist.y += fabsf(xcor.y - yp);
 		double t2 = getPreciseTime();
+
+	//	dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f\n", xp, com.x-xp, xcor.x-xp));
 
 		tloc+=t2-t1;
 		tgen+=t1-t0;
@@ -121,6 +140,7 @@ void SmallImageTest()
 void PixelationErrorTest()
 {
 	CPUTracker tracker(128,128, 64);
+	CPUTracker interpTracker(128,128,64*4);
 
 	float X = tracker.width/2;
 	float Y = tracker.height/2;
@@ -128,24 +148,24 @@ void PixelationErrorTest()
 	for (int x=0;x<N;x++)  {
 		float xpos = X + 2.0f * x / (float)N;
 		GenerateTestImage(&tracker, xpos, X, 1, 0.0f);
+		GenerateTestImage(&interpTracker, xpos, X, 1, 0.0f);
 
 		vector2f com = tracker.ComputeCOM(tracker.ComputeMedian());
 		//dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
 
 		vector2f initial = {X,Y};
 		vector2f xcor = tracker.ComputeXCor(initial);
-		vector2f xcorInterp = tracker.ComputeXCorInterpolated(initial, 2);
-		if (x==5) tracker.OutputDebugInfo();
+		vector2f xcorInterp = tracker.ComputeXCorInterpolated(initial, 3);
 		dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f, XCorInterp err: %f\n", xpos, com.x-xpos, xcor.x-xpos, xcorInterp.x-xpos));
 	}
 }
 
 int main()
 {
-//	SpeedTest();
+	SpeedTest();
 
 	//SmallImageTest();
-	PixelationErrorTest();
+//	PixelationErrorTest();
 
 	return 0;
 }
