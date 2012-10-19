@@ -120,19 +120,23 @@ void SmallImageTest()
 
 void PixelationErrorTest()
 {
-	CPUTracker tracker(32,32, 16);
+	CPUTracker tracker(128,128, 64);
 
+	float X = tracker.width/2;
+	float Y = tracker.height/2;
 	int N = 20;
 	for (int x=0;x<N;x++)  {
-		float xpos = 15.0f + 2.0f * x / (float)N;
-		GenerateTestImage(&tracker, xpos, 15, 1, 0.0f);
+		float xpos = X + 2.0f * x / (float)N;
+		GenerateTestImage(&tracker, xpos, X, 1, 0.0f);
 
 		vector2f com = tracker.ComputeCOM(tracker.ComputeMedian());
 		//dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
 
-		vector2f initial = {15,15};
+		vector2f initial = {X,Y};
 		vector2f xcor = tracker.ComputeXCor(initial);
-		dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f\n", xpos, com.x-xpos, xcor.x-xpos));
+		vector2f xcorInterp = tracker.ComputeXCorInterpolated(initial, 2);
+		if (x==5) tracker.OutputDebugInfo();
+		dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f, XCorInterp err: %f\n", xpos, com.x-xpos, xcor.x-xpos, xcorInterp.x-xpos));
 	}
 }
 

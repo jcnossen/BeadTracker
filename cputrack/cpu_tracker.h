@@ -55,6 +55,8 @@ public:
 	void SetZLUT(float* data, int planes,int res);
 	float ComputeZ(vector2f center, int angularSteps, float radius); // radialSteps is given by zlut_res
 	float ComputeMedian();
+
+	void OutputDebugInfo();
 };
 
 

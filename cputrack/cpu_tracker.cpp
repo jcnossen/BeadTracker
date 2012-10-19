@@ -131,7 +131,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 	//	dbgout(SPrintf("\t: X FFT\n"));
 
 		XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
-		float offsetX = - ( ComputeMaxInterp(X_result) - (float)xcorw/2); //ComputeMaxInterp(X_result) - (float)xcorw/2 - 1;
+		float offsetX = ComputeMaxInterp(X_result) - (float)xcorw/2; //ComputeMaxInterp(X_result) - (float)xcorw/2 - 1;
 
 //dbgout(SPrintf("\t: offsetX: %f\n", offsetX));
 
@@ -150,13 +150,16 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 
 	//	dbgout(SPrintf("\t: Y FFT\n", offsetX));
 		XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
-		float offsetY = - ( ComputeMaxInterp(Y_result) - (float)xcorw/2);
+		float offsetY = ComputeMaxInterp(Y_result) - (float)xcorw/2;
 
 	//	dbgout(SPrintf("[%d] offsetX: %f, offsetY: %f\n", k, offsetX, offsetY));
-		pos.x -= offsetX * XCorScale;
-		pos.y -= offsetY * XCorScale;
-	}
 
+	pos.x += (offsetX - 1) * XCorScale * 0.5f;
+	pos.y += (offsetY - 1) * XCorScale * 0.5f;
+	
+	//pos.x -= offsetX * XCorScale;
+		//pos.y -= offsetY * XCorScale;
+	}
 
 	return pos;
 }
@@ -222,14 +225,18 @@ vector2f CPUTracker::ComputeXCor(vector2f initial)
 	XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
 	float offsetY = ComputeMaxInterp(Y_result) - (float)xcorw/2;
 
-	for (int i=0;i<xcorw;i++) {
-	//	dbgout(SPrintf("i=%d,  X = %f;  X_rev = %f;  Y = %f,  Y_rev = %f\n", i, X_xc[i], X_xcr[i], Y_xc[i], Y_xcr[i]));
-	}
-
-	pos.x = rx + offsetX - 1;
-	pos.y = ry + offsetY - 1;
+	pos.x = rx + (offsetX - 1) * 0.5f;
+	pos.y = ry + (offsetY - 1) * 0.5f;
 
 	return pos;
+}
+
+void CPUTracker::OutputDebugInfo()
+{
+	for (int i=0;i<xcorw;i++) {
+		//dbgout(SPrintf("i=%d,  X = %f;  X_rev = %f;  Y = %f,  Y_rev = %f\n", i, X_xc[i], X_xcr[i], Y_xc[i], Y_xcr[i]));
+		dbgout(SPrintf("i=%d,  X_result = %f;   X = %f;  X_rev = %f\n", i, X_result[i], X_xc[i], X_xcr[i]));
+	}
 }
 
 
