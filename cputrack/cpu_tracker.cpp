@@ -9,8 +9,9 @@ CPU only tracker
 #include "cpu_tracker.h"
 #include "../cudatrack/LsqQuadraticFit.h"
 
-const int XCorSumWidth = 32;
-const float XCorScale = 1.0f;
+const float XCorScale = 0.25f;
+
+static int round(float f) { return (int)(f+0.5f); }
 
 CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 {
@@ -24,9 +25,13 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 	
 	srcImage = new float [w*h];
 	debugImage = new float [w*h];
+	memset(srcImage, 0, sizeof(float)*w*h);
+	memset(debugImage, 0, sizeof(float)*w*h);
 
 	zlut = 0;
 	zlut_planes = zlut_res = 0;
+
+	xcorProfileWidth = min(32, xcorwindow);
 }
 
 void CPUTracker::setXCorWindow(int xcorwindow)
@@ -49,6 +54,7 @@ void CPUTracker::setXCorWindow(int xcorwindow)
 		X_result.resize(xcorw);
 		Y_xc.resize(xcorw);
 		Y_result.resize(xcorw);
+		shiftedResult.resize(xcorw);
 
 		fft_out = new complexf[xcorw];
 		fft_revout = new complexf[xcorw];
@@ -112,9 +118,9 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 		// generate X position xcor array (summing over y range)
 		for (int x=0;x<xcorw;x++) {
 			float s = 0.0f;
-			for (int y=0;y<XCorSumWidth;y++) {
+			for (int y=0;y<xcorProfileWidth;y++) {
 				float xp = x * XCorScale + xmin;
-				float yp = pos.y + XCorScale * (y - XCorSumWidth/2);
+				float yp = pos.y + XCorScale * (y - xcorProfileWidth/2);
 				s += Interpolate(xp, yp);
 				MARKPIXEL(xp, yp);
 			}
@@ -132,8 +138,8 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 		// generate Y position xcor array (summing over x range)
 		for (int y=0;y<xcorw;y++) {
 			float s = 0.0f; 
-			for (int x=0;x<XCorSumWidth;x++) {
-				float xp = pos.x + XCorScale * (x - XCorSumWidth/2);
+			for (int x=0;x<xcorProfileWidth;x++) {
+				float xp = pos.x + XCorScale * (x - xcorProfileWidth/2);
 				float yp = y * XCorScale + ymin;
 				s += Interpolate(xp, yp);
 				MARKPIXEL(xp,yp);
@@ -156,7 +162,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 }
 
 
-vector2f CPUTracker::ComputeXCor(vector2f initial, int iterations)
+vector2f CPUTracker::ComputeXCor(vector2f initial)
 {
 	// extract the image
 	vector2f pos = initial;
@@ -166,59 +172,62 @@ vector2f CPUTracker::ComputeXCor(vector2f initial, int iterations)
 	float maxValue = *std::max_element(srcImage,srcImage+width*height);
 #endif
 
-	for (int k=0;k<iterations;k++) {
-		float xmin = pos.x - xcorw/2;
-		float ymin = pos.y - xcorw/2;
+	int rx = round(pos.x);
+	int ry = round(pos.y);
 
-		if (xmin < 0 || ymin < 0 || xmin+xcorw/2*XCorScale>=width || ymin+xcorw/2*XCorScale>=height) {
-			vector2f z={};
-			return z;
+	int xmin = rx - xcorw/2;
+	int ymin = ry - xcorw/2;
+
+	if (xmin < 0 || ymin < 0 || xmin+xcorw/2>=width || ymin+xcorw/2>=height) {
+		vector2f z={};
+		return z;
+	}
+
+//	dbgout(SPrintf("[%d]: xmin: %.1f, ymin: %.1f, \n", k, xmin, ymin));
+
+	// generate X position xcor array (summing over y range)
+	for (int x=0;x<xcorw;x++) {
+		float s = 0.0f;
+		for (int y=0;y<xcorProfileWidth;y++) {
+			int xp = rx + x - xcorw/2;
+			int yp = ry + y - xcorProfileWidth/2;
+			s += getPixel(xp, yp);
+			MARKPIXEL(xp, yp);
 		}
+		X_xc [x] = s;
+		X_xcr [xcorw-x-1] = X_xc[x];
+	}
 
-	//	dbgout(SPrintf("[%d]: xmin: %.1f, ymin: %.1f, \n", k, xmin, ymin));
+//	dbgout(SPrintf("\t: X FFT\n"));
 
-		// generate X position xcor array (summing over y range)
-		for (int x=0;x<xcorw;x++) {
-			float s = 0.0f;
-			for (int y=0;y<XCorSumWidth;y++) {
-				float xp = x * XCorScale + xmin;
-				float yp = pos.y + XCorScale * (y - XCorSumWidth/2);
-				s += Interpolate(xp, yp);
-				MARKPIXEL(xp, yp);
-			}
-			X_xc [x] = s;
-			X_xcr [xcorw-x-1] = X_xc[x];
-		}
-
-	//	dbgout(SPrintf("\t: X FFT\n"));
-
-		XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
-		float offsetX = - ( ComputeMaxInterp(X_result) - (float)xcorw/2); //ComputeMaxInterp(X_result) - (float)xcorw/2 - 1;
+	XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
+	float offsetX = ComputeMaxInterp(X_result) - (float)xcorw/2; //ComputeMaxInterp(X_result) - (float)xcorw/2 - 1;
 
 //dbgout(SPrintf("\t: offsetX: %f\n", offsetX));
 
-		// generate Y position xcor array (summing over x range)
-		for (int y=0;y<xcorw;y++) {
-			float s = 0.0f; 
-			for (int x=0;x<XCorSumWidth;x++) {
-				float xp = pos.x + XCorScale * (x - XCorSumWidth/2);
-				float yp = y * XCorScale + ymin;
-				s += Interpolate(xp, yp);
-				MARKPIXEL(xp,yp);
-			}
-			Y_xc[y] = s;
-			Y_xcr [xcorw-y-1] = Y_xc[y];
+	// generate Y position xcor array (summing over x range)
+	for (int y=0;y<xcorw;y++) {
+		float s = 0.0f; 
+		for (int x=0;x<xcorProfileWidth;x++) {
+			int xp = rx + x - xcorProfileWidth/2;
+			int yp = ry + y - xcorw/2;
+			s += getPixel(xp,yp);
+			MARKPIXEL(xp,yp);
 		}
-
-	//	dbgout(SPrintf("\t: Y FFT\n", offsetX));
-		XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
-		float offsetY = - ( ComputeMaxInterp(Y_result) - (float)xcorw/2);
-
-	//	dbgout(SPrintf("[%d] offsetX: %f, offsetY: %f\n", k, offsetX, offsetY));
-		pos.x -= offsetX * XCorScale;
-		pos.y -= offsetY * XCorScale;
+		Y_xc[y] = s;
+		Y_xcr [xcorw-y-1] = Y_xc[y];
 	}
 
+//	dbgout(SPrintf("\t: Y FFT\n", offsetX));
+	XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
+	float offsetY = ComputeMaxInterp(Y_result) - (float)xcorw/2;
+
+	for (int i=0;i<xcorw;i++) {
+	//	dbgout(SPrintf("i=%d,  X = %f;  X_rev = %f;  Y = %f,  Y_rev = %f\n", i, X_xc[i], X_xcr[i], Y_xc[i], Y_xcr[i]));
+	}
+
+	pos.x = rx + offsetX - 1;
+	pos.y = ry + offsetY - 1;
 
 	return pos;
 }
@@ -236,9 +245,9 @@ void CPUTracker::XCorFFTHelper(float* xc, float *xcr, float* result)
 		fft_out[x] *= complexf(fft_revout[x].real(), -fft_revout[x].imag());
 	}
 
-	fftwf_execute_dft_c2r(fft_plan_bw, (fftwf_complex*)fft_out, xc);
+	fftwf_execute_dft_c2r(fft_plan_bw, (fftwf_complex*)fft_out, &shiftedResult[0]);
 	for (int x=0;x<xcorw;x++)
-		result[x] = xc[ (x+xcorw/2) % xcorw ];
+		result[x] = shiftedResult[ (x+xcorw/2) % xcorw ];
 }
 
 float CPUTracker::ComputeMaxInterp(const std::vector<float>& r)
@@ -258,7 +267,7 @@ float CPUTracker::ComputeMaxInterp(const std::vector<float>& r)
 	LsqSqQuadFit<float> qfit(5, xs, &r[iMax-2]);
 	float interpMax = qfit.maxPos();
 
-	return (float)iMax;// + interpMax;
+	return (float)iMax + interpMax;
 }
 
 

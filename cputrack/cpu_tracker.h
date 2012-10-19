@@ -12,6 +12,7 @@ class CPUTracker
 {
 public:
 	int width, height;
+	int xcorProfileWidth;
 
 	float *srcImage, *debugImage;
 	complexf *fft_out, *fft_revout;
@@ -27,17 +28,18 @@ public:
 	std::vector<float> rprof, rprof_diff;
 
 	int xcorw;
+	std::vector<float> shiftedResult;
 	std::vector<float> X_xc, X_xcr, X_result;
 	std::vector<float> Y_xc, Y_xcr, Y_result;
 
-	float getPixel(int x, int y) { return srcImage[width*y+x]; }
+	float& getPixel(int x, int y) { return srcImage[width*y+x]; }
 	float Interpolate(float x,float y);
 	CPUTracker(int w, int h, int xcorwindow=128);
 	~CPUTracker();
 	void setXCorWindow(int xcorwindow);
 
 	vector2f Compute2DXCor();
-	vector2f ComputeXCor(vector2f initial, int iterations);
+	vector2f ComputeXCor(vector2f initial);
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations);
 	void XCorFFTHelper(float* xc, float* xcr, float* result);
 	// Compute the interpolated index of the maximum value in the result array
