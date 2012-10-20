@@ -13,35 +13,6 @@ double getPreciseTime()
 	return (double)time / (double)freq;
 }
 
-void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, float MaxPhotons)
-{
-	int w=tracker->width;
-	int h=tracker->height;
-	float S = 1.0f/size;
-	float *d =  tracker->srcImage; //new float[tracker->width*tracker->height];
-	for (int y=0;y<h;y++) {
-		for (int x=0;x<w;x++) {
-			float X = x - xp;
-			float Y = y - yp;
-			float r = sqrtf(X*X+Y*Y)+1;
-			float v = 0.1 + sinf( (r-10)/5) * expf(-r*S);
-			d[y*w+x] = v;
-		}
-	}
-
-	if (MaxPhotons>0) {
-		tracker->Normalize();
-		for (int k=0;k<w*h;k++) {
-			float r = rand_poisson(d[k]*MaxPhotons);
-			d[k] = r;
-		}
-	}
-	tracker->Normalize();
-}
-
-void Localize(CPUTracker* t, vector2f& com, vector2f& xcor)
-{
-}
 
 void writeImageAsCSV(const char* file, float* d, int w,int h)
 {
@@ -50,7 +21,8 @@ void writeImageAsCSV(const char* file, float* d, int w,int h)
 	for (int y=0;y<h;y++) {
 		for (int x=0;x<w;x++)
 		{
-			fprintf(f, "%f\t", d[y*w+x]);
+			fprintf(f, "%f", d[y*w+x]);
+			if(x<w-1) fputs("\t", f); 
 		}
 		fprintf(f, "\n");
 	}
@@ -63,18 +35,32 @@ void SpeedTest()
 	int N = 1000;
 	CPUTracker tracker(150,150, 64);
 
+	int radialSteps = 64, zplanes = 120;
+	float* zlut = new float[radialSteps*zplanes];
+	float zmin = 2, zmax = 8;
+	float zradius = tracker.xcorw/2;
+
+	for (int x=0;x<zplanes;x++)  {
+		vector2f center = { tracker.width/2, tracker.height/2 };
+		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
+		GenerateTestImage(&tracker, center.x, center.y, s, 0.0f);
+		tracker.ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, zradius, center);
+	}
+	tracker.SetZLUT(zlut, zplanes, radialSteps);
+
 	// Speed test
 	vector2f comdist={}, xcordist={};
-	double tloc = 0.0, tgen=0.0;
+	float zdist=0.0f;
+	double tloc = 0.0, tgen=0.0, tz = 0.0;
 	for (int k=0;k<N;k++)
 	{
 		double t0= getPreciseTime();
 		float xp = tracker.width/2+(rand_uniform<float>() - 0.5) * 5;
 		float yp = tracker.height/2+(rand_uniform<float>() - 0.5) * 5;
-		float size = 2.0f;
+		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
 
-		GenerateTestImage(&tracker, xp, yp, size, 500);
-		
+		GenerateTestImage(&tracker, xp, yp, z, 0);
+
 		double t1 = getPreciseTime();
 		float median = tracker.ComputeMedian();
 		vector2f com = tracker.ComputeCOM(median);
@@ -92,16 +78,20 @@ void SpeedTest()
 		xcordist.y += fabsf(xcor.y - yp);
 		double t2 = getPreciseTime();
 
-	//	dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f\n", xp, com.x-xp, xcor.x-xp));
+		float est_z = zmin + tracker.ComputeZ(xcor, 64, zradius) * (zmax - zmin) / (zplanes - 1);
+		zdist += fabsf(est_z-z);
 
+		double t3 = getPreciseTime();
+	//	dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f\n", xp, com.x-xp, xcor.x-xp));
 		tloc+=t2-t1;
 		tgen+=t1-t0;
+		tz+=t3-t2;
 	}
-
 	
-	dbgout(SPrintf("Time: %f s. Image generation speed (img/s): %f\n. Localization speed (img/s): %f\n", tloc+tgen, N/tgen, N/tloc));
-	dbgout(SPrintf("Average distance: COM x: %f, y: %f\n", comdist.x/N, comdist.y/N));
-	dbgout(SPrintf("Average distance: Cross-correlation x: %f, y: %f\n", xcordist.x/N, xcordist.y/N));
+	dbgout(SPrintf("Time: %f s. Image gen. (img/s): %f\n2D loc. speed (img/s): %f Z estimation (img/s): %f\n", tloc+tgen, N/tgen, N/tloc, N/tz));
+	dbgout(SPrintf("Average dist: COM x: %f, y: %f\n", comdist.x/N, comdist.y/N));
+	dbgout(SPrintf("Average dist: Cross-correlation x: %f, y: %f\n", xcordist.x/N, xcordist.y/N));
+	dbgout(SPrintf("Average dist: Z: %f\n", zdist/N)); 
 }
 
 void OnePixelTest()
@@ -119,7 +109,7 @@ void OnePixelTest()
 
 	assert(xcor.x == 15.0f && xcor.y == 15.0f);
 }
-
+ 
 void SmallImageTest()
 {
 	CPUTracker tracker(32,32, 16);
@@ -158,12 +148,64 @@ void PixelationErrorTest()
 	}
 }
 
+float EstimateZError(int zplanes)
+{
+	// build LUT
+	CPUTracker tracker(128,128, 64);
+
+	vector2f center = { tracker.width/2, tracker.height/2 };
+	int radialSteps = 64;
+	float* zlut = new float[radialSteps*zplanes];
+	float zmin = 2, zmax = 8;
+	float zradius = tracker.xcorw/2;
+
+	//GenerateTestImage(&tracker, center.x, center.y, zmin, 0.0f);
+	//writeImageAsCSV("img.csv", tracker.srcImage, tracker.width, tracker.height);
+
+	for (int x=0;x<zplanes;x++)  {
+		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
+		GenerateTestImage(&tracker, center.x, center.y, s, 0.0f);
+	//	dbgout(SPrintf("z=%f\n", s));
+		tracker.ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, zradius, center);
+	}
+
+	tracker.SetZLUT(zlut, zplanes, radialSteps);
+	writeImageAsCSV("zlut.csv", zlut, radialSteps, zplanes);
+
+	int N=100;
+	float zdist=0.0f;
+	for (int k=0;k<N;k++) {
+		float z = zmin + k/float(N-1) * (zmax-zmin);
+		GenerateTestImage(&tracker, center.x, center.y, z, 0.0f);
+		
+		float est_z = zmin + tracker.ComputeZ(center, 64, zradius) * (zmax - zmin) / (zplanes - 1);
+		zdist += fabsf(est_z-z);
+		//dbgout(SPrintf("Z: %f, EstZ: %f\n", z, est_z));
+
+		if(k==50) {
+			writeImageAsCSV("rprofdiff.csv", &tracker.rprof_diff[0], tracker.rprof_diff.size(),1);
+		}
+	}
+	return zdist/N;
+}
+
+
+void ZTrackingTest()
+{
+	for (int k=20;k<100;k+=10)
+	{
+		float err = EstimateZError(k);
+		dbgout(SPrintf("average Z difference: %f. zplanes=%d\n", err, k));
+	}
+}
+
 int main()
 {
 	SpeedTest();
 
 	//SmallImageTest();
-	PixelationErrorTest();
+	//PixelationErrorTest();
+//	ZTrackingTest();
 
 	return 0;
 }

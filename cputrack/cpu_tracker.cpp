@@ -8,6 +8,7 @@ CPU only tracker
 
 #include "cpu_tracker.h"
 #include "../cudatrack/LsqQuadraticFit.h"
+#include "random_distr.h"
 
 const float XCorScale = 1.0f; // keep this at 1, because linear oversampling was obviously a bad idea..
 
@@ -322,6 +323,7 @@ void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSt
 	for (int i=0;i<radialSteps;i++)
 		dst[i]=0.0f;
 
+	float total = 0.0f;
 	float rstep = range / radialSteps;
 	for (int i=0;i<radialSteps; i++) {
 		float sum = 0.0f;
@@ -333,7 +335,10 @@ void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSt
 		}
 
 		dst[i] = sum/(float)angularSteps;
+		total += dst[i];
 	}
+	for (int i=0;i<radialSteps;i++)
+		dst[i] /= total;
 }
 
 void CPUTracker::SetZLUT(float* data, int planes, int res)
@@ -387,4 +392,28 @@ ushort* floatToNormalizedUShort(float *data, uint w,uint h)
 }
 
 
+void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, float MaxPhotons)
+{
+	int w=tracker->width;
+	int h=tracker->height;
+	float S = 1.0f/size;
+	float *d =  tracker->srcImage; //new float[tracker->width*tracker->height];
+	for (int y=0;y<h;y++) {
+		for (int x=0;x<w;x++) {
+			float X = x - xp;
+			float Y = y - yp;
+			float r = sqrtf(X*X+Y*Y)+1;
+			float v = sinf(r/(5*S)) * expf(-r*r*S*0.01f);
+			d[y*w+x] = v;
+		}
+	}
 
+	if (MaxPhotons>0) {
+		tracker->Normalize();
+		for (int k=0;k<w*h;k++) {
+			float r = rand_poisson(d[k]*MaxPhotons);
+			d[k] = r;
+		}
+	}
+	tracker->Normalize();
+}

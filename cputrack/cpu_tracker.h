@@ -70,7 +70,7 @@ public:
 
 
 ushort* floatToNormalizedUShort(float *data, uint w,uint h);
-
+void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, float MaxPhotons);
 
 
 template<typename TPixel>
@@ -131,8 +131,8 @@ template<typename T>
 T CPUTracker::ComputeMaxInterp(const std::vector<T>& r)
 {
 	uint iMax=0;
-	T vMax=0;
-	for (uint k=0;k<r.size();k++) {
+	T vMax=r[0];
+	for (uint k=1;k<r.size();k++) {
 		if (r[k]>vMax) {
 			vMax = r[k];
 			iMax = k;
@@ -147,4 +147,6 @@ T CPUTracker::ComputeMaxInterp(const std::vector<T>& r)
 
 	return (T)iMax + interpMax;
 }
+
+
 
