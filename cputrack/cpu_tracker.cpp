@@ -141,7 +141,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 				float xp = x * XCorScale + xmin;
 				float yp = pos.y + XCorScale * (y - xcorProfileWidth/2);
 				s += Interpolate(xp, yp);
-				MARKPIXEL(xp, yp);
+				MARKPIXELI(xp, yp);
 			}
 			X_xc [x] = s;
 			X_xcr [xcorw-x-1] = X_xc[x];
@@ -157,7 +157,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 				float xp = pos.x + XCorScale * (x - xcorProfileWidth/2);
 				float yp = y * XCorScale + ymin;
 				s += Interpolate(xp, yp);
-				MARKPIXEL(xp,yp);
+				MARKPIXELI(xp,yp);
 			}
 			Y_xc[y] = s;
 			Y_xcr [xcorw-y-1] = Y_xc[y];
