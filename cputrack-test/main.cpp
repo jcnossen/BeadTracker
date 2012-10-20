@@ -41,7 +41,7 @@ void SpeedTest()
 	float zradius = tracker.xcorw/2;
 
 	for (int x=0;x<zplanes;x++)  {
-		vector2f center = { tracker.width/2, tracker.height/2 };
+		vector2f center = { tracker.GetWidth()/2, tracker.GetHeight()/2 };
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 		GenerateTestImage(&tracker, center.x, center.y, s, 0.0f);
 		tracker.ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, zradius, center);
@@ -55,8 +55,8 @@ void SpeedTest()
 	for (int k=0;k<N;k++)
 	{
 		double t0= getPreciseTime();
-		float xp = tracker.width/2+(rand_uniform<float>() - 0.5) * 5;
-		float yp = tracker.height/2+(rand_uniform<float>() - 0.5) * 5;
+		float xp = tracker.GetWidth()/2+(rand_uniform<float>() - 0.5) * 5;
+		float yp = tracker.GetHeight()/2+(rand_uniform<float>() - 0.5) * 5;
 		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
 
 		GenerateTestImage(&tracker, xp, yp, z, 0);
@@ -131,8 +131,8 @@ void PixelationErrorTest()
 {
 	CPUTracker tracker(128,128, 64);
 
-	float X = tracker.width/2;
-	float Y = tracker.height/2;
+	float X = tracker.GetWidth()/2;
+	float Y = tracker.GetHeight()/2;
 	int N = 20;
 	for (int x=0;x<N;x++)  {
 		float xpos = X + 2.0f * x / (float)N;
@@ -153,7 +153,7 @@ float EstimateZError(int zplanes)
 	// build LUT
 	CPUTracker tracker(128,128, 64);
 
-	vector2f center = { tracker.width/2, tracker.height/2 };
+	vector2f center = { tracker.GetWidth()/2, tracker.GetHeight()/2 };
 	int radialSteps = 64;
 	float* zlut = new float[radialSteps*zplanes];
 	float zmin = 2, zmax = 8;

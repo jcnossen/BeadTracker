@@ -52,16 +52,17 @@ void saveImage(float* data, uint w, uint h, const char* filename)
 DLL_EXPORT void CALLCONV generate_test_image(Image *img, int w, int h, float xp, float yp, float size, float photoncount)
 {
 	try {
-		float S = 1.0f/size;
+		float S = size;
 		float *d = new float[w*h];
-		for (int y=0;y<h;y++)
+		for (int y=0;y<h;y++) {
 			for (int x=0;x<w;x++) {
 				float X = x - xp;
 				float Y = y - yp;
 				float r = sqrtf(X*X+Y*Y)+1;
-				float v = 0.1 - sinf( (r-10)/5) * expf(-r*S);
+				float v = sinf(r*S/5.0f) * expf(-r*r/S*0.01f);
 				d[y*w+x] = v;
 			}
+		}
 
 		ushort* result = floatToNormalizedUShort(d, w, h);
 		if (photoncount != 0.0f) {
@@ -93,7 +94,7 @@ DLL_EXPORT CPUTracker* CALLCONV create_tracker(uint w, uint h, uint xcorw)
 	}
 }
 
-DLL_EXPORT void CALLCONV destroy_tracker(CPUTracker* tracker)
+DLL_EXPORT void CALLCONV destroy_tracker(Tracker* tracker)
 {
 	try {
 		delete tracker;
@@ -122,10 +123,13 @@ void copyToLVArray (ppFloatArray r, const std::vector<T>& a)
 DLL_EXPORT void CALLCONV copy_crosscorrelation_result(CPUTracker* tracker, ppFloatArray x_result, ppFloatArray y_result, ppFloatArray x_xc, ppFloatArray y_xc)
 {
 	try {
-		if (x_result) copyToLVArray (x_result, tracker->X_result);
-		if (y_result) copyToLVArray (y_result, tracker->Y_result);
-		if (x_xc) copyToLVArray (x_xc, tracker->X_xc);
-		if (y_xc) copyToLVArray (y_xc, tracker->Y_xc);
+		std::vector<xcor_t> xprof, yprof, xconv, yconv;
+		if (tracker->GetLastXCorProfiles(xprof, yprof, xconv, yconv)) {
+			if (x_result) copyToLVArray (x_result, xprof);
+			if (y_result) copyToLVArray (y_result, yprof);
+			if (x_xc) copyToLVArray (x_xc, xconv);
+			if (y_xc) copyToLVArray (y_xc, yconv);
+		}
 	}
 	catch(const std::exception& e)
 	{
@@ -139,20 +143,19 @@ DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* 
 		ImageInfo info;
 		imaqGetImageInfo(img, &info);
 
-		if (info.xRes != tracker->width || info.yRes != tracker->height)
+		if (info.xRes != tracker->GetWidth() || info.yRes != tracker->GetHeight())
 			return;
 
 		vector2f com;
 		if (info.imageType == IMAQ_IMAGE_U8) {
 			uchar* imgData = (uchar*)info.imageStart;
-
 			float median = ComputeMedian(imgData, info.xRes, info.yRes, info.pixelsPerLine, storedMedian);
-			tracker->SetImage(imgData, info.xRes, info.yRes, info.pixelsPerLine);
+			tracker->SetImage8Bit(imgData, info.xRes, info.yRes, info.pixelsPerLine);
 			com = tracker->ComputeCOM(median);
 		} else if(info.imageType == IMAQ_IMAGE_U16) {
 			ushort* imgData = (ushort*)info.imageStart;
 			float median = ComputeMedian(imgData, info.xRes, info.yRes, info.pixelsPerLine*2, storedMedian);
-			tracker->SetImage(imgData, info.xRes, info.yRes, info.pixelsPerLine*2);
+			tracker->SetImage16Bit(imgData, info.xRes, info.yRes, info.pixelsPerLine*2);
 			com = tracker->ComputeCOM(median);
 		} else
 			return;
@@ -180,7 +183,7 @@ DLL_EXPORT void CALLCONV localize_image(CPUTracker* tracker, Image* img, float* 
 			ImageInfo di;
 			imaqGetImageInfo(dbgImg, &di);
 			if (di.imageType == IMAQ_IMAGE_U16) {
-				ushort* d = floatToNormalizedUShort(tracker->srcImage, tracker->width, tracker->height);
+				ushort* d = floatToNormalizedUShort(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight());
 				imaqArrayToImage(dbgImg, d, info.xRes, info.yRes);
 				delete[] d;
 			}
@@ -200,7 +203,7 @@ median = 0: Use zero median
 *median >= 0: Use given median
 
 */
-DLL_EXPORT void CALLCONV compute_com(CPUTracker* tracker, float *median, float* out)
+DLL_EXPORT void CALLCONV compute_com(Tracker* tracker, float *median, float* out)
 {
 	float m;
 	if (!median)
@@ -223,19 +226,19 @@ DLL_EXPORT void CALLCONV compute_xcor(CPUTracker* tracker, vector2f* position, i
 	*position = tracker->ComputeXCor(*position);
 }
 
-DLL_EXPORT void CALLCONV set_image(CPUTracker* tracker, Image* img, int offsetX, int offsetY)
+DLL_EXPORT void CALLCONV set_image(Tracker* tracker, Image* img, int offsetX, int offsetY)
 {
 	try {
 		ImageInfo info;
 		imaqGetImageInfo(img, &info);
 
-		if (offsetX < 0 || offsetY < 0 || offsetX + tracker->width > info.xRes || offsetY + tracker->height > info.yRes)
+		if (offsetX < 0 || offsetY < 0 || offsetX + tracker->GetWidth() > info.xRes || offsetY + tracker->GetHeight() > info.yRes)
 			return;
 		if (info.imageType == IMAQ_IMAGE_U8)
-			tracker->SetImage((uchar*)info.imageStart + offsetX + info.pixelsPerLine * offsetY, tracker->width, tracker->height, info.pixelsPerLine);
+			tracker->SetImage8Bit((uchar*)info.imageStart + offsetX + info.pixelsPerLine * offsetY, info.xRes, info.yRes, info.pixelsPerLine);
 		else if(info.imageType == IMAQ_IMAGE_U16)
-			tracker->SetImage((ushort*)info.imageStart + offsetX + info.pixelsPerLine * offsetY, info.xRes, info.yRes, info.pixelsPerLine*2);
-		else 
+			tracker->SetImage16Bit((ushort*)info.imageStart + offsetX + info.pixelsPerLine * offsetY, info.xRes, info.yRes, info.pixelsPerLine*2);
+		else
 			return;
 	}
 	catch(const std::exception& e)
@@ -244,13 +247,13 @@ DLL_EXPORT void CALLCONV set_image(CPUTracker* tracker, Image* img, int offsetX,
 	}
 }
 
-DLL_EXPORT void CALLCONV compute_radial_profile(CPUTracker* tracker, ppFloatArray result, int angularSteps, float range, float* center)
+DLL_EXPORT void CALLCONV compute_radial_profile(Tracker* tracker, ppFloatArray result, int angularSteps, float range, float* center)
 {
 	LVFloatArray* dst = *result;
 	tracker->ComputeRadialProfile(&dst->elt[0], dst->dimSize, angularSteps, range, *(vector2f*)center);
 }
 
-DLL_EXPORT void CALLCONV set_ZLUT(CPUTracker* tracker, ppFloatArray2 pZlut)
+DLL_EXPORT void CALLCONV set_ZLUT(Tracker* tracker, ppFloatArray2 pZlut)
 {
 	LVFloatArray2* zlut = *pZlut;
 	
@@ -258,14 +261,17 @@ DLL_EXPORT void CALLCONV set_ZLUT(CPUTracker* tracker, ppFloatArray2 pZlut)
 }
 
 
-DLL_EXPORT void CALLCONV get_debug_image(CPUTracker* tracker, Image* dbgImg)
+DLL_EXPORT void CALLCONV get_debug_image(Tracker* tracker, Image* dbgImg)
 {
 	ImageInfo di;
 	imaqGetImageInfo(dbgImg, &di);
 	if (di.imageType == IMAQ_IMAGE_U16) {
-		ushort* d = floatToNormalizedUShort(tracker->debugImage, tracker->width, tracker->height);
-		imaqArrayToImage(dbgImg, d, tracker->width, tracker->height);
-		delete[] d;
+		float* dbg = tracker->GetDebugImage();
+		if (dbg) {
+			ushort* d = floatToNormalizedUShort(dbg, tracker->GetWidth(), tracker->GetHeight());
+			imaqArrayToImage(dbgImg, d, tracker->GetWidth(), tracker->GetHeight());
+			delete[] d;
+		}
 	}
 }
 

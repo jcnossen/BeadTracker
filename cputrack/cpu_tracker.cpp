@@ -34,9 +34,6 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 
 	xcorProfileWidth = min(32, xcorwindow);
 
-	fft_out2D = 0;
-	plan_bw2D = plan_fw2D = 0;
-
 	setXCorWindow(xcorwindow);
 }
 
@@ -122,7 +119,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 	vector2f pos = initial;
 
 #ifdef _DEBUG
-	memcpy(debugImage, srcImage, sizeof(float)*width*height);
+	std::copy(srcImage, srcImage+width*height, debugImage);
 	float maxValue = *std::max_element(srcImage,srcImage+width*height);
 #endif
 
@@ -184,7 +181,7 @@ vector2f CPUTracker::ComputeXCor(vector2f initial)
 	vector2f pos = initial;
 
 #ifdef _DEBUG
-	memcpy(debugImage, srcImage, sizeof(float)*width*height);
+	std::copy(srcImage, srcImage+width*height, debugImage);
 	float maxValue = *std::max_element(srcImage,srcImage+width*height);
 #endif
 
@@ -394,8 +391,8 @@ ushort* floatToNormalizedUShort(float *data, uint w,uint h)
 
 void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, float MaxPhotons)
 {
-	int w=tracker->width;
-	int h=tracker->height;
+	int w=tracker->GetWidth();
+	int h=tracker->GetHeight();
 	float S = 1.0f/size;
 	float *d =  tracker->srcImage; //new float[tracker->width*tracker->height];
 	for (int y=0;y<h;y++) {

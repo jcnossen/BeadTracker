@@ -1,35 +1,30 @@
 #pragma once
-#include "../cudatrack/utils.h"
 
 #include "fftw/fftw3.h"
 #include <complex>
 #include <vector>
 
+#include "Tracker.h"
+
 #ifdef TRK_USE_DOUBLE
-	typedef double xcor_t;
 	typedef fftw_plan fftw_plan_t;
 #else
-	typedef float xcor_t;
 	typedef fftwf_plan fftw_plan_t;
 #endif
+
 
 typedef uchar pixel_t;
 typedef std::complex<xcor_t> complexc;
 
-class CPUTracker
+class CPUTracker : public Tracker
 {
 public:
-	int width, height;
 	int xcorProfileWidth;
 
 	float *srcImage, *debugImage;
 	complexc *fft_out, *fft_revout;
 	fftw_plan_t fft_plan_fw, fft_plan_bw;
 	std::vector<vector2f> radialDirs;
-
-	//----------- 2D Cross-Correlation variables
-	fftw_plan_t plan_fw2D, plan_bw2D;
-	complexc* fft_out2D;
 
 	float* zlut; // zlut[plane * zlut_res + r]
 	int zlut_planes, zlut_res;
@@ -46,12 +41,13 @@ public:
 	~CPUTracker();
 	void setXCorWindow(int xcorwindow);
 
-	vector2f Compute2DXCor();
 	vector2f ComputeXCor(vector2f initial);
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations);
 	void XCorFFTHelper(xcor_t* xc, xcor_t* xcr, xcor_t* result);
 	template<typename TPixel>
 	void SetImage(TPixel* srcImage, uint w, uint h, uint srcpitch);
+	void SetImage16Bit(ushort* srcImage, uint w, uint h, uint srcpitch) { SetImage(srcImage, w, h, srcpitch); }
+	void SetImage8Bit(uchar* srcImage, uint w, uint h, uint srcpitch) { SetImage(srcImage, w, h, srcpitch); }
 
 	vector2f ComputeCOM(float median);
 	void RemoveBackground(float median);
@@ -66,6 +62,7 @@ public:
 	template<typename T> T ComputeMaxInterp(const std::vector<T>& r);
 
 	void OutputDebugInfo();
+	float* GetDebugImage() { return debugImage; }
 };
 
 
@@ -143,7 +140,7 @@ T CPUTracker::ComputeMaxInterp(const std::vector<T>& r)
 	
 	T xs[] = {-2, -1, 0, 1, 2};
 	LsqSqQuadFit<T> qfit(5, xs, &r[iMax-2]);
-	xcor_t interpMax = qfit.maxPos();
+	T interpMax = qfit.maxPos();
 
 	return (T)iMax + interpMax;
 }

@@ -156,7 +156,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../labview/vision/Lib/MSVC;../labview/imaq/Lib;../labview/cintools;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>../labview/cintools/labview.lib;fftw/libfftw3-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>../labview/cintools/labview.lib;../pthreads/lib/x86/pthreadsVSE2.lib;fftw/libfftw3-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(ProjectDir)/../cudatrack-labview/cputrack_d.dll</OutputFile>
     </Link>
   </ItemDefinitionGroup>
@@ -245,11 +245,11 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-Single|Win32'">
     <Link>
       <AdditionalLibraryDirectories>../labview/vision/Lib/MSVC;../labview/imaq/Lib;../labview/cintools;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>../labview/cintools/labview.lib;fftw/libfftwf-3.3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>../labview/cintools/labview.lib;../pthreads/lib/x86/pthreadsVSE2.lib;fftw/libfftwf-3.3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;CPUTRACK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../cudatrack/;../labview/cintools;../labview/vision/Include;../labview/imaq/Include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../cudatrack/;../labview/cintools;../labview/vision/Include;../labview/imaq/Include;../pthreads/include</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -262,6 +262,8 @@
     <ClInclude Include="..\cudatrack\utils.h" />
     <ClInclude Include="cpu_tracker.h" />
     <ClInclude Include="random_distr.h" />
+    <ClInclude Include="Tracker.h" />
+    <ClInclude Include="TrackerQueue.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
