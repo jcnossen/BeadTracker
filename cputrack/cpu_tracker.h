@@ -5,8 +5,13 @@
 #include <complex>
 #include <vector>
 
-typedef double xcor_t ;
-typedef fftw_plan fftw_plan_t;
+#ifdef TRK_USE_DOUBLE
+	typedef double xcor_t;
+	typedef fftw_plan fftw_plan_t;
+#else
+	typedef float xcor_t;
+	typedef fftwf_plan fftw_plan_t;
+#endif
 
 typedef uchar pixel_t;
 typedef std::complex<xcor_t> complexc;

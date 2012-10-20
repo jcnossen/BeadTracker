@@ -140,7 +140,6 @@ void SmallImageTest()
 void PixelationErrorTest()
 {
 	CPUTracker tracker(128,128, 64);
-	CPUTracker interpTracker(128,128,64*4);
 
 	float X = tracker.width/2;
 	float Y = tracker.height/2;
@@ -148,7 +147,6 @@ void PixelationErrorTest()
 	for (int x=0;x<N;x++)  {
 		float xpos = X + 2.0f * x / (float)N;
 		GenerateTestImage(&tracker, xpos, X, 1, 0.0f);
-		GenerateTestImage(&interpTracker, xpos, X, 1, 0.0f);
 
 		vector2f com = tracker.ComputeCOM(tracker.ComputeMedian());
 		//dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
@@ -165,7 +163,7 @@ int main()
 	SpeedTest();
 
 	//SmallImageTest();
-//	PixelationErrorTest();
+	PixelationErrorTest();
 
 	return 0;
 }

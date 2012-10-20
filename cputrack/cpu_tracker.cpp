@@ -11,6 +11,7 @@ CPU only tracker
 
 const float XCorScale = 1.0f; // keep this at 1, because linear oversampling was obviously a bad idea..
 
+
 static int round(xcor_t f) { return (int)(f+0.5f); }
 
 CPUTracker::CPUTracker(int w, int h, int xcorwindow)
@@ -21,7 +22,6 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 	fft_out = 0;
 	fft_revout = 0;
 	fft_plan_fw = fft_plan_bw = 0;
-	setXCorWindow(xcorwindow);
 	
 	srcImage = new float [w*h];
 	debugImage = new float [w*h];
@@ -32,15 +32,23 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 	zlut_planes = zlut_res = 0;
 
 	xcorProfileWidth = min(32, xcorwindow);
+
+	fft_out2D = 0;
+	plan_bw2D = plan_fw2D = 0;
+
+	setXCorWindow(xcorwindow);
 }
 
 void CPUTracker::setXCorWindow(int xcorwindow)
 {
 	if (xcorw!=xcorwindow) {
-		if (fft_plan_fw) 
-			fftw_destroy_plan(fft_plan_fw);
-		if (fft_plan_bw)
-			fftw_destroy_plan(fft_plan_bw);
+#ifdef TRK_USE_DOUBLE
+		if (fft_plan_fw) fftw_destroy_plan(fft_plan_fw);
+		if (fft_plan_bw) fftw_destroy_plan(fft_plan_bw);
+#else
+		if (fft_plan_fw) fftwf_destroy_plan(fft_plan_fw);
+		if (fft_plan_bw) fftwf_destroy_plan(fft_plan_bw);
+#endif
 
 		delete[] fft_out;
 		delete[] fft_revout;
@@ -58,9 +66,13 @@ void CPUTracker::setXCorWindow(int xcorwindow)
 
 		fft_out = new complexc[xcorw];
 		fft_revout = new complexc[xcorw];
-
+#ifdef TRK_USE_DOUBLE
 		fft_plan_fw = fftw_plan_dft_r2c_1d(xcorw, &X_xc[0], (fftw_complex*) fft_out, FFTW_ESTIMATE);
 		fft_plan_bw = fftw_plan_dft_c2r_1d(xcorw, (fftw_complex*)fft_out, &X_result[0], FFTW_ESTIMATE);
+#else
+		fft_plan_fw = fftwf_plan_dft_r2c_1d(xcorw, &X_xc[0], (fftwf_complex*) fft_out, FFTW_ESTIMATE);
+		fft_plan_bw = fftwf_plan_dft_c2r_1d(xcorw, (fftwf_complex*)fft_out, &X_result[0], FFTW_ESTIMATE);
+#endif
 	}
 }
 
@@ -122,8 +134,6 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 			return z;
 		}
 
-	//	dbgout(SPrintf("[%d]: xmin: %.1f, ymin: %.1f, \n", k, xmin, ymin));
-
 		// generate X position xcor array (summing over y range)
 		for (int x=0;x<xcorw;x++) {
 			xcor_t s = 0.0f;
@@ -137,12 +147,8 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 			X_xcr [xcorw-x-1] = X_xc[x];
 		}
 
-	//	dbgout(SPrintf("\t: X FFT\n"));
-
 		XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
 		xcor_t offsetX = ComputeMaxInterp(X_result) - (xcor_t)xcorw/2; //ComputeMaxInterp(X_result) - (float)xcorw/2 - 1;
-
-//dbgout(SPrintf("\t: offsetX: %f\n", offsetX));
 
 		// generate Y position xcor array (summing over x range)
 		for (int y=0;y<xcorw;y++) {
@@ -157,14 +163,11 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 			Y_xcr [xcorw-y-1] = Y_xc[y];
 		}
 
-	//	dbgout(SPrintf("\t: Y FFT\n", offsetX));
 		XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
 		xcor_t offsetY = ComputeMaxInterp(Y_result) - (xcor_t)xcorw/2;
 
-	//	dbgout(SPrintf("[%d] offsetX: %f, offsetY: %f\n", k, offsetX, offsetY));
-
-	pos.x += (offsetX - 1) * XCorScale * 0.5f;
-	pos.y += (offsetY - 1) * XCorScale * 0.5f;
+		pos.x += (offsetX - 1) * XCorScale * 0.5f;
+		pos.y += (offsetY - 1) * XCorScale * 0.5f;
 	}
 
 	return pos;
@@ -195,8 +198,6 @@ vector2f CPUTracker::ComputeXCor(vector2f initial)
 		return z;
 	}
 
-//	dbgout(SPrintf("[%d]: xmin: %.1f, ymin: %.1f, \n", k, xmin, ymin));
-
 	// generate X position xcor array (summing over y range)
 	for (int x=0;x<xcorw;x++) {
 		xcor_t s = 0.0f;
@@ -210,12 +211,8 @@ vector2f CPUTracker::ComputeXCor(vector2f initial)
 		X_xcr [xcorw-x-1] = X_xc[x];
 	}
 
-//	dbgout(SPrintf("\t: X FFT\n"));
-
 	XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
-	xcor_t offsetX = ComputeMaxInterp(X_result) - (xcor_t)xcorw/2; //ComputeMaxInterp(X_result) - (float)xcorw/2 - 1;
-
-//dbgout(SPrintf("\t: offsetX: %f\n", offsetX));
+	xcor_t offsetX = ComputeMaxInterp(X_result) - (xcor_t)xcorw/2; 
 
 	// generate Y position xcor array (summing over x range)
 	for (int y=0;y<xcorw;y++) {
@@ -230,7 +227,6 @@ vector2f CPUTracker::ComputeXCor(vector2f initial)
 		Y_xcr [xcorw-y-1] = Y_xc[y];
 	}
 
-//	dbgout(SPrintf("\t: Y FFT\n", offsetX));
 	XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
 	xcor_t offsetY = ComputeMaxInterp(Y_result) - (xcor_t)xcorw/2;
 
@@ -252,16 +248,25 @@ void CPUTracker::OutputDebugInfo()
 
 void CPUTracker::XCorFFTHelper(xcor_t* xc, xcor_t *xcr, xcor_t* result)
 {
-	// need to optimize this: the DFT of the reverse sequence should be calculatable from the known DFT (right?)
+#ifdef TRK_USE_DOUBLE
 	fftw_execute_dft_r2c(fft_plan_fw, xc, (fftw_complex*)fft_out);
 	fftw_execute_dft_r2c(fft_plan_fw, xcr, (fftw_complex*)fft_revout);
+#else
+	fftwf_execute_dft_r2c(fft_plan_fw, xc, (fftwf_complex*)fft_out);
+	fftwf_execute_dft_r2c(fft_plan_fw, xcr, (fftwf_complex*)fft_revout);
+#endif
 
 	// Multiply with conjugate of reverse
 	for (int x=0;x<xcorw;x++) {
 		fft_out[x] *= complexc(fft_revout[x].real(), -fft_revout[x].imag());
 	}
 
+#ifdef TRK_USE_DOUBLE
 	fftw_execute_dft_c2r(fft_plan_bw, (fftw_complex*)fft_out, &shiftedResult[0]);
+#else
+	fftwf_execute_dft_c2r(fft_plan_bw, (fftwf_complex*)fft_out, &shiftedResult[0]);
+#endif
+
 	for (int x=0;x<xcorw;x++)
 		result[x] = shiftedResult[ (x+xcorw/2) % xcorw ];
 }
