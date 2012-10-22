@@ -44,11 +44,12 @@ typedef unsigned char uchar;
 #endif
 #define ALLOCA_ARRAY(T, N) (new(ALLOCA(sizeof(T) * N)) T[N])
 
-#define DLL_EXPORT extern "C" __declspec(dllexport) 
-#define CLASS_DLL_EXPORT __declspec(dllexport) 
+#define DLL_CALLCONV __cdecl
+#define CDLL_EXPORT extern "C" __declspec(dllexport) 
+#define DLL_EXPORT __declspec(dllexport) 
 
-void dbgout(std::string s);
-std::string SPrintf(const char *fmt, ...);
+DLL_EXPORT void dbgout(std::string s);
+DLL_EXPORT std::string SPrintf(const char *fmt, ...);
 
 
 #pragma pack(push, 4)

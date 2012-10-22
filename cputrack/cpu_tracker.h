@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Tracker.h"
+#include "../cudatrack/utils.h"
 
 #ifdef TRK_USE_DOUBLE
 	typedef fftw_plan fftw_plan_t;
@@ -29,6 +30,7 @@ public:
 	float* zlut; // zlut[plane * zlut_res + r]
 	int zlut_planes, zlut_res;
 	std::vector<float> rprof, rprof_diff;
+	float zprofile_radius;
 
 	int xcorw;
 	std::vector<xcor_t> shiftedResult;
@@ -54,21 +56,25 @@ public:
 	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center);
 
 	void Normalize(float *image=0);
-	void SetZLUT(float* data, int planes,int res);
-	float ComputeZ(vector2f center, int angularSteps, float radius); // radialSteps is given by zlut_res
+	void SetZLUT(float* data, int planes,int res, float prof_radius);
+	float ComputeZ(vector2f center, int angularSteps); // radialSteps is given by zlut_res
 	float ComputeMedian();
 
+	bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
+		std::vector<xcor_t>& xconv, std::vector<xcor_t>& yconv);
+
+
 	// Compute the interpolated index of the maximum value in the result array
-	template<typename T> T ComputeMaxInterp(const std::vector<T>& r);
+	template<typename T> T ComputeMaxInterp(T* data, int len, int numpoints=5);
 
 	void OutputDebugInfo();
 	float* GetDebugImage() { return debugImage; }
-};
 
+};
 
 ushort* floatToNormalizedUShort(float *data, uint w,uint h);
 void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, float MaxPhotons);
-
+CPUTracker* CreateCPUTrackerInstance(int w,int h,int xcorw);
 
 template<typename TPixel>
 void CPUTracker::SetImage(TPixel* data, uint w,uint h, uint pitchInBytes)
@@ -125,25 +131,31 @@ void normalize(TPixel* d, uint w,uint h)
 
 
 template<typename T>
-T CPUTracker::ComputeMaxInterp(const std::vector<T>& r)
+T CPUTracker::ComputeMaxInterp(T* data, int len, int numpoints)
 {
-	uint iMax=0;
-	T vMax=r[0];
-	for (uint k=1;k<r.size();k++) {
-		if (r[k]>vMax) {
-			vMax = r[k];
+	int iMax=0;
+	T vMax=data[0];
+	for (int k=1;k<len;k++) {
+		if (data[k]>vMax) {
+			vMax = data[k];
 			iMax = k;
 		}
 	}
-	if (iMax<2 || iMax>=r.size()-2)
-		return iMax; // on the edge, so we ignore the interpolation
-	
-	T xs[] = {-2, -1, 0, 1, 2};
-	LsqSqQuadFit<T> qfit(5, xs, &r[iMax-2]);
-	T interpMax = qfit.maxPos();
+	int startPos = max(iMax-numpoints/2, 0);
+	int endPos = min(iMax+(numpoints-numpoints/2), len);
+	numpoints = endPos - startPos;
 
-	return (T)iMax + interpMax;
+	if (numpoints<3) 
+		return iMax;
+	else {
+		T *xs = (T*)ALLOCA(sizeof(T)*numpoints);
+		for(int i=startPos;i<endPos;i++)
+			xs[i-startPos] = i-iMax;
+		LsqSqQuadFit<T> qfit(numpoints, xs, &data[startPos]);
+		T interpMax = qfit.maxPos();
+
+		return (T)iMax + interpMax;
+	}
 }
-
 
 

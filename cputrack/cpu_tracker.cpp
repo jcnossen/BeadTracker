@@ -6,12 +6,22 @@ CPU only tracker
 
 #include <Windows.h>
 
+#pragma warning(disable: 4996) // Function call with parameters that may be unsafe
+
 #include "cpu_tracker.h"
 #include "../cudatrack/LsqQuadraticFit.h"
 #include "random_distr.h"
 
-const float XCorScale = 1.0f; // keep this at 1, because linear oversampling was obviously a bad idea..
+DLL_EXPORT Tracker* CreateTrackerInstance(int w,int h,int xcorw)
+{
+	return new CPUTracker(w,h,xcorw);
+}
+CPUTracker* CreateCPUTrackerInstance(int w,int h,int xcorw)
+{
+	return new CPUTracker(w,h,xcorw);
+}
 
+const float XCorScale = 1.0f; // keep this at 1, because linear oversampling was obviously a bad idea..
 
 static int round(xcor_t f) { return (int)(f+0.5f); }
 
@@ -26,11 +36,12 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 	
 	srcImage = new float [w*h];
 	debugImage = new float [w*h];
-	memset(srcImage, 0, sizeof(float)*w*h);
-	memset(debugImage, 0, sizeof(float)*w*h);
+	std::fill(srcImage, srcImage+w*h, 0.0f);
+	std::fill(debugImage, debugImage+w*h, 0.0f);
 
 	zlut = 0;
 	zlut_planes = zlut_res = 0;
+	zprofile_radius = 0.0f;
 
 	xcorProfileWidth = min(32, xcorwindow);
 
@@ -146,7 +157,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 		}
 
 		XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
-		xcor_t offsetX = ComputeMaxInterp(X_result) - (xcor_t)xcorw/2; //ComputeMaxInterp(X_result) - (float)xcorw/2 - 1;
+		xcor_t offsetX = ComputeMaxInterp(&X_result[0],X_result.size()) - (xcor_t)xcorw/2; //ComputeMaxInterp(X_result) - (float)xcorw/2 - 1;
 
 		// generate Y position xcor array (summing over x range)
 		for (int y=0;y<xcorw;y++) {
@@ -162,7 +173,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 		}
 
 		XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
-		xcor_t offsetY = ComputeMaxInterp(Y_result) - (xcor_t)xcorw/2;
+		xcor_t offsetY = ComputeMaxInterp(&Y_result[0], Y_result.size()) - (xcor_t)xcorw/2;
 
 		pos.x += (offsetX - 1) * XCorScale * 0.5f;
 		pos.y += (offsetY - 1) * XCorScale * 0.5f;
@@ -210,7 +221,7 @@ vector2f CPUTracker::ComputeXCor(vector2f initial)
 	}
 
 	XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
-	xcor_t offsetX = ComputeMaxInterp(X_result) - (xcor_t)xcorw/2; 
+	xcor_t offsetX = ComputeMaxInterp(&X_result[0], X_result.size()) - (xcor_t)xcorw/2; 
 
 	// generate Y position xcor array (summing over x range)
 	for (int y=0;y<xcorw;y++) {
@@ -226,7 +237,7 @@ vector2f CPUTracker::ComputeXCor(vector2f initial)
 	}
 
 	XCorFFTHelper(&Y_xc[0], &Y_xcr[0], &Y_result[0]);
-	xcor_t offsetY = ComputeMaxInterp(Y_result) - (xcor_t)xcorw/2;
+	xcor_t offsetY = ComputeMaxInterp(&Y_result[0], Y_result.size()) - (xcor_t)xcorw/2;
 
 	pos.x = rx + (offsetX - 1) * 0.5f;
 	pos.y = ry + (offsetY - 1) * 0.5f;
@@ -338,24 +349,25 @@ void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSt
 		dst[i] /= total;
 }
 
-void CPUTracker::SetZLUT(float* data, int planes, int res)
+void CPUTracker::SetZLUT(float* data, int planes, int res, float prof_radius)
 {
 	if (zlut) delete[] zlut;
 	zlut = new float[planes*res];
 	memcpy(zlut, data, sizeof(float)*planes*res);
 	zlut_planes = planes;
 	zlut_res = res;
+	zprofile_radius = prof_radius;
 }
 
 
 
-float CPUTracker::ComputeZ(vector2f center, int angularSteps, float radius)
+float CPUTracker::ComputeZ(vector2f center, int angularSteps)
 {
 	// Compute the radial profile
 	if (rprof.size() != zlut_res)
 		rprof.resize(zlut_res);
 
-	ComputeRadialProfile(&rprof[0], zlut_res, angularSteps, radius, center);
+	ComputeRadialProfile(&rprof[0], zlut_res, angularSteps, zprofile_radius, center);
 
 	// Now compare the radial profile to the profiles stored in Z
 	if (rprof_diff.size() != zlut_planes)
@@ -369,7 +381,19 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps, float radius)
 		rprof_diff[k] = -diffsum;
 	}
 
-	return ComputeMaxInterp(rprof_diff);
+	float z = ComputeMaxInterp(&rprof_diff[0], rprof_diff.size());
+	return z / (float)(zlut_planes-1);
+}
+
+
+bool CPUTracker::GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
+		std::vector<xcor_t>& xconv, std::vector<xcor_t>& yconv)
+{
+	xprof = X_xc;
+	yprof = Y_xc;
+	xconv = X_result;
+	yconv = Y_result;
+	return true;
 }
 
 
@@ -414,3 +438,6 @@ void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, floa
 	}
 	tracker->Normalize();
 }
+
+
+

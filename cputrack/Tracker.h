@@ -13,7 +13,6 @@
 #endif
 
 
-
 class Tracker
 {
 protected:
@@ -34,8 +33,8 @@ public:
 	virtual vector2f ComputeCOM(float median) = 0;
 	virtual void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center) = 0;
 
-	virtual void SetZLUT(float* data, int planes,int res) = 0;
-	virtual float ComputeZ(vector2f center, int angularSteps, float radius) = 0; // radialSteps is given by zlut_res
+	virtual void SetZLUT(float* data, int planes,int res, float profile_radius) = 0;
+	virtual float ComputeZ(vector2f center, int angularSteps) = 0; // radialSteps is given by zlut_res. Returns normalized Z position
 	virtual float ComputeMedian() = 0;
 		
 	// Debug stuff
@@ -43,3 +42,5 @@ public:
 	virtual bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
 		std::vector<xcor_t>& xconv, std::vector<xcor_t>& yconv) { return false; }
 };
+
+DLL_EXPORT Tracker* CreateTrackerInstance(int w,int h,int xcorw);
