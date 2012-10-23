@@ -2,64 +2,74 @@
 #include "pthread.h"
 #include <list>
 
-#include "Tracker.h"
+/*
+TWorker needs to have the following types declared:
 
-struct TrackerLocalization {
-	float x,y,z;
-	int imageID;
-	int param;
-};
+constructor_t:  Functor to generate new workers
+workspace_t:  Buffer type to maintain buffers shared between task processing
+task_t:  Stores the task info
+result_t:  Stores the result of the task
+*/
 
-
-
-struct ZLookupTable {
-	ZLookupTable(float* d, int planes, int res, float radius) { 
-		data=d;
-		this->planes = planes;
-		radialsteps = res;
-		profile_radius = radius;
-	}
-	~ZLookupTable() { if(data) delete[] data; }
-	float* data;
-	int planes, radialsteps;
-	float profile_radius;
-};
- 
-
-class TrackerQueue
+template<typename TWorker>
+class MThreadQueue
 {
 public:
-	TrackerQueue(int workerThreads, int width, int height, int xcorw, ZLookupTable* zlut);
-	~TrackerQueue();
+	TWorker::constructor_t workerConstructor;
 
-	void QueueImage(unsigned short* data, int pitch, int imageID, int param);
+	MThreadQueue(int workerThreads, TWorker::constructor_t wc)
+	{
+		workerConstructor = wc;
+
+		pthread_mutex_init(&results_mutex, 0);
+		pthread_mutex_init(&jobs_mutex, 0);
+
+		threads.resize(workerThreads);
+		for (int k=0;k<workerThreads;k++) {
+	//		pthread_create(& threads[k].thread, NULL, WorkerThreadMain);
+		}
+
+	}
+
+	~MThreadQueue() {
+		pthread_mutex_destroy(&results_mutex);
+		pthread_mutex_destroy(&jobs_mutex);
+	}
+
+	TTaskWorkspace* GetTaskWorkspace() {
+		if (free_workspace.empty()) {
+			TTaskWorkspace * ws = 
+		}
+	}
+	void QueueTask(TTask* task);
 	bool PollFinishedLocalization(TrackerLocalization *loc);
 	int GetQueueSize();
 
 private:
-	struct Job {
-		TrackerImageBuffer* buffer;
-		int imageID, param;
-	};
-
 	Job* AllocateJob();
 
 	struct WorkerThread {
 		pthread_t thread;
-		Tracker* tracker;
-		TrackerQueue* queue;
+		bool active;
+
 	};
 	std::vector<WorkerThread> threads;
 	pthread_mutex_t results_mutex;
-	std::list<TrackerLocalization> results;
+	std::list<TResult> results;
 
 	std::list<Job*> jobs;
-	std::list<Job*> job_buffer;
+	std::list<TTaskWorkspace*> free_workspace;
 	pthread_mutex_t jobs_mutex;
 
-	int trk_w, trk_h, trk_xcorw;
-	ZLookupTable* trk_zlut;
+	TWorkerParam *workerParam;
 
-	static void WorkerThreadMain(void* arg);
+	static void WorkerThreadMain(void* arg) 
+	{
+		WorkerThread* th = (WorkerThread*)arg;
+	}
+
+
+
+
 };
 

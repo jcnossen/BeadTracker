@@ -24,7 +24,7 @@ typedef LVFloatArray2 **ppFloatArray2;
 #include "lv_epilog.h"
 
 #include "tracker.h"
-#include "MThreadQueue.h"
+#include "TrackerQueue.h"
 
 
 void saveImage(float* data, uint w, uint h, const char* filename)

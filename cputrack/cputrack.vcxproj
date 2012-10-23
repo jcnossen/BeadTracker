@@ -261,7 +261,6 @@
     <ClCompile Include="..\cudatrack\utils.cpp" />
     <ClCompile Include="cpu_tracker.cpp" />
     <ClCompile Include="labview_interface.cpp" />
-    <ClCompile Include="MThreadQueue.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cudatrack\LsqQuadraticFit.h" />
@@ -270,6 +269,7 @@
     <ClInclude Include="MThreadQueue.h" />
     <ClInclude Include="random_distr.h" />
     <ClInclude Include="Tracker.h" />
+    <ClInclude Include="TrackerQueue.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
