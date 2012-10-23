@@ -57,3 +57,6 @@ struct vector2f {
 	float x,y;
 };
 #pragma pack(pop)
+
+ushort* floatToNormalizedUShort(float *data, uint w,uint h);
+

@@ -79,13 +79,10 @@ public:
 
 	void OutputDebugInfo();
 	float* GetDebugImage() { return debugImage; }
-
-	TrackerImageBuffer* CreateImageBuffer();
 	void SelectImageBuffer(TrackerImageBuffer* b);
 
 };
 
-ushort* floatToNormalizedUShort(float *data, uint w,uint h);
 void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, float MaxPhotons);
 CPUTracker* CreateCPUTrackerInstance(int w,int h,int xcorw);
 

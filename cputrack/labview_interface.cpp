@@ -23,8 +23,8 @@ struct LVFloatArray2 {
 typedef LVFloatArray2 **ppFloatArray2;
 #include "lv_epilog.h"
 
-#include "cpu_tracker.h"
-#include "TrackerQueue.h"
+#include "tracker.h"
+#include "MThreadQueue.h"
 
 
 void saveImage(float* data, uint w, uint h, const char* filename)
@@ -82,7 +82,7 @@ CDLL_EXPORT Tracker* DLL_CALLCONV create_tracker(uint w, uint h, uint xcorw)
 {
 	try {
 		Sleep(300);
-		return new CPUTracker(w,h, xcorw);
+		return CreateTrackerInstance(w,h,xcorw);
 	}
 	catch(const std::exception& e)
 	{
@@ -134,7 +134,7 @@ CDLL_EXPORT void DLL_CALLCONV copy_crosscorrelation_result(Tracker* tracker, ppF
 	}
 }
 
-CDLL_EXPORT void DLL_CALLCONV localize_image(Tracker* tracker, Image* img, float* COM, float* xcor,  float* storedMedian, Image* dbgImg, int xcor_iterations)
+CDLL_EXPORT void DLL_CALLCONV localize_image(Tracker* tracker, Image* img, float* COM, float* xcor, float* storedMedian, Image* dbgImg, int xcor_iterations)
 {
 	try {
 		ImageInfo info;
@@ -143,19 +143,19 @@ CDLL_EXPORT void DLL_CALLCONV localize_image(Tracker* tracker, Image* img, float
 		if (info.xRes != tracker->GetWidth() || info.yRes != tracker->GetHeight())
 			return;
 
-		vector2f com;
+		float median = storedMedian ? *storedMedian : -1.0f;
+		
 		if (info.imageType == IMAQ_IMAGE_U8) {
 			uchar* imgData = (uchar*)info.imageStart;
-			float median = ComputeMedian(imgData, info.xRes, info.yRes, info.pixelsPerLine, storedMedian);
 			tracker->SetImage8Bit(imgData, info.xRes, info.yRes, info.pixelsPerLine);
-			com = tracker->ComputeCOM(median);
 		} else if(info.imageType == IMAQ_IMAGE_U16) {
 			ushort* imgData = (ushort*)info.imageStart;
-			float median = ComputeMedian(imgData, info.xRes, info.yRes, info.pixelsPerLine*2, storedMedian);
 			tracker->SetImage16Bit(imgData, info.xRes, info.yRes, info.pixelsPerLine*2);
-			com = tracker->ComputeCOM(median);
 		} else
 			return;
+
+		if (median < 0.0f) median = tracker->ComputeMedian();
+		vector2f com = tracker->ComputeCOM(median);
 
 		COM[0] = com.x;
 		COM[1] = com.y;
@@ -168,8 +168,9 @@ CDLL_EXPORT void DLL_CALLCONV localize_image(Tracker* tracker, Image* img, float
 #ifdef _DEBUG
 			ImageInfo di;
 			imaqGetImageInfo(dbgImg, &di);
-			if (di.imageType == IMAQ_IMAGE_U16) {
-				ushort* d = floatToNormalizedUShort(tracker->debugImage, tracker->GetWidth(), tracker->GetHeight());
+			float* img = tracker->GetDebugImage();
+			if (di.imageType == IMAQ_IMAGE_U16 && dbgImg) {
+				ushort* d = floatToNormalizedUShort(img, tracker->GetWidth(), tracker->GetHeight());
 				imaqArrayToImage(dbgImg, d, info.xRes, info.yRes);
 				delete[] d;
 			}
@@ -217,7 +218,7 @@ CDLL_EXPORT void DLL_CALLCONV compute_com(Tracker* tracker, float *median, float
 
 CDLL_EXPORT void DLL_CALLCONV compute_xcor(Tracker* tracker, vector2f* position, int iterations)
 {
-	*position = tracker->ComputeXCor(*position);
+	*position = tracker->ComputeXCorInterpolated(*position,iterations);
 }
 
 CDLL_EXPORT void DLL_CALLCONV set_image(Tracker* tracker, Image* img, int offsetX, int offsetY)
@@ -277,7 +278,6 @@ CDLL_EXPORT TrackerQueue* create_queue(int workerThreads, int width, int height,
 {
 	LVFloatArray2* zlutdata = *pZlut;
 	ZLookupTable* zlut = new ZLookupTable (zlutdata->data, zlutdata->dimSizes[0], zlutdata->dimSizes[1], profile_radius);
-	TrackerQueue* q = new TrackerQueue(workerThreads, width, height, xcorw, zlut);
 
 	// zlut is now owned by TrackerQueue
 	return 0;

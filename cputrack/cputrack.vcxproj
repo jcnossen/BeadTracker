@@ -154,7 +154,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;CPUTRACK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../cudatrack/;../labview/cintools;../labview/vision/Include;../labview/imaq/Include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../cudatrack/;../labview/cintools;../labview/vision/Include;../labview/imaq/Include;../pthreads/include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -261,15 +261,15 @@
     <ClCompile Include="..\cudatrack\utils.cpp" />
     <ClCompile Include="cpu_tracker.cpp" />
     <ClCompile Include="labview_interface.cpp" />
-    <ClCompile Include="TrackerQueue.cpp" />
+    <ClCompile Include="MThreadQueue.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cudatrack\LsqQuadraticFit.h" />
     <ClInclude Include="..\cudatrack\utils.h" />
     <ClInclude Include="cpu_tracker.h" />
+    <ClInclude Include="MThreadQueue.h" />
     <ClInclude Include="random_distr.h" />
     <ClInclude Include="Tracker.h" />
-    <ClInclude Include="TrackerQueue.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
