@@ -24,8 +24,7 @@ typedef LVFloatArray2 **ppFloatArray2;
 #include "lv_epilog.h"
 
 #include "cpu_tracker.h"
-
-#include "labview_api.h"
+#include "TrackerQueue.h"
 
 
 void saveImage(float* data, uint w, uint h, const char* filename)
@@ -118,7 +117,7 @@ void copyToLVArray (ppFloatArray r, const std::vector<T>& a)
 		dst->elt[i] = a[i];
 }
 
-CDLL_EXPORT void DLL_CALLCONV copy_crosscorrelation_result(CPUTracker* tracker, ppFloatArray x_result, ppFloatArray y_result, ppFloatArray x_xc, ppFloatArray y_xc)
+CDLL_EXPORT void DLL_CALLCONV copy_crosscorrelation_result(Tracker* tracker, ppFloatArray x_result, ppFloatArray y_result, ppFloatArray x_xc, ppFloatArray y_xc)
 {
 	try {
 		std::vector<xcor_t> xprof, yprof, xconv, yconv;
@@ -135,7 +134,7 @@ CDLL_EXPORT void DLL_CALLCONV copy_crosscorrelation_result(CPUTracker* tracker, 
 	}
 }
 
-CDLL_EXPORT void DLL_CALLCONV localize_image(CPUTracker* tracker, Image* img, float* COM, float* xcor,  float* storedMedian, Image* dbgImg, int xcor_iterations)
+CDLL_EXPORT void DLL_CALLCONV localize_image(Tracker* tracker, Image* img, float* COM, float* xcor,  float* storedMedian, Image* dbgImg, int xcor_iterations)
 {
 	try {
 		ImageInfo info;
@@ -177,8 +176,8 @@ CDLL_EXPORT void DLL_CALLCONV localize_image(CPUTracker* tracker, Image* img, fl
 #else
 			ImageInfo di;
 			imaqGetImageInfo(dbgImg, &di);
-			if (di.imageType == IMAQ_IMAGE_U16) {
-				ushort* d = floatToNormalizedUShort(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight());
+			if (di.imageType == IMAQ_IMAGE_U16 && tracker->GetDebugImage()) {
+				ushort* d = floatToNormalizedUShort(tracker->GetDebugImage(), tracker->GetWidth(), tracker->GetHeight());
 				imaqArrayToImage(dbgImg, d, info.xRes, info.yRes);
 				delete[] d;
 			}
@@ -216,7 +215,7 @@ CDLL_EXPORT void DLL_CALLCONV compute_com(Tracker* tracker, float *median, float
 	out[1] = com.y;
 }
 
-CDLL_EXPORT void DLL_CALLCONV compute_xcor(CPUTracker* tracker, vector2f* position, int iterations)
+CDLL_EXPORT void DLL_CALLCONV compute_xcor(Tracker* tracker, vector2f* position, int iterations)
 {
 	*position = tracker->ComputeXCor(*position);
 }
@@ -272,5 +271,15 @@ CDLL_EXPORT void DLL_CALLCONV get_debug_image(Tracker* tracker, Image* dbgImg)
 			delete[] d;
 		}
 	}
+}
+
+CDLL_EXPORT TrackerQueue* create_queue(int workerThreads, int width, int height, int xcorw, ppFloatArray2 pZlut, float profile_radius)
+{
+	LVFloatArray2* zlutdata = *pZlut;
+	ZLookupTable* zlut = new ZLookupTable (zlutdata->data, zlutdata->dimSizes[0], zlutdata->dimSizes[1], profile_radius);
+	TrackerQueue* q = new TrackerQueue(workerThreads, width, height, xcorw, zlut);
+
+	// zlut is now owned by TrackerQueue
+	return 0;
 }
 

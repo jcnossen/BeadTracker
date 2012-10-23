@@ -13,6 +13,16 @@
 #endif
 
 
+
+class TrackerImageBuffer
+{
+public:
+	TrackerImageBuffer() {}
+
+	virtual ~TrackerImageBuffer() {}
+	virtual void Assign(ushort* data, int pitch) = 0;
+};
+
 class Tracker
 {
 protected:
@@ -41,6 +51,9 @@ public:
 	virtual float* GetDebugImage() { return 0; }
 	virtual bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
 		std::vector<xcor_t>& xconv, std::vector<xcor_t>& yconv) { return false; }
+
+	virtual void SelectImageBuffer(TrackerImageBuffer* b) = 0;
 };
 
 DLL_EXPORT Tracker* CreateTrackerInstance(int w,int h,int xcorw);
+TrackerImageBuffer* CreateTrackerImageBuffer(int w,int h);

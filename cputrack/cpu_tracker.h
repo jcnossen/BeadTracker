@@ -17,6 +17,16 @@
 typedef uchar pixel_t;
 typedef std::complex<xcor_t> complexc;
 
+class CPUTrackerImageBuffer : public TrackerImageBuffer
+{
+public:
+	void Assign(ushort* src_data, int pitch);
+	~CPUTrackerImageBuffer ();
+
+	int w,h;
+	ushort* data;
+};
+
 class CPUTracker : public Tracker
 {
 public:
@@ -69,6 +79,9 @@ public:
 
 	void OutputDebugInfo();
 	float* GetDebugImage() { return debugImage; }
+
+	TrackerImageBuffer* CreateImageBuffer();
+	void SelectImageBuffer(TrackerImageBuffer* b);
 
 };
 

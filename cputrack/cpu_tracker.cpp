@@ -396,6 +396,37 @@ bool CPUTracker::GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xco
 	return true;
 }
 
+void CPUTrackerImageBuffer::Assign(ushort* srcData, int pitch)
+{
+	uchar *d = (uchar*)srcData;
+	for (int y=0;y<h;y++) {
+		memcpy(&data[y*w], d, sizeof(ushort)*w);
+		d += pitch;
+	}
+}
+
+CPUTrackerImageBuffer::~CPUTrackerImageBuffer ()
+{
+	delete[] data;
+}
+
+TrackerImageBuffer* CPUTracker::CreateImageBuffer()
+{
+	CPUTrackerImageBuffer* b = new CPUTrackerImageBuffer();
+	b->w = width;
+	b->h = height;
+	b->data = new ushort[width*height];
+	return b;
+}
+
+void CPUTracker::SelectImageBuffer(TrackerImageBuffer* b)
+{
+	CPUTrackerImageBuffer* cpubuf = (CPUTrackerImageBuffer*)b;
+
+}
+
+
+
 
 
 ushort* floatToNormalizedUShort(float *data, uint w,uint h)

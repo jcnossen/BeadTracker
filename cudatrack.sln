@@ -8,9 +8,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cudatrack", "cudatrack\cudatrack.vcxproj", "{ACF7861A-4D51-4035-BD25-D0A0FD1C1530}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cputrack-test", "cputrack-test\cputrack-test.vcxproj", "{A3EDBB02-24F8-4010-BE57-91A55A2F5981}"
-	ProjectSection(ProjectDependencies) = postProject
-		{1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B} = {1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B}
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

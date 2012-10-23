@@ -52,6 +52,7 @@ void SpeedTest()
 	// Speed test
 	vector2f comdist={}, xcordist={};
 	float zdist=0.0f;
+	double zerrsum=0.0f;
 	double tloc = 0.0, tgen=0.0, tz = 0.0;
 	for (int k=0;k<N;k++)
 	{
@@ -81,6 +82,7 @@ void SpeedTest()
 
 		float est_z = zmin + tracker->ComputeZ(xcor, 64) * (zmax - zmin);
 		zdist += fabsf(est_z-z);
+		zerrsum += est_z-z;
 
 		double t3 = getPreciseTime();
 	//	dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f\n", xp, com.x-xp, xcor.x-xp));
@@ -92,7 +94,7 @@ void SpeedTest()
 	dbgout(SPrintf("Time: %f s. Image gen. (img/s): %f\n2D loc. speed (img/s): %f Z estimation (img/s): %f\n", tloc+tgen, N/tgen, N/tloc, N/tz));
 	dbgout(SPrintf("Average dist: COM x: %f, y: %f\n", comdist.x/N, comdist.y/N));
 	dbgout(SPrintf("Average dist: Cross-correlation x: %f, y: %f\n", xcordist.x/N, xcordist.y/N));
-	dbgout(SPrintf("Average dist: Z: %f\n", zdist/N)); 
+	dbgout(SPrintf("Average dist: Z: %f. Mean error:%f\n", zdist/N, zerrsum/N)); 
 	
 	delete tracker;
 }
