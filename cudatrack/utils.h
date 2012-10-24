@@ -50,7 +50,7 @@ typedef unsigned char uchar;
 
 DLL_EXPORT void dbgout(std::string s);
 DLL_EXPORT std::string SPrintf(const char *fmt, ...);
-
+DLL_EXPORT void dbgprintf(const char *fmt,...);
 
 #pragma pack(push, 4)
 struct vector2f {

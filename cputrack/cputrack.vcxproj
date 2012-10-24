@@ -266,6 +266,7 @@
     <ClInclude Include="..\cudatrack\LsqQuadraticFit.h" />
     <ClInclude Include="..\cudatrack\utils.h" />
     <ClInclude Include="cpu_tracker.h" />
+    <ClInclude Include="labview.h" />
     <ClInclude Include="MThreadQueue.h" />
     <ClInclude Include="random_distr.h" />
     <ClInclude Include="Tracker.h" />

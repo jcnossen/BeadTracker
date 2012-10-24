@@ -4,6 +4,10 @@
 #include "../cputrack/random_distr.h"
 
 
+template<typename T> T sq(T x) { return x*x; }
+template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }
+
+
 double getPreciseTime()
 {
 	uint64_t freq, time;
@@ -91,10 +95,10 @@ void SpeedTest()
 		tz+=t3-t2;
 	}
 	
-	dbgout(SPrintf("Time: %f s. Image gen. (img/s): %f\n2D loc. speed (img/s): %f Z estimation (img/s): %f\n", tloc+tgen, N/tgen, N/tloc, N/tz));
-	dbgout(SPrintf("Average dist: COM x: %f, y: %f\n", comdist.x/N, comdist.y/N));
-	dbgout(SPrintf("Average dist: Cross-correlation x: %f, y: %f\n", xcordist.x/N, xcordist.y/N));
-	dbgout(SPrintf("Average dist: Z: %f. Mean error:%f\n", zdist/N, zerrsum/N)); 
+	dbgprintf("Time: %f s. Image gen. (img/s): %f\n2D loc. speed (img/s): %f Z estimation (img/s): %f\n", tloc+tgen, N/tgen, N/tloc, N/tz);
+	dbgprintf("Average dist: COM x: %f, y: %f\n", comdist.x/N, comdist.y/N);
+	dbgprintf("Average dist: Cross-correlation x: %f, y: %f\n", xcordist.x/N, xcordist.y/N);
+	dbgprintf("Average dist: Z: %f. Mean error:%f\n", zdist/N, zerrsum/N); 
 	
 	delete tracker;
 }
@@ -207,13 +211,51 @@ void ZTrackingTest()
 	}
 }
 
+void Test2DTracking()
+{
+	CPUTracker tracker(150,150);
+
+	float zmin = 2;
+	float zmax = 6;
+	int N = 200;
+	tracker.ComputeXCor2D();
+
+	double tloc2D = 0, tloc1D = 0;
+	double dist2D = 0;
+	double dist1D = 0;
+	for (int k=0;k<N;k++) {
+		float xp = tracker.GetWidth()/2+(rand_uniform<float>() - 0.5) * 5;
+		float yp = tracker.GetHeight()/2+(rand_uniform<float>() - 0.5) * 5;
+		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
+
+		GenerateTestImage(&tracker, xp, yp, z, 0);
+
+		double t0 = getPreciseTime();
+		vector2f xcor2D = tracker.ComputeXCor2D();
+		double t1 = getPreciseTime();
+		float median = tracker.ComputeMedian();
+		vector2f com = tracker.ComputeCOM(median);
+		vector2f xcor1D = tracker.ComputeXCorInterpolated(com, 2);
+		double t2 = getPreciseTime();
+
+		dist1D += distance(xp-xcor1D.x,yp-xcor1D.y);
+		dist2D += distance(xp-xcor2D.x,yp-xcor2D.y);
+		tloc2D += t1-t0;
+		tloc1D += t2-t1;
+	}
+	dbgprintf("1D Xcor speed(img/s): %f\n2D Xcor speed (img/s): %f\n", N/tloc1D, N/tloc2D);
+	dbgprintf("Average dist XCor 1D: %f\n", dist1D/N);
+	dbgprintf("Average dist XCor 2D: %f\n", dist2D/N);
+}
+
 int main()
 {
 	SpeedTest();
 
 	SmallImageTest();
-	//PixelationErrorTest();
+	PixelationErrorTest();
 	ZTrackingTest();
+	//Test2DTracking();
 
 	return 0;
 }

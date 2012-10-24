@@ -1,28 +1,8 @@
 
 #include <Windows.h>
 
-#include "nivision.h"
-#include "extcode.h"
-#include "niimaq.h"
 #include "random_distr.h"
-
-/* lv_prolog.h and lv_epilog.h set up the correct alignment for LabVIEW data. */
-#include "lv_prolog.h"
-struct LVFloatArray {
-	int32_t dimSize;
-	float elt[1];
-};
-typedef LVFloatArray **ppFloatArray;
-struct LVFloatArray2 {
-	int32_t dimSizes[2];
-	float data[1];
-	float& elem(int col, int row) {
-		return data[row*dimSizes[0]+col];
-	}
-};
-typedef LVFloatArray2 **ppFloatArray2;
-#include "lv_epilog.h"
-
+#include "labview.h"
 #include "tracker.h"
 #include "TrackerQueue.h"
 
@@ -105,16 +85,8 @@ CDLL_EXPORT void DLL_CALLCONV destroy_tracker(Tracker* tracker)
 template<typename T>
 void copyToLVArray (ppFloatArray r, const std::vector<T>& a)
 {
-	size_t wantedSize = sizeof(float)*a.size();
-
-	NumericArrayResize(9 /* codes for SGL type */, 1, (UHandle*)&r, wantedSize);
-
-	LVFloatArray* dst = *r;
-	dst->dimSize = a.size();
-	size_t len = min((size_t) dst->dimSize, a.size () );
-//	dbgout(SPrintf("copying %d elements to Labview array\n", len));
-	for (size_t i=0;i<a.size();i++)
-		dst->elt[i] = a[i];
+	ResizeLVArray(r, a.size());
+	std::copy(a.begin(),a.end(),(*r)->elt);
 }
 
 CDLL_EXPORT void DLL_CALLCONV copy_crosscorrelation_result(Tracker* tracker, ppFloatArray x_result, ppFloatArray y_result, ppFloatArray x_xc, ppFloatArray y_xc)
@@ -221,6 +193,7 @@ CDLL_EXPORT void DLL_CALLCONV compute_xcor(Tracker* tracker, vector2f* position,
 	*position = tracker->ComputeXCorInterpolated(*position,iterations);
 }
 
+
 CDLL_EXPORT void DLL_CALLCONV set_image(Tracker* tracker, Image* img, int offsetX, int offsetY)
 {
 	try {
@@ -242,15 +215,26 @@ CDLL_EXPORT void DLL_CALLCONV set_image(Tracker* tracker, Image* img, int offset
 	}
 }
 
+CDLL_EXPORT void DLL_CALLCONV set_image_as_byte_array(Tracker* tracker, LVArray2D<uchar>** data)
+{
+	tracker->SetImage8Bit( (*data)->data, tracker->GetWidth(), tracker->GetHeight(), tracker->GetWidth() );
+}
+
+CDLL_EXPORT void DLL_CALLCONV set_image_as_float_array(Tracker* tracker, LVArray2D<float>** data)
+{
+	tracker->SetImageFloat( (*data)->data );
+}
+
+
 CDLL_EXPORT void DLL_CALLCONV compute_radial_profile(Tracker* tracker, ppFloatArray result, int angularSteps, float range, float* center)
 {
-	LVFloatArray* dst = *result;
+	LVArray<float>* dst = *result;
 	tracker->ComputeRadialProfile(&dst->elt[0], dst->dimSize, angularSteps, range, *(vector2f*)center);
 }
 
-CDLL_EXPORT void DLL_CALLCONV set_ZLUT(Tracker* tracker, ppFloatArray2 pZlut, float profile_radius)
+CDLL_EXPORT void DLL_CALLCONV set_ZLUT(Tracker* tracker, LVArray2D<float>** pZlut, float profile_radius)
 {
-	LVFloatArray2* zlut = *pZlut;
+	LVArray2D<float>* zlut = *pZlut;
 	
 	tracker->SetZLUT(zlut->data, zlut->dimSizes[0], zlut->dimSizes[1], profile_radius);
 }
@@ -274,12 +258,26 @@ CDLL_EXPORT void DLL_CALLCONV get_debug_image(Tracker* tracker, Image* dbgImg)
 	}
 }
 
+CDLL_EXPORT void DLL_CALLCONV get_debug_img_as_array(Tracker* tracker, ppFloatArray2 pdbgImg)
+{
+	float* src = tracker->GetDebugImage();
+	if (src) {
+		ResizeLVArray2D(pdbgImg, tracker->GetHeight(), tracker->GetWidth());
+		LVArray2D<float>* dst = *pdbgImg;
+
+	//	dbgout(SPrintf("copying %d elements to Labview array\n", len));
+		for (size_t i=0;i<dst->numElem();i++)
+			dst->data[i] = src[i];
+	}
+}
+
 CDLL_EXPORT TrackerQueue* create_queue(int workerThreads, int width, int height, int xcorw, ppFloatArray2 pZlut, float profile_radius)
 {
-	LVFloatArray2* zlutdata = *pZlut;
+	LVArray2D<float>* zlutdata = *pZlut;
 	ZLookupTable* zlut = new ZLookupTable (zlutdata->data, zlutdata->dimSizes[0], zlutdata->dimSizes[1], profile_radius);
 
 	// zlut is now owned by TrackerQueue
 	return 0;
 }
+
 

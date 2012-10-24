@@ -1,10 +1,6 @@
 
 #pragma once
 
-#ifndef LSQ_FDECL
-#define LSQ_FDECL
-#endif
-
 
 template<typename T>
 class LsqSqQuadFit
@@ -18,7 +14,7 @@ public:
 	T a,b,c;
 	T s40, s30, s20, s10, s21, s11, s01;
 
-	LSQ_FDECL LsqSqQuadFit(uint numPts, const T* xval, const T* yval) : numPts(numPts), X(xval), Y(yval)
+	LsqSqQuadFit(uint numPts, const T* xval, const T* yval) : numPts(numPts), X(xval), Y(yval)
 	{
 		computeSums();
         //notation sjk to mean the sum of x_i^j*y_i^k. 
@@ -52,31 +48,19 @@ public:
                 (s40 * (s20 * s00 - s10 * s10) - s30 * (s30 * s00 - s10 * s20) + s20 * (s30 * s10 - s20 * s20));
 	}
     
-	LSQ_FDECL T compute(T pos)
+	T compute(T pos)
 	{
 		return a*pos*pos + b*pos + c;
 	}
 
-	LSQ_FDECL T maxPos()
+	T maxPos()
 	{
 		return -b/(2*a);
 	}
-
-	/*
-    public double rSquare() // get r-squared
-    {
-        if (numOfEntries < 3)
-        {
-            throw new InvalidOperationException("Insufficient pairs of co-ordinates");
-        }
-        // 1 - (total sum of squares / residual sum of squares)
-        return 1 - getSSerr() / getSStot();
-    }*/
    
 private:
 
-    /*helper methods*/
-    LSQ_FDECL T computeSums() // get sum of x
+    T computeSums() // get sum of x
     {
         T Sx = 0, Sy = 0;
 		T Sx2 = 0, Sx3 = 0;
@@ -99,46 +83,4 @@ private:
 		s01 = Sy; s11 = Sxy; s21 = Sx2y;
         return Sx;
     }
-
-
-	/*
-    private double getYMean() // mean value of y
-    {
-        double y_tot = 0;
-        foreach (double[] ppair in pointArray)
-        {
-            y_tot += ppair[1]; 
-        }
-        return y_tot/numOfEntries;
-    }
-
-    private double getSStot() // total sum of squares
-    {
-        //the sum of the squares of the differences between 
-        //the measured y values and the mean y value
-        double ss_tot = 0;
-        foreach (double[] ppair in pointArray)
-        {
-            ss_tot += Math.Pow(ppair[1] - getYMean(), 2);
-        }
-        return ss_tot;
-    }
-
-    private double getSSerr() // residual sum of squares
-    {
-        //the sum of the squares of te difference between 
-        //the measured y values and the values of y predicted by the equation
-        double ss_err = 0;
-        foreach (double[] ppair in pointArray)
-        {
-            ss_err += Math.Pow(ppair[1] - getPredictedY(ppair[0]), 2);
-        }
-        return ss_err;
-    }
-
-    private double getPredictedY(double x)
-    {
-        //returns value of y predicted by the equation for a given value of x
-        return aTerm() * Math.Pow(x, 2) + bTerm() * x + cTerm();
-    }*/
 };

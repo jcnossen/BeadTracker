@@ -9,17 +9,22 @@ constructor_t:  Functor to generate new workers
 workspace_t:  Buffer type to maintain buffers shared between task processing
 task_t:  Stores the task info
 result_t:  Stores the result of the task
+
 */
 
 template<typename TWorker>
 class MThreadQueue
 {
 public:
-	TWorker::constructor_t workerConstructor;
+	typedef typename TWorker::task_t Task;
+	typedef typename TWorker::workspace_t Workspace;
+	typedef typename TWorker::constructor_t Constructor;
+	typedef typename TWorker::result_t Result;
+	Constructor constructor;
 
-	MThreadQueue(int workerThreads, TWorker::constructor_t wc)
+	MThreadQueue(int workerThreads, Constructor wc)
 	{
-		workerConstructor = wc;
+		constructor = wc;
 
 		pthread_mutex_init(&results_mutex, 0);
 		pthread_mutex_init(&jobs_mutex, 0);
@@ -36,40 +41,39 @@ public:
 		pthread_mutex_destroy(&jobs_mutex);
 	}
 
-	TTaskWorkspace* GetTaskWorkspace() {
-		if (free_workspace.empty()) {
-			TTaskWorkspace * ws = 
+	Workspace* GetFreeWorkspace() {
+		Workspace* ws = 0;
+		if (free_workspaces.empty()) {
+			 ws = constructor.CreateWorkspace();
+		} else {
+			ws = free_workspaces.front();
+			free_workspaces.pop_front();
 		}
+		return ws;
 	}
-	void QueueTask(TTask* task);
-	bool PollFinishedLocalization(TrackerLocalization *loc);
 	int GetQueueSize();
 
 private:
-	Job* AllocateJob();
-
 	struct WorkerThread {
 		pthread_t thread;
 		bool active;
-
+		TWorker* worker;
 	};
 	std::vector<WorkerThread> threads;
 	pthread_mutex_t results_mutex;
-	std::list<TResult> results;
+	std::list<Result*> results;
 
-	std::list<Job*> jobs;
-	std::list<TTaskWorkspace*> free_workspace;
+	std::list<Task*> jobs;
+	std::list<Workspace*> free_workspaces;
 	pthread_mutex_t jobs_mutex;
-
-	TWorkerParam *workerParam;
-
+	
 	static void WorkerThreadMain(void* arg) 
 	{
 		WorkerThread* th = (WorkerThread*)arg;
+
+		while (true) {
+		}
 	}
-
-
-
 
 };
 

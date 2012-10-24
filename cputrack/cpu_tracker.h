@@ -27,10 +27,26 @@ public:
 	ushort* data;
 };
 
+/*
+2D FFT functionality is located in a seperate class, as the buffers are a lot bigger. This way, the memory is only allocated if ComputeXCor2D is actually used
+*/
+class FFT2DTracker {
+public:
+	FFT2DTracker(int w,int h);
+	~FFT2DTracker();
+	vector2f ComputeXCor(float* image);
+
+	int width,height;
+	fftw_plan_t plan_fw2D, plan_bw2D;
+	float *mirror2D;
+	complexc *fft_buf, *fft_buf_mirrored;
+};
+
 class CPUTracker : public Tracker
 {
 public:
 	int xcorProfileWidth;
+	FFT2DTracker* tracker2D;
 
 	float *srcImage, *debugImage;
 	complexc *fft_out, *fft_revout;
@@ -41,7 +57,7 @@ public:
 	int zlut_planes, zlut_res;
 	std::vector<float> rprof, rprof_diff;
 	float zprofile_radius;
-
+	
 	int xcorw;
 	std::vector<xcor_t> shiftedResult;
 	std::vector<xcor_t> X_xc, X_xcr, X_result;
@@ -49,17 +65,19 @@ public:
 
 	float& getPixel(int x, int y) { return srcImage[width*y+x]; }
 	float Interpolate(float x,float y);
-	CPUTracker(int w, int h, int xcorwindow=128);
+	CPUTracker(int w, int h, int xcorwindow=128, int xcorProfileWidth=32);
 	~CPUTracker();
 	void setXCorWindow(int xcorwindow);
 
 	vector2f ComputeXCor(vector2f initial);
+	vector2f ComputeXCor2D();
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations);
 	void XCorFFTHelper(xcor_t* xc, xcor_t* xcr, xcor_t* result);
 	template<typename TPixel>
 	void SetImage(TPixel* srcImage, uint w, uint h, uint srcpitch);
 	void SetImage16Bit(ushort* srcImage, uint w, uint h, uint srcpitch) { SetImage(srcImage, w, h, srcpitch); }
 	void SetImage8Bit(uchar* srcImage, uint w, uint h, uint srcpitch) { SetImage(srcImage, w, h, srcpitch); }
+	void SetImageFloat(float* srcImage);
 
 	vector2f ComputeCOM(float median);
 	void RemoveBackground(float median);
@@ -72,7 +90,6 @@ public:
 
 	bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
 		std::vector<xcor_t>& xconv, std::vector<xcor_t>& yconv);
-
 
 	// Compute the interpolated index of the maximum value in the result array
 	template<typename T> T ComputeMaxInterp(T* data, int len, int numpoints=5);

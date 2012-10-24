@@ -25,7 +25,7 @@ const float XCorScale = 1.0f; // keep this at 1, because linear oversampling was
 
 static int round(xcor_t f) { return (int)(f+0.5f); }
 
-CPUTracker::CPUTracker(int w, int h, int xcorwindow)
+CPUTracker::CPUTracker(int w, int h, int xcorwindow, int xcorProfileWidth)
 {
 	width = w;
 	height = h;
@@ -33,6 +33,7 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 	fft_out = 0;
 	fft_revout = 0;
 	fft_plan_fw = fft_plan_bw = 0;
+	tracker2D = 0;
 	
 	srcImage = new float [w*h];
 	debugImage = new float [w*h];
@@ -43,8 +44,7 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 	zlut_planes = zlut_res = 0;
 	zprofile_radius = 0.0f;
 
-	xcorProfileWidth = min(32, xcorwindow);
-
+	this->xcorProfileWidth = min(xcorProfileWidth, xcorwindow);
 	setXCorWindow(xcorwindow);
 }
 
@@ -90,7 +90,13 @@ CPUTracker::~CPUTracker()
 	setXCorWindow(0);
 	delete[] srcImage;
 	delete[] debugImage;
+	if (tracker2D) delete tracker2D;
 	if (zlut) delete[] zlut;
+}
+
+void CPUTracker::SetImageFloat(float *src) {
+	for (int k=0;k<width*height;k++)
+		srcImage[k]=src[k];
 }
 
 const inline float interp(float a, float b, float x) { return a + (b-a)*x; }
@@ -339,10 +345,10 @@ void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSt
 		for (int a=0;a<angularSteps;a++) {
 			float x = center.x + radialDirs[a].x * rstep*i;
 			float y = center.y + radialDirs[a].y * rstep*i;
-			sum += Interpolate(x,y)*i;
+			sum += Interpolate(x,y);
 		}
 
-		dst[i] = sum/(float)angularSteps;
+		dst[i] = sum;
 		total += dst[i];
 	}
 	for (int i=0;i<radialSteps;i++)
@@ -425,10 +431,40 @@ void CPUTracker::SelectImageBuffer(TrackerImageBuffer* b)
 
 }
 
+vector2f CPUTracker::ComputeXCor2D()
+{
+	if (!tracker2D) {
+		tracker2D = new FFT2DTracker(width, height);
+	}
+
+	return tracker2D->ComputeXCor(srcImage);
+}
 
 
+FFT2DTracker::FFT2DTracker(int w,int h)
+{
+	width = w;
+	height = h;
 
+	fft_buf = new complexc[w*h];
+	fft_buf_mirrored = new complexc[w*h];
+	mirror2D = new float[w*h];
 
+	plan_fw2D = fftwf_plan_dft_r2c_2d(w, h, 0, 0, FFTW_ESTIMATE);
+	plan_bw2D = fftwf_plan_dft_c2r_2d(w, h, 0, 0, FFTW_ESTIMATE);
+}
+
+FFT2DTracker::~FFT2DTracker()
+{
+	fftwf_destroy_plan(plan_fw2D);
+	fftwf_destroy_plan(plan_bw2D);
+}
+
+vector2f FFT2DTracker::ComputeXCor(float* image)
+{
+	vector2f pos;
+	return pos;
+}
 
 void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, float MaxPhotons)
 {
@@ -455,6 +491,8 @@ void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, floa
 	}
 	tracker->Normalize();
 }
+
+
 
 
 
