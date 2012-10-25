@@ -30,8 +30,10 @@ void saveImage(float* data, uint w, uint h, const char* filename)
 CDLL_EXPORT void DLL_CALLCONV generate_test_image(Image *img, int w, int h, float xp, float yp, float size, float photoncount)
 {
 	try {
-		float S = size;
 		float *d = new float[w*h];
+		GenerateTestImage(d, w, h, xp, yp, size, photoncount);
+
+/*		float S = size;
 		for (int y=0;y<h;y++) {
 			for (int x=0;x<w;x++) {
 				float X = x - xp;
@@ -40,16 +42,9 @@ CDLL_EXPORT void DLL_CALLCONV generate_test_image(Image *img, int w, int h, floa
 				float v = sinf(r*S/5.0f) * expf(-r*r/S*0.01f);
 				d[y*w+x] = v;
 			}
-		}
+		}*/
 
-		ushort* result = floatToNormalizedUShort(d, w, h);
-		if (photoncount != 0.0f) {
-			for (int k=0;k<w*h;k++)
-				result[k] = rand_poisson((float)result[k] * photoncount / (float) (1<<16));
-		}
-
-		imaqArrayToImage(img, result, w,h);
-		delete[] result;
+		imaqArrayToImage(img, d, w,h);
 		delete[] d;
 	}
 	catch(const std::exception& e)

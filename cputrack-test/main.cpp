@@ -228,7 +228,7 @@ void Test2DTracking()
 		float yp = tracker.GetHeight()/2+(rand_uniform<float>() - 0.5) * 5;
 		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
 
-		GenerateTestImage(&tracker, xp, yp, z, 0);
+		GenerateTestImage(&tracker, xp, yp, z, 50000);
 
 		double t0 = getPreciseTime();
 		vector2f xcor2D = tracker.ComputeXCor2D();

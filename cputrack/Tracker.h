@@ -4,7 +4,7 @@
 #pragma once
 
 #include <vector>
-#include "../cudatrack/utils.h"
+#include "utils.h"
 
 #ifdef TRK_USE_DOUBLE
 	typedef double xcor_t;

@@ -4,12 +4,10 @@ CPU only tracker
 
 */
 
-#include <Windows.h>
-
 #pragma warning(disable: 4996) // Function call with parameters that may be unsafe
 
 #include "cpu_tracker.h"
-#include "../cudatrack/LsqQuadraticFit.h"
+#include "LsqQuadraticFit.h"
 #include "random_distr.h"
 
 DLL_EXPORT Tracker* CreateTrackerInstance(int w,int h,int xcorw)
@@ -44,7 +42,7 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow, int xcorProfileWidth)
 	zlut_planes = zlut_res = 0;
 	zprofile_radius = 0.0f;
 
-	this->xcorProfileWidth = min(xcorProfileWidth, xcorwindow);
+	this->xcorProfileWidth = std::min(xcorProfileWidth, xcorwindow);
 	setXCorWindow(xcorwindow);
 }
 
@@ -465,33 +463,6 @@ vector2f FFT2DTracker::ComputeXCor(float* image)
 	vector2f pos;
 	return pos;
 }
-
-void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, float MaxPhotons)
-{
-	int w=tracker->GetWidth();
-	int h=tracker->GetHeight();
-	float S = 1.0f/size;
-	float *d =  tracker->srcImage; //new float[tracker->width*tracker->height];
-	for (int y=0;y<h;y++) {
-		for (int x=0;x<w;x++) {
-			float X = x - xp;
-			float Y = y - yp;
-			float r = sqrtf(X*X+Y*Y)+1;
-			float v = sinf(r/(5*S)) * expf(-r*r*S*0.01f);
-			d[y*w+x] = v;
-		}
-	}
-
-	if (MaxPhotons>0) {
-		tracker->Normalize();
-		for (int k=0;k<w*h;k++) {
-			float r = rand_poisson(d[k]*MaxPhotons);
-			d[k] = r;
-		}
-	}
-	tracker->Normalize();
-}
-
 
 
 

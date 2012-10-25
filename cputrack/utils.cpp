@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <string>
 
+#include "random_distr.h"
 
 std::string SPrintf(const char *fmt, ...) {
 	va_list ap;
@@ -45,3 +46,28 @@ ushort* floatToNormalizedUShort(float *data, uint w,uint h)
 		norm[k] = ((1<<16)-1) * (data[k]-minv) / (maxv-minv);
 	return norm;
 }
+
+
+
+void GenerateTestImage(float* data, int w, int h, float xp, float yp, float size, float MaxPhotons)
+{
+	float S = 1.0f/size;
+	for (int y=0;y<h;y++) {
+		for (int x=0;x<w;x++) {
+			float X = x - xp;
+			float Y = y - yp;
+			float r = sqrtf(X*X+Y*Y)+1;
+			float v = sinf(r/(5*S)) * expf(-r*r*S*0.01f);
+			data[y*w+x] = v;
+		}
+	}
+
+	if (MaxPhotons>0) {
+		normalize(data,w,h);
+		for (int k=0;k<w*h;k++) {
+			data[k] = rand_poisson(data[k]*MaxPhotons);
+		}
+	}
+	normalize(data,w,h);
+}
+

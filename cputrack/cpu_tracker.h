@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "Tracker.h"
-#include "../cudatrack/utils.h"
+#include "utils.h"
 
 #ifdef TRK_USE_DOUBLE
 	typedef fftw_plan fftw_plan_t;
@@ -100,7 +100,7 @@ public:
 
 };
 
-void GenerateTestImage(CPUTracker* tracker, float xp, float yp, float size, float MaxPhotons);
+void GenerateTestImage(float* data, int w, float xp, float yp, float size, float MaxPhotons);
 CPUTracker* CreateCPUTrackerInstance(int w,int h,int xcorw);
 
 template<typename TPixel>
@@ -143,19 +143,6 @@ float ComputeMedian(TPixel* data, uint w, uint h, uint srcpitch, float* pMedian)
 	return median;
 }
 
-template<typename TPixel>
-void normalize(TPixel* d, uint w,uint h)
-{
-	TPixel maxv = d[0];
-	TPixel minv = d[0];
-	for (uint k=0;k<w*h;k++) {
-		maxv = max(maxv, d[k]);
-		minv = min(minv, d[k]);
-	}
-	for (uint k=0;k<w*h;k++)
-		d[k]=(d[k]-minv)/(maxv-minv);
-}
-
 
 template<typename T>
 T CPUTracker::ComputeMaxInterp(T* data, int len, int numpoints)
@@ -168,8 +155,8 @@ T CPUTracker::ComputeMaxInterp(T* data, int len, int numpoints)
 			iMax = k;
 		}
 	}
-	int startPos = max(iMax-numpoints/2, 0);
-	int endPos = min(iMax+(numpoints-numpoints/2), len);
+	int startPos = std::max(iMax-numpoints/2, 0);
+	int endPos = std::min(iMax+(numpoints-numpoints/2), len);
 	numpoints = endPos - startPos;
 
 	if (numpoints<3) 

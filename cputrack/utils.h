@@ -60,3 +60,18 @@ struct vector2f {
 
 ushort* floatToNormalizedUShort(float *data, uint w,uint h);
 
+
+template<typename TPixel>
+void normalize(TPixel* d, uint w,uint h)
+{
+	TPixel maxv = d[0];
+	TPixel minv = d[0];
+	for (uint k=0;k<w*h;k++) {
+		maxv = std::max(maxv, d[k]);
+		minv = std::min(minv, d[k]);
+	}
+	for (uint k=0;k<w*h;k++)
+		d[k]=(d[k]-minv)/(maxv-minv);
+}
+
+void GenerateTestImage(float* data, int w, int h, float xp, float yp, float size, float MaxPhotons);
