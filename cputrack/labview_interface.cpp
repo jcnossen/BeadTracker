@@ -44,8 +44,11 @@ CDLL_EXPORT void DLL_CALLCONV generate_test_image(Image *img, int w, int h, floa
 			}
 		}*/
 
-		imaqArrayToImage(img, d, w,h);
+		ushort* intd = floatToNormalizedUShort(d, w,h);
+
+		imaqArrayToImage(img, intd, w,h);
 		delete[] d;
+		delete[] intd;
 	}
 	catch(const std::exception& e)
 	{

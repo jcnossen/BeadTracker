@@ -9,6 +9,7 @@ CPU only tracker
 #include "cpu_tracker.h"
 #include "LsqQuadraticFit.h"
 #include "random_distr.h"
+#include "FFT2DTracker.h"
 
 DLL_EXPORT Tracker* CreateTrackerInstance(int w,int h,int xcorw)
 {
@@ -367,6 +368,9 @@ void CPUTracker::SetZLUT(float* data, int planes, int res, float prof_radius)
 
 float CPUTracker::ComputeZ(vector2f center, int angularSteps)
 {
+	if (!zlut)
+		return 0.0f;
+
 	// Compute the radial profile
 	if (rprof.size() != zlut_res)
 		rprof.resize(zlut_res);
@@ -437,33 +441,5 @@ vector2f CPUTracker::ComputeXCor2D()
 
 	return tracker2D->ComputeXCor(srcImage);
 }
-
-
-FFT2DTracker::FFT2DTracker(int w,int h)
-{
-	width = w;
-	height = h;
-
-	fft_buf = new complexc[w*h];
-	fft_buf_mirrored = new complexc[w*h];
-	mirror2D = new float[w*h];
-
-	plan_fw2D = fftwf_plan_dft_r2c_2d(w, h, 0, 0, FFTW_ESTIMATE);
-	plan_bw2D = fftwf_plan_dft_c2r_2d(w, h, 0, 0, FFTW_ESTIMATE);
-}
-
-FFT2DTracker::~FFT2DTracker()
-{
-	fftwf_destroy_plan(plan_fw2D);
-	fftwf_destroy_plan(plan_bw2D);
-}
-
-vector2f FFT2DTracker::ComputeXCor(float* image)
-{
-	vector2f pos;
-	return pos;
-}
-
-
 
 

@@ -2,7 +2,7 @@
 #include <Windows.h>
 #include <stdint.h>
 #include "../cputrack/random_distr.h"
-
+#include "../cputrack/FFT2DTracker.h" 
 
 template<typename T> T sq(T x) { return x*x; }
 template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }
@@ -48,7 +48,7 @@ void SpeedTest()
 	for (int x=0;x<zplanes;x++)  {
 		vector2f center = { tracker->GetWidth()/2, tracker->GetHeight()/2 };
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
-		GenerateTestImage(tracker, center.x, center.y, s, 0.0f);
+		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), center.x, center.y, s, 0.0f);
 		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, zradius, center);
 	}
 	tracker->SetZLUT(zlut, zplanes, radialSteps, zradius);
@@ -65,7 +65,7 @@ void SpeedTest()
 		float yp = tracker->GetHeight()/2+(rand_uniform<float>() - 0.5) * 5;
 		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
 
-		GenerateTestImage(tracker, xp, yp, z, 0);
+		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), xp, yp, z, 0);
 
 		double t1 = getPreciseTime();
 		float median = tracker->ComputeMedian();
@@ -124,7 +124,7 @@ void SmallImageTest()
 {
 	CPUTracker *tracker = CreateCPUTrackerInstance(32,32, 16);
 
-	GenerateTestImage(tracker, 15,15, 1, 0.0f);
+	GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), 15,15, 1, 0.0f);
 
 	vector2f com = tracker->ComputeCOM(tracker->ComputeMedian());
 	dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
@@ -147,7 +147,7 @@ void PixelationErrorTest()
 	int N = 20;
 	for (int x=0;x<N;x++)  {
 		float xpos = X + 2.0f * x / (float)N;
-		GenerateTestImage(tracker, xpos, X, 1, 0.0f);
+		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), xpos, X, 1, 0.0f);
 
 		vector2f com = tracker->ComputeCOM(tracker->ComputeMedian());
 		//dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
@@ -176,7 +176,7 @@ float EstimateZError(int zplanes)
 
 	for (int x=0;x<zplanes;x++)  {
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
-		GenerateTestImage(tracker, center.x, center.y, s, 0.0f);
+		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), center.x, center.y, s, 0.0f);
 	//	dbgout(SPrintf("z=%f\n", s));
 		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, zradius, center);
 	}
@@ -188,7 +188,7 @@ float EstimateZError(int zplanes)
 	float zdist=0.0f;
 	for (int k=0;k<N;k++) {
 		float z = zmin + k/float(N-1) * (zmax-zmin);
-		GenerateTestImage(tracker, center.x, center.y, z, 0.0f);
+		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), center.x, center.y, z, 0.0f);
 		
 		float est_z = zmin + tracker->ComputeZ(center, 64) * (zmax - zmin);
 		zdist += fabsf(est_z-z);
@@ -218,7 +218,6 @@ void Test2DTracking()
 	float zmin = 2;
 	float zmax = 6;
 	int N = 200;
-	tracker.ComputeXCor2D();
 
 	double tloc2D = 0, tloc1D = 0;
 	double dist2D = 0;
@@ -228,10 +227,15 @@ void Test2DTracking()
 		float yp = tracker.GetHeight()/2+(rand_uniform<float>() - 0.5) * 5;
 		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
 
-		GenerateTestImage(&tracker, xp, yp, z, 50000);
+		GenerateTestImage(tracker.srcImage, tracker.GetWidth(), tracker.GetHeight(), xp, yp, z, 50000);
 
 		double t0 = getPreciseTime();
 		vector2f xcor2D = tracker.ComputeXCor2D();
+		if (k==0) {
+			float * results = tracker.tracker2D->GetAutoConvResults();
+			writeImageAsCSV("xcor2d-autoconv-img.csv", results, tracker.GetWidth(), tracker.GetHeight());
+		}
+
 		double t1 = getPreciseTime();
 		float median = tracker.ComputeMedian();
 		vector2f com = tracker.ComputeCOM(median);
@@ -240,9 +244,14 @@ void Test2DTracking()
 
 		dist1D += distance(xp-xcor1D.x,yp-xcor1D.y);
 		dist2D += distance(xp-xcor2D.x,yp-xcor2D.y);
-		tloc2D += t1-t0;
-		tloc1D += t2-t1;
+
+		if (k>0) {
+			tloc2D += t1-t0;
+			tloc1D += t2-t1;
+		}
 	}
+	N--; // ignore first
+
 	dbgprintf("1D Xcor speed(img/s): %f\n2D Xcor speed (img/s): %f\n", N/tloc1D, N/tloc2D);
 	dbgprintf("Average dist XCor 1D: %f\n", dist1D/N);
 	dbgprintf("Average dist XCor 2D: %f\n", dist2D/N);
@@ -250,12 +259,11 @@ void Test2DTracking()
 
 int main()
 {
-	SpeedTest();
-
-	SmallImageTest();
-	PixelationErrorTest();
-	ZTrackingTest();
-	//Test2DTracking();
+	//SpeedTest();
+	//SmallImageTest();
+	//PixelationErrorTest();
+	//ZTrackingTest();
+	Test2DTracking();
 
 	return 0;
 }
