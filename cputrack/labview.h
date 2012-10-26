@@ -7,6 +7,14 @@
 
 /* lv_prolog.h and lv_epilog.h set up the correct alignment for LabVIEW data. */
 #include "lv_prolog.h"
+
+typedef struct {
+        LVBoolean status;
+        int32 code;
+        LStrHandle message;
+} ErrorCluster;
+
+
 template<typename T>
 struct LVArray {
 	int32_t dimSize;

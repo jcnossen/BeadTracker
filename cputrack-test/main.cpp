@@ -259,7 +259,7 @@ void Test2DTracking()
 
 int main()
 {
-	//SpeedTest();
+	SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();

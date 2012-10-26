@@ -162,7 +162,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 		}
 
 		XCorFFTHelper(&X_xc[0], &X_xcr[0], &X_result[0]);
-		xcor_t offsetX = ComputeMaxInterp(&X_result[0],X_result.size()) - (xcor_t)xcorw/2; //ComputeMaxInterp(X_result) - (float)xcorw/2 - 1;
+		xcor_t offsetX = ComputeMaxInterp(&X_result[0],X_result.size()) - (xcor_t)xcorw/2;
 
 		// generate Y position xcor array (summing over x range)
 		for (int y=0;y<xcorw;y++) {

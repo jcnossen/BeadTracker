@@ -6,6 +6,26 @@
 #include "tracker.h"
 #include "TrackerQueue.h"
 
+static MgErr FillErrorCluster(MgErr err, const char *message, ErrorCluster *error)
+{
+	if (err)
+	{
+		int msglen = strlen(message);
+		error->status = LVBooleanTrue;
+		error->code = err;
+		err = NumericArrayResize(uB, 1, (UHandle*)&(error->message), msglen);
+		if (!err)
+		{
+			MoveBlock(message, LStrBuf(*error->message), msglen);
+			LStrLen(*error->message) = msglen;
+		} 
+	}
+	return err;
+}
+
+void ArgumentErrorMsg(ErrorCluster* e, const std::string& msg) {
+	FillErrorCluster(mgArgErr, msg.c_str(), e);
+}
 
 void saveImage(float* data, uint w, uint h, const char* filename)
 {
@@ -192,14 +212,16 @@ CDLL_EXPORT void DLL_CALLCONV compute_xcor(Tracker* tracker, vector2f* position,
 }
 
 
-CDLL_EXPORT void DLL_CALLCONV set_image(Tracker* tracker, Image* img, int offsetX, int offsetY)
+CDLL_EXPORT void DLL_CALLCONV set_image(Tracker* tracker, Image* img, int offsetX, int offsetY, ErrorCluster* error)
 {
 	try {
 		ImageInfo info;
 		imaqGetImageInfo(img, &info);
 
-		if (offsetX < 0 || offsetY < 0 || offsetX + tracker->GetWidth() > info.xRes || offsetY + tracker->GetHeight() > info.yRes)
+		if (offsetX < 0 || offsetY < 0 || offsetX + tracker->GetWidth() > info.xRes || offsetY + tracker->GetHeight() > info.yRes) {
+			ArgumentErrorMsg(error, "Invalid image dimension or offset given");
 			return;
+		}
 		if (info.imageType == IMAQ_IMAGE_U8)
 			tracker->SetImage8Bit((uchar*)info.imageStart + offsetX + info.pixelsPerLine * offsetY, info.xRes, info.yRes, info.pixelsPerLine);
 		else if(info.imageType == IMAQ_IMAGE_U16)
@@ -209,7 +231,7 @@ CDLL_EXPORT void DLL_CALLCONV set_image(Tracker* tracker, Image* img, int offset
 	}
 	catch(const std::exception& e)
 	{
-		dbgout("Exception: " + std::string(e.what()) + "\n");
+		ArgumentErrorMsg(error, "Exception: " + std::string(e.what()) + "\n");
 	}
 }
 
