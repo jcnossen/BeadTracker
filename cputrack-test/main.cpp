@@ -51,7 +51,7 @@ void SpeedTest()
 		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), center.x, center.y, s, 0.0f);
 		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, zradius, center);
 	}
-	tracker->SetZLUT(zlut, zplanes, radialSteps, zradius);
+	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, zradius);
 
 	// Speed test
 	vector2f comdist={}, xcordist={};
@@ -84,7 +84,7 @@ void SpeedTest()
 		xcordist.y += fabsf(xcor.y - yp);
 		double t2 = getPreciseTime();
 
-		float est_z = zmin + tracker->ComputeZ(xcor, 64) * (zmax - zmin);
+		float est_z = zmin + tracker->ComputeZ(xcor, 64, 0) * (zmax - zmin);
 		zdist += fabsf(est_z-z);
 		zerrsum += est_z-z;
 
@@ -181,7 +181,7 @@ float EstimateZError(int zplanes)
 		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, zradius, center);
 	}
 
-	tracker->SetZLUT(zlut, zplanes, radialSteps, zradius);
+	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, zradius);
 	writeImageAsCSV("zlut.csv", zlut, radialSteps, zplanes);
 
 	int N=100;
@@ -190,7 +190,7 @@ float EstimateZError(int zplanes)
 		float z = zmin + k/float(N-1) * (zmax-zmin);
 		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), center.x, center.y, z, 0.0f);
 		
-		float est_z = zmin + tracker->ComputeZ(center, 64) * (zmax - zmin);
+		float est_z = zmin + tracker->ComputeZ(center, 64, 0) * (zmax - zmin);
 		zdist += fabsf(est_z-z);
 		//dbgout(SPrintf("Z: %f, EstZ: %f\n", z, est_z));
 
@@ -259,7 +259,7 @@ void Test2DTracking()
 
 int main()
 {
-	SpeedTest();
+//	SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();

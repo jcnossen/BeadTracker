@@ -32,8 +32,9 @@ public:
 	fftw_plan_t fft_plan_fw, fft_plan_bw;
 	std::vector<vector2f> radialDirs;
 
-	float* zlut; // zlut[plane * zlut_res + r]
-	int zlut_planes, zlut_res;
+	// The ZLUT system stores 'zlut_count' number of 2D zlut's, so every bead can be tracked with its own unique ZLUT.
+	float* zluts; // size: zlut_planes*zlut_count*zlut_res,		indexing: zlut[index * (zlut_planes * zlut_res) + plane * zlut_res + r]
+	int zlut_planes, zlut_res, zlut_count; 
 	std::vector<float> rprof, rprof_diff;
 	float zprofile_radius;
 	
@@ -63,8 +64,8 @@ public:
 	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center);
 
 	void Normalize(float *image=0);
-	void SetZLUT(float* data, int planes,int res, float prof_radius);
-	float ComputeZ(vector2f center, int angularSteps); // radialSteps is given by zlut_res
+	void SetZLUT(float* data, int planes, int res, int num_zluts, float prof_radius);
+	float ComputeZ(vector2f center, int angularSteps, int zlutIndex); // radialSteps is given by zlut_res
 	float ComputeMedian();
 
 	bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 

@@ -45,8 +45,8 @@ public:
 	virtual vector2f ComputeCOM(float median) = 0;
 	virtual void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center) = 0;
 
-	virtual void SetZLUT(float* data, int planes,int res, float profile_radius) = 0;
-	virtual float ComputeZ(vector2f center, int angularSteps) = 0; // radialSteps is given by zlut_res. Returns normalized Z position
+	virtual void SetZLUT(float* data, int planes, int res, int numLUTs, float profile_radius) = 0;
+	virtual float ComputeZ(vector2f center, int angularSteps, int zlutIndex) = 0; // radialSteps is given by zlut_res. Returns normalized Z position
 	virtual float ComputeMedian() = 0;
 		
 	// Debug stuff

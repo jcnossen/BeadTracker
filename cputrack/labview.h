@@ -22,6 +22,7 @@ struct LVArray {
 };
 typedef LVArray<float> **ppFloatArray;
 
+
 template<typename T>
 struct LVArray2D {
 	int32_t dimSizes[2];
@@ -30,8 +31,15 @@ struct LVArray2D {
 	T & elem(int col, int row) {
 		return data[row*dimSizes[0]+col];
 	}
-
 	int numElem() { return dimSizes[0]*dimSizes[1]; }
+};
+
+template<typename T>
+struct LVArray3D {
+	int32_t dimSizes[3];
+	T data[1];
+
+	int numElem() { return dimSizes[0]*dimSizes[1]*dimSizes[2]; }
 };
 
 
@@ -39,7 +47,7 @@ struct LVArray2D {
 template<typename T>
 struct LVDataType {};
 template<> struct LVDataType<float> { enum { code=9 }; };
-template<> struct LVDataType<double> { enum { code=0xa }; };
+template<> struct LVDataType<double> { enum { code=10 }; };
 template<> struct LVDataType<int8_t> { enum { code=1 }; };
 template<> struct LVDataType<int16_t> { enum { code=2 }; };
 template<> struct LVDataType<int32_t> { enum { code=3 }; };
@@ -56,6 +64,13 @@ void ResizeLVArray2D(LVArray2D<T>**& d, int rows, int cols) {
 	NumericArrayResize(LVDataType<T>::code, 2, (UHandle*)&d, sizeof(T)*rows*cols);
 	(*d)->dimSizes[0] = rows;
 	(*d)->dimSizes[1] = cols;
+}
+template<typename T>
+void ResizeLVArray3D(LVArray3D<T>**& d, int depth, int rows, int cols) {
+	NumericArrayResize(LVDataType<T>::code, 3, (UHandle*)&d, sizeof(T)*rows*cols*depth);
+	(*d)->dimSizes[0] = depth;
+	(*d)->dimSizes[1] = rows;
+	(*d)->dimSizes[2] = cols;
 }
 template<typename T>
 void ResizeLVArray(LVArray<T>**& d, int elems) {

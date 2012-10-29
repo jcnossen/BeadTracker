@@ -52,18 +52,6 @@ CDLL_EXPORT void DLL_CALLCONV generate_test_image(Image *img, int w, int h, floa
 	try {
 		float *d = new float[w*h];
 		GenerateTestImage(d, w, h, xp, yp, size, photoncount);
-
-/*		float S = size;
-		for (int y=0;y<h;y++) {
-			for (int x=0;x<w;x++) {
-				float X = x - xp;
-				float Y = y - yp;
-				float r = sqrtf(X*X+Y*Y)+1;
-				float v = sinf(r*S/5.0f) * expf(-r*r/S*0.01f);
-				d[y*w+x] = v;
-			}
-		}*/
-
 		ushort* intd = floatToNormalizedUShort(d, w,h);
 
 		imaqArrayToImage(img, intd, w,h);
@@ -101,21 +89,22 @@ CDLL_EXPORT void DLL_CALLCONV destroy_tracker(Tracker* tracker)
 }
 
 template<typename T>
-void copyToLVArray (ppFloatArray r, const std::vector<T>& a)
+void copyToLVArray (LVArray<T>**& r, const std::vector<T>& a)
 {
 	ResizeLVArray(r, a.size());
-	std::copy(a.begin(),a.end(),(*r)->elt);
+	for (int x=0;x<a.size();x++)
+		(*r)->elt[x] = a[x];
 }
 
-CDLL_EXPORT void DLL_CALLCONV copy_crosscorrelation_result(Tracker* tracker, ppFloatArray x_result, ppFloatArray y_result, ppFloatArray x_xc, ppFloatArray y_xc)
+CDLL_EXPORT void DLL_CALLCONV copy_crosscorrelation_result(Tracker* tracker, LVArray<float>** x_result, LVArray<float>** y_result, LVArray<float>** x_xc, LVArray<float>** y_xc)
 {
 	try {
 		std::vector<xcor_t> xprof, yprof, xconv, yconv;
 		if (tracker->GetLastXCorProfiles(xprof, yprof, xconv, yconv)) {
-			if (x_result) copyToLVArray (x_result, xprof);
-			if (y_result) copyToLVArray (y_result, yprof);
-			if (x_xc) copyToLVArray (x_xc, xconv);
-			if (y_xc) copyToLVArray (y_xc, yconv);
+			if (x_result) copyToLVArray (x_result, xconv);
+			if (y_result) copyToLVArray (y_result, yconv);
+			if (x_xc) copyToLVArray (x_xc, xprof);
+			if (y_xc) copyToLVArray (y_xc, yprof);
 		}
 	}
 	catch(const std::exception& e)
@@ -252,16 +241,20 @@ CDLL_EXPORT void DLL_CALLCONV compute_radial_profile(Tracker* tracker, ppFloatAr
 	tracker->ComputeRadialProfile(&dst->elt[0], dst->dimSize, angularSteps, range, *(vector2f*)center);
 }
 
-CDLL_EXPORT void DLL_CALLCONV set_ZLUT(Tracker* tracker, LVArray2D<float>** pZlut, float profile_radius)
+CDLL_EXPORT void DLL_CALLCONV set_ZLUT(Tracker* tracker, LVArray3D<float>** pZlut, float profile_radius)
 {
-	LVArray2D<float>* zlut = *pZlut;
+	LVArray3D<float>* zlut = *pZlut;
+
+	int numLUTs = zlut->dimSizes[0];
+	int planes = zlut->dimSizes[1];
+	int res = zlut->dimSizes[2];
 	
-	tracker->SetZLUT(zlut->data, zlut->dimSizes[0], zlut->dimSizes[1], profile_radius);
+	tracker->SetZLUT(zlut->data, planes, res, numLUTs, profile_radius);
 }
 
-CDLL_EXPORT float DLL_CALLCONV compute_z(Tracker* tracker, float* center, int angularSteps)
+CDLL_EXPORT float DLL_CALLCONV compute_z(Tracker* tracker, float* center, int angularSteps, int zlut_index)
 {
-	return tracker->ComputeZ(*(vector2f*)center, angularSteps);
+	return tracker->ComputeZ(*(vector2f*)center, angularSteps, zlut_index);
 }
 
 CDLL_EXPORT void DLL_CALLCONV get_debug_image(Tracker* tracker, Image* dbgImg)

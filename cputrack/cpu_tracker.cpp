@@ -39,8 +39,8 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow, int xcorProfileWidth)
 	std::fill(srcImage, srcImage+w*h, 0.0f);
 	std::fill(debugImage, debugImage+w*h, 0.0f);
 
-	zlut = 0;
-	zlut_planes = zlut_res = 0;
+	zluts = 0;
+	zlut_planes = zlut_res = zlut_count = 0;
 	zprofile_radius = 0.0f;
 
 	this->xcorProfileWidth = std::min(xcorProfileWidth, xcorwindow);
@@ -90,7 +90,7 @@ CPUTracker::~CPUTracker()
 	delete[] srcImage;
 	delete[] debugImage;
 	if (tracker2D) delete tracker2D;
-	if (zlut) delete[] zlut;
+	if (zluts) delete[] zluts;
 }
 
 void CPUTracker::SetImageFloat(float *src) {
@@ -354,21 +354,22 @@ void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSt
 		dst[i] /= total;
 }
 
-void CPUTracker::SetZLUT(float* data, int planes, int res, float prof_radius)
+void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float prof_radius)
 {
-	if (zlut) delete[] zlut;
-	zlut = new float[planes*res];
-	memcpy(zlut, data, sizeof(float)*planes*res);
+	if (zluts) delete[] zluts;
+	zluts = new float[planes*res*numLUTs];
+	std::copy(data, data+planes*res*numLUTs, zluts);
 	zlut_planes = planes;
 	zlut_res = res;
+	zlut_count = numLUTs;
 	zprofile_radius = prof_radius;
 }
 
 
 
-float CPUTracker::ComputeZ(vector2f center, int angularSteps)
+float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex)
 {
-	if (!zlut)
+	if (!zluts)
 		return 0.0f;
 
 	// Compute the radial profile
@@ -380,10 +381,13 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps)
 	// Now compare the radial profile to the profiles stored in Z
 	if (rprof_diff.size() != zlut_planes)
 		rprof_diff.resize(zlut_planes);
+
+	float* zlut_sel = &zluts[zlut_planes*zlut_res*zlutIndex];
+
 	for (int k=0;k<zlut_planes;k++) {
 		float diffsum = 0.0f;
 		for (int r = 0; r<zlut_res;r++) {
-			float diff = rprof[r]-zlut[k*zlut_res+r];
+			float diff = rprof[r]-zlut_sel[k*zlut_res+r];
 			diffsum += diff*diff;
 		}
 		rprof_diff[k] = -diffsum;
