@@ -259,11 +259,11 @@ void Test2DTracking()
 
 int main()
 {
-//	SpeedTest();
+	SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
-	Test2DTracking();
+	//Test2DTracking();
 
 	return 0;
 }
