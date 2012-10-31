@@ -286,18 +286,45 @@ void CPUTracker::XCorFFTHelper(xcor_t* xc, xcor_t *xcr, xcor_t* result)
 }
 
 
-
-vector2f CPUTracker::ComputeCOM(float median)
+vector2f CPUTracker::ComputeQI(int iterations, int radialSteps, int angularStepsPerQ, float radius, vector2f center)
 {
-	float sum=0;
+	/*
+	Compute profiles for each quadrant
+
+	*/
+
+	if (angularStepsPerQ != quadrantDirs.size()) {
+		for (int j=0;j<angularStepsPerQ;j++) {
+			float ang = 2*3.141593f*j/(float)angularStepsPerQ;
+			vector2f d = { cosf(ang), sinf(ang) };
+			radialDirs[j] = d;
+		}
+	}
+}
+
+
+vector2f CPUTracker::ComputeBgCorrectedCOM()
+{
+	float sum=0, sum2=0;
 	float momentX=0;
 	float momentY=0;
 
 	for (int y=0;y<height;y++)
+		for (int x=0;x<width;x++) {
+			float v = getPixel(x,y);
+			sum += v;
+			sum2 += v*v;
+		}
+
+	float stdev = sum2 / sum;
+	float mean = sum / (width*height);
+	sum = 0.0f;
+
+	for (int y=0;y<height;y++)
 		for(int x=0;x<width;x++)
 		{
-			float v = getPixel(x,y)-median;
-			v *= v;
+			float v = getPixel(x,y);
+			v = std::max(0.0f, fabs(v-mean)-stdev);
 			sum += v;
 			momentX += x*v;
 			momentY += y*v;

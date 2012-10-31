@@ -30,7 +30,8 @@ public:
 	float *srcImage, *debugImage;
 	complexc *fft_out, *fft_revout;
 	fftw_plan_t fft_plan_fw, fft_plan_bw;
-	std::vector<vector2f> radialDirs;
+	std::vector<vector2f> radialDirs; // full circle for ZLUT
+	std::vector<vector2f> quadrantDirs; // single quadrant
 
 	// The ZLUT system stores 'zlut_count' number of 2D zlut's, so every bead can be tracked with its own unique ZLUT.
 	float* zluts; // size: zlut_planes*zlut_count*zlut_res,		indexing: zlut[index * (zlut_planes * zlut_res) + plane * zlut_res + r]
@@ -52,6 +53,7 @@ public:
 	vector2f ComputeXCor(vector2f initial);
 	vector2f ComputeXCor2D();
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations);
+	vector2f ComputeQI(int iterations, int radialSteps, int angularStepsPerQuadrant, float radius, vector2f center);
 	void XCorFFTHelper(xcor_t* xc, xcor_t* xcr, xcor_t* result);
 	template<typename TPixel>
 	void SetImage(TPixel* srcImage, uint w, uint h, uint srcpitch);
@@ -59,7 +61,7 @@ public:
 	void SetImage8Bit(uchar* srcImage, uint w, uint h, uint srcpitch) { SetImage(srcImage, w, h, srcpitch); }
 	void SetImageFloat(float* srcImage);
 
-	vector2f ComputeCOM(float median);
+	vector2f ComputeBgCorrectedCOM();
 	void RemoveBackground(float median);
 	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center);
 

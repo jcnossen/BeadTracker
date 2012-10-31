@@ -180,17 +180,7 @@ median = 0: Use zero median
 CDLL_EXPORT void DLL_CALLCONV compute_com(Tracker* tracker, float *median, float* out)
 {
 	float m;
-	if (!median)
-		m = 0.0f;
-	else if (median) {
-		if (*median >= 0.0f)
-			m = *median;
-		else {
-			m = tracker->ComputeMedian();
-			*median = m;
-		}
-	}
-	vector2f com = tracker->ComputeCOM(m);
+	vector2f com = tracker->ComputeBgCorrectedCOM();
 	out[0] = com.x;
 	out[1] = com.y;
 }

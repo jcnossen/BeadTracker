@@ -42,7 +42,7 @@ public:
 	virtual void SetImage8Bit(uchar* srcImage, uint w, uint h, uint srcpitch) = 0;
 	virtual void SetImageFloat(float* srcImage) = 0;
 
-	virtual vector2f ComputeCOM(float median) = 0;
+	virtual vector2f ComputeBgCorrectedCOM(float median) = 0;
 	virtual void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center) = 0;
 
 	virtual void SetZLUT(float* data, int planes, int res, int numLUTs, float profile_radius) = 0;
