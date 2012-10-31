@@ -24,7 +24,6 @@ public:
 class CPUTracker : public Tracker
 {
 public:
-	int xcorProfileWidth;
 	FFT2DTracker* tracker2D;
 
 	float *srcImage, *debugImage;
@@ -46,13 +45,13 @@ public:
 
 	float& getPixel(int x, int y) { return srcImage[width*y+x]; }
 	float Interpolate(float x,float y);
-	CPUTracker(int w, int h, int xcorwindow=128, int xcorProfileWidth=32);
+	CPUTracker(int w, int h, int xcorwindow=128);
 	~CPUTracker();
 	void setXCorWindow(int xcorwindow);
 
-	vector2f ComputeXCor(vector2f initial);
+	vector2f ComputeXCor(vector2f initial, int profileWidth=32);
 	vector2f ComputeXCor2D();
-	vector2f ComputeXCorInterpolated(vector2f initial, int iterations);
+	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth=32);
 	vector2f ComputeQI(int iterations, int radialSteps, int angularStepsPerQuadrant, float radius, vector2f center);
 	void XCorFFTHelper(xcor_t* xc, xcor_t* xcr, xcor_t* result);
 	template<typename TPixel>
@@ -68,7 +67,6 @@ public:
 	void Normalize(float *image=0);
 	void SetZLUT(float* data, int planes, int res, int num_zluts, float prof_radius);
 	float ComputeZ(vector2f center, int angularSteps, int zlutIndex); // radialSteps is given by zlut_res
-	float ComputeMedian();
 
 	bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
 		std::vector<xcor_t>& xconv, std::vector<xcor_t>& yconv);

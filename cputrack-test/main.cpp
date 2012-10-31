@@ -65,13 +65,12 @@ void SpeedTest()
 		float yp = tracker->GetHeight()/2+(rand_uniform<float>() - 0.5) * 5;
 		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
 
-		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), xp, yp, z, 0);
+		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), xp, yp, z, 10000);
 
 		double t1 = getPreciseTime();
-		float median = tracker->ComputeMedian();
-		vector2f com = tracker->ComputeCOM(median);
+		vector2f com = tracker->ComputeBgCorrectedCOM();
 		vector2f initial = {com.x, com.y};
-		vector2f xcor = tracker->ComputeXCorInterpolated(initial,2);
+		vector2f xcor = tracker->ComputeXCorInterpolated(initial, 2);
 /*		if (k == 1) {
 			tracker.OutputDebugInfo();
 			writeImageAsCSV("test.csv", tracker.srcImage, tracker.width, tracker.height);
@@ -109,7 +108,7 @@ void OnePixelTest()
 
 	tracker->getPixel(15,15) = 1;
 	dbgout(SPrintf("Pixel at 15,15\n"));
-	vector2f com = tracker->ComputeCOM(0);
+	vector2f com = tracker->ComputeBgCorrectedCOM();
 	dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
 	
 	vector2f initial = {15,15};
@@ -126,7 +125,7 @@ void SmallImageTest()
 
 	GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), 15,15, 1, 0.0f);
 
-	vector2f com = tracker->ComputeCOM(tracker->ComputeMedian());
+	vector2f com = tracker->ComputeBgCorrectedCOM();
 	dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
 	
 	vector2f initial = {15,15};
@@ -149,7 +148,7 @@ void PixelationErrorTest()
 		float xpos = X + 2.0f * x / (float)N;
 		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), xpos, X, 1, 0.0f);
 
-		vector2f com = tracker->ComputeCOM(tracker->ComputeMedian());
+		vector2f com = tracker->ComputeBgCorrectedCOM();
 		//dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
 
 		vector2f initial = {X,Y};
@@ -237,8 +236,7 @@ void Test2DTracking()
 		}
 
 		double t1 = getPreciseTime();
-		float median = tracker.ComputeMedian();
-		vector2f com = tracker.ComputeCOM(median);
+		vector2f com = tracker.ComputeBgCorrectedCOM();
 		vector2f xcor1D = tracker.ComputeXCorInterpolated(com, 2);
 		double t2 = getPreciseTime();
 

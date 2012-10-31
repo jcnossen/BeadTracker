@@ -24,7 +24,7 @@ const float XCorScale = 1.0f; // keep this at 1, because linear oversampling was
 
 static int round(xcor_t f) { return (int)(f+0.5f); }
 
-CPUTracker::CPUTracker(int w, int h, int xcorwindow, int xcorProfileWidth)
+CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 {
 	width = w;
 	height = h;
@@ -43,7 +43,6 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow, int xcorProfileWidth)
 	zlut_planes = zlut_res = zlut_count = 0;
 	zprofile_radius = 0.0f;
 
-	this->xcorProfileWidth = std::min(xcorProfileWidth, xcorwindow);
 	setXCorWindow(xcorwindow);
 }
 
@@ -129,10 +128,13 @@ static void _markPixels(float x,float y, float* img, int w, float mv)
 	#define MARKPIXELI(x,y)
 #endif
 
-vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
+vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth)
 {
 	// extract the image
 	vector2f pos = initial;
+
+	if (xcorw < profileWidth)
+		profileWidth = xcorw;
 
 #ifdef _DEBUG
 	std::copy(srcImage, srcImage+width*height, debugImage);
@@ -151,9 +153,9 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 		// generate X position xcor array (summing over y range)
 		for (int x=0;x<xcorw;x++) {
 			xcor_t s = 0.0f;
-			for (int y=0;y<xcorProfileWidth;y++) {
+			for (int y=0;y<profileWidth;y++) {
 				float xp = x * XCorScale + xmin;
-				float yp = pos.y + XCorScale * (y - xcorProfileWidth/2);
+				float yp = pos.y + XCorScale * (y - profileWidth/2);
 				s += Interpolate(xp, yp);
 				MARKPIXELI(xp, yp);
 			}
@@ -167,8 +169,8 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 		// generate Y position xcor array (summing over x range)
 		for (int y=0;y<xcorw;y++) {
 			xcor_t s = 0.0f; 
-			for (int x=0;x<xcorProfileWidth;x++) {
-				float xp = pos.x + XCorScale * (x - xcorProfileWidth/2);
+			for (int x=0;x<profileWidth;x++) {
+				float xp = pos.x + XCorScale * (x - profileWidth/2);
 				float yp = y * XCorScale + ymin;
 				s += Interpolate(xp, yp);
 				MARKPIXELI(xp,yp);
@@ -191,10 +193,13 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations)
 
 
 
-vector2f CPUTracker::ComputeXCor(vector2f initial)
+vector2f CPUTracker::ComputeXCor(vector2f initial, int profileWidth)
 {
 	// extract the image
 	vector2f pos = initial;
+
+	if (xcorw < profileWidth)
+		profileWidth = xcorw;
 
 #ifdef _DEBUG
 	std::copy(srcImage, srcImage+width*height, debugImage);
@@ -215,9 +220,9 @@ vector2f CPUTracker::ComputeXCor(vector2f initial)
 	// generate X position xcor array (summing over y range)
 	for (int x=0;x<xcorw;x++) {
 		xcor_t s = 0.0f;
-		for (int y=0;y<xcorProfileWidth;y++) {
+		for (int y=0;y<profileWidth;y++) {
 			int xp = rx + x - xcorw/2;
-			int yp = ry + y - xcorProfileWidth/2;
+			int yp = ry + y - profileWidth/2;
 			s += getPixel(xp, yp);
 			MARKPIXEL(xp, yp);
 		}
@@ -231,8 +236,8 @@ vector2f CPUTracker::ComputeXCor(vector2f initial)
 	// generate Y position xcor array (summing over x range)
 	for (int y=0;y<xcorw;y++) {
 		xcor_t s = 0.0f; 
-		for (int x=0;x<xcorProfileWidth;x++) {
-			int xp = rx + x - xcorProfileWidth/2;
+		for (int x=0;x<profileWidth;x++) {
+			int xp = rx + x - profileWidth/2;
 			int yp = ry + y - xcorw/2;
 			s += getPixel(xp,yp);
 			MARKPIXEL(xp,yp);
@@ -300,6 +305,9 @@ vector2f CPUTracker::ComputeQI(int iterations, int radialSteps, int angularSteps
 			radialDirs[j] = d;
 		}
 	}
+
+
+	return center;
 }
 
 
@@ -316,8 +324,9 @@ vector2f CPUTracker::ComputeBgCorrectedCOM()
 			sum2 += v*v;
 		}
 
-	float stdev = sum2 / sum;
-	float mean = sum / (width*height);
+	float invN = 1.0f/(width*height);
+	float stdev = sqrtf( sum2 * invN - invN*invN * sum*sum );
+	float mean = sum * invN;
 	sum = 0.0f;
 
 	for (int y=0;y<height;y++)
@@ -333,12 +342,6 @@ vector2f CPUTracker::ComputeBgCorrectedCOM()
 	com.x = momentX / (float)sum;
 	com.y = momentY / (float)sum;
 	return com;
-}
-
-
-float CPUTracker::ComputeMedian()
-{
-	return ::ComputeMedian(srcImage, width, height, width * sizeof(float), 0);
 }
 
 

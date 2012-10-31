@@ -133,8 +133,7 @@ CDLL_EXPORT void DLL_CALLCONV localize_image(Tracker* tracker, Image* img, float
 		} else
 			return;
 
-		if (median < 0.0f) median = tracker->ComputeMedian();
-		vector2f com = tracker->ComputeCOM(median);
+		vector2f com = tracker->ComputeBgCorrectedCOM();
 
 		COM[0] = com.x;
 		COM[1] = com.y;
@@ -177,7 +176,7 @@ median = 0: Use zero median
 *median >= 0: Use given median
 
 */
-CDLL_EXPORT void DLL_CALLCONV compute_com(Tracker* tracker, float *median, float* out)
+CDLL_EXPORT void DLL_CALLCONV compute_com(Tracker* tracker, float* out)
 {
 	float m;
 	vector2f com = tracker->ComputeBgCorrectedCOM();
@@ -185,9 +184,12 @@ CDLL_EXPORT void DLL_CALLCONV compute_com(Tracker* tracker, float *median, float
 	out[1] = com.y;
 }
 
-CDLL_EXPORT void DLL_CALLCONV compute_xcor(Tracker* tracker, vector2f* position, int iterations)
+CDLL_EXPORT void DLL_CALLCONV compute_xcor(Tracker* tracker, vector2f* position, int iterations, int profileWidth, int useInterpolation)
 {
-	*position = tracker->ComputeXCorInterpolated(*position,iterations);
+	if (useInterpolation)
+		*position = tracker->ComputeXCorInterpolated(*position, iterations, profileWidth);
+	else
+		*position = tracker->ComputeXCor(*position, profileWidth);
 }
 
 
@@ -214,9 +216,14 @@ CDLL_EXPORT void DLL_CALLCONV set_image(Tracker* tracker, Image* img, int offset
 	}
 }
 
-CDLL_EXPORT void DLL_CALLCONV set_image_as_byte_array(Tracker* tracker, LVArray2D<uchar>** data)
+CDLL_EXPORT void DLL_CALLCONV set_image_u8(Tracker* tracker, LVArray2D<uchar>** data)
 {
 	tracker->SetImage8Bit( (*data)->data, tracker->GetWidth(), tracker->GetHeight(), tracker->GetWidth() );
+}
+
+CDLL_EXPORT void DLL_CALLCONV set_image_u16(Tracker* tracker, LVArray2D<ushort>** data)
+{
+	tracker->SetImage16Bit( (*data)->data, tracker->GetWidth(), tracker->GetHeight(), tracker->GetWidth() );
 }
 
 CDLL_EXPORT void DLL_CALLCONV set_image_as_float_array(Tracker* tracker, LVArray2D<float>** data)
