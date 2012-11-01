@@ -11,15 +11,6 @@ CPU only tracker
 #include "random_distr.h"
 #include "FFT2DTracker.h"
 
-DLL_EXPORT Tracker* CreateTrackerInstance(int w,int h,int xcorw)
-{
-	return new CPUTracker(w,h,xcorw);
-}
-CPUTracker* CreateCPUTrackerInstance(int w,int h,int xcorw)
-{
-	return new CPUTracker(w,h,xcorw);
-}
-
 const float XCorScale = 1.0f; // keep this at 1, because linear oversampling was obviously a bad idea..
 
 static int round(xcor_t f) { return (int)(f+0.5f); }
@@ -39,7 +30,7 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 	std::fill(debugImage, debugImage+w*h, 0.0f);
 
 	zluts = 0;
-	zlut_planes = zlut_res = zlut_count = 0;
+	zlut_planes = zlut_res = zlut_count = zlut_angularSteps = 0;
 	zprofile_radius = 0.0f;
 	xcorw = xcorwindow;
 }
@@ -390,15 +381,20 @@ void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSt
 		dst[i] /= total;
 }
 
-void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float prof_radius)
+void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float prof_radius, int angularSteps, bool copyMemory)
 {
-	if (zluts) delete[] zluts;
-	zluts = new float[planes*res*numLUTs];
-	std::copy(data, data+planes*res*numLUTs, zluts);
+	if (zluts && zlut_memoryOwner) delete[] zluts;
+	if (copyMemory) {
+		zluts = new float[planes*res*numLUTs];
+		std::copy(data, data+planes*res*numLUTs, zluts);
+	} else
+		zluts = data;
+	zlut_memoryOwner = !copyMemory;
 	zlut_planes = planes;
 	zlut_res = res;
 	zlut_count = numLUTs;
 	zprofile_radius = prof_radius;
+	zlut_angularSteps = angularSteps;
 }
 
 
@@ -453,24 +449,12 @@ void CPUTrackerImageBuffer::Assign(ushort* srcData, int pitch)
 	}
 }
 
+
+
+
 CPUTrackerImageBuffer::~CPUTrackerImageBuffer ()
 {
 	delete[] data;
-}
-
-TrackerImageBuffer* CreateTrackerImageBuffer(int w,int h)
-{
-	CPUTrackerImageBuffer* b = new CPUTrackerImageBuffer();
-	b->w = w;
-	b->h = h;
-	b->data = new ushort[w*h];
-	return b;
-}
-
-void CPUTracker::SelectImageBuffer(TrackerImageBuffer* b)
-{
-	CPUTrackerImageBuffer* cpubuf = (CPUTrackerImageBuffer*)b;
-
 }
 
 vector2f CPUTracker::ComputeXCor2D()
@@ -481,5 +465,6 @@ vector2f CPUTracker::ComputeXCor2D()
 
 	return tracker2D->ComputeXCor(srcImage);
 }
+
 
 

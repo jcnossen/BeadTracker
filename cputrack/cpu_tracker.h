@@ -1,8 +1,7 @@
 #pragma once
 
-#include "Tracker.h"
+#include "QueuedTracker.h"
 #include "utils.h"
-
 #include "scalar_types.h"
 
 
@@ -21,10 +20,11 @@ public:
 };
 
 
-class CPUTracker : public Tracker
+class CPUTracker
 {
 public:
 	FFT2DTracker* tracker2D;
+	int width, height;
 
 	float *srcImage, *debugImage;
 	complexc *fft_out, *fft_revout;
@@ -34,7 +34,8 @@ public:
 
 	// The ZLUT system stores 'zlut_count' number of 2D zlut's, so every bead can be tracked with its own unique ZLUT.
 	float* zluts; // size: zlut_planes*zlut_count*zlut_res,		indexing: zlut[index * (zlut_planes * zlut_res) + plane * zlut_res + r]
-	int zlut_planes, zlut_res, zlut_count; 
+	bool zlut_memoryOwner; // is this instance the owner of the zluts memory, or is it external?
+	int zlut_planes, zlut_res, zlut_count, zlut_angularSteps; 
 	std::vector<float> rprof, rprof_diff;
 	float zprofile_radius;
 	
@@ -44,6 +45,8 @@ public:
 	std::vector<xcor_t> Y_xc, Y_xcr, Y_result;
 
 	float& getPixel(int x, int y) { return srcImage[width*y+x]; }
+	int GetWidth() { return width; }
+	int GetHeight() { return height; }
 	float Interpolate(float x,float y);
 	CPUTracker(int w, int h, int xcorwindow=128);
 	~CPUTracker();
@@ -61,11 +64,10 @@ public:
 	void SetImageFloat(float* srcImage);
 
 	vector2f ComputeBgCorrectedCOM();
-	void RemoveBackground(float median);
 	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center);
 
 	void Normalize(float *image=0);
-	void SetZLUT(float* data, int planes, int res, int num_zluts, float prof_radius);
+	void SetZLUT(float* data, int planes, int res, int num_zluts, float prof_radius, int angularSteps, bool copyMemory);
 	float ComputeZ(vector2f center, int angularSteps, int zlutIndex); // radialSteps is given by zlut_res
 
 	bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
@@ -77,7 +79,6 @@ public:
 	void OutputDebugInfo();
 	float* GetDebugImage() { return debugImage; }
 	void SelectImageBuffer(TrackerImageBuffer* b);
-
 };
 
 void GenerateTestImage(float* data, int w, float xp, float yp, float size, float MaxPhotons);
@@ -125,5 +126,4 @@ T CPUTracker::ComputeMaxInterp(T* data, int len, int numpoints)
 		return (T)iMax + interpMax;
 	}
 }
-
 

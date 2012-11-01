@@ -81,3 +81,5 @@ void ResizeLVArray(LVArray<T>**& d, int elems) {
 typedef LVArray2D<float> **ppFloatArray2;
 #include "lv_epilog.h"
 
+void ArgumentErrorMsg(ErrorCluster* e, const std::string& msg);
+

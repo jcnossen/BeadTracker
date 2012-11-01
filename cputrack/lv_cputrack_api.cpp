@@ -1,12 +1,13 @@
-
+/*
+Labview API for CPU tracker
+*/
 #include <Windows.h>
 
 #include "random_distr.h"
 #include "labview.h"
-#include "tracker.h"
-#include "TrackerQueue.h"
+#include "cpu_tracker.h"
 
-static MgErr FillErrorCluster(MgErr err, const char *message, ErrorCluster *error)
+MgErr FillErrorCluster(MgErr err, const char *message, ErrorCluster *error)
 {
 	if (err)
 	{
@@ -47,28 +48,12 @@ void saveImage(float* data, uint w, uint h, const char* filename)
 	imaqDispose(dst);
 }
 
-CDLL_EXPORT void DLL_CALLCONV generate_test_image(Image *img, int w, int h, float xp, float yp, float size, float photoncount)
-{
-	try {
-		float *d = new float[w*h];
-		GenerateTestImage(d, w, h, xp, yp, size, photoncount);
-		ushort* intd = floatToNormalizedUShort(d, w,h);
 
-		imaqArrayToImage(img, intd, w,h);
-		delete[] d;
-		delete[] intd;
-	}
-	catch(const std::exception& e)
-	{
-		dbgout("Exception: " + std::string(e.what()) + "\n");
-	}
-}
-
-CDLL_EXPORT Tracker* DLL_CALLCONV create_tracker(uint w, uint h, uint xcorw)
+CDLL_EXPORT CPUTracker* DLL_CALLCONV create_tracker(uint w, uint h, uint xcorw)
 {
 	try {
 		Sleep(300);
-		return CreateTrackerInstance(w,h,xcorw);
+		return new CPUTracker(w,h,xcorw);
 	}
 	catch(const std::exception& e)
 	{
@@ -77,7 +62,7 @@ CDLL_EXPORT Tracker* DLL_CALLCONV create_tracker(uint w, uint h, uint xcorw)
 	}
 }
 
-CDLL_EXPORT void DLL_CALLCONV destroy_tracker(Tracker* tracker)
+CDLL_EXPORT void DLL_CALLCONV destroy_tracker(CPUTracker* tracker)
 {
 	try {
 		delete tracker;
@@ -96,7 +81,7 @@ void copyToLVArray (LVArray<T>**& r, const std::vector<T>& a)
 		(*r)->elt[x] = a[x];
 }
 
-CDLL_EXPORT void DLL_CALLCONV copy_crosscorrelation_result(Tracker* tracker, LVArray<float>** x_result, LVArray<float>** y_result, LVArray<float>** x_xc, LVArray<float>** y_xc)
+CDLL_EXPORT void DLL_CALLCONV copy_crosscorrelation_result(CPUTracker* tracker, LVArray<float>** x_result, LVArray<float>** y_result, LVArray<float>** x_xc, LVArray<float>** y_xc)
 {
 	try {
 		std::vector<xcor_t> xprof, yprof, xconv, yconv;
@@ -113,62 +98,6 @@ CDLL_EXPORT void DLL_CALLCONV copy_crosscorrelation_result(Tracker* tracker, LVA
 	}
 }
 
-CDLL_EXPORT void DLL_CALLCONV localize_image(Tracker* tracker, Image* img, float* COM, float* xcor, float* storedMedian, Image* dbgImg, int xcor_iterations)
-{
-	try {
-		ImageInfo info;
-		imaqGetImageInfo(img, &info);
-
-		if (info.xRes != tracker->GetWidth() || info.yRes != tracker->GetHeight())
-			return;
-
-		float median = storedMedian ? *storedMedian : -1.0f;
-		
-		if (info.imageType == IMAQ_IMAGE_U8) {
-			uchar* imgData = (uchar*)info.imageStart;
-			tracker->SetImage8Bit(imgData, info.xRes, info.yRes, info.pixelsPerLine);
-		} else if(info.imageType == IMAQ_IMAGE_U16) {
-			ushort* imgData = (ushort*)info.imageStart;
-			tracker->SetImage16Bit(imgData, info.xRes, info.yRes, info.pixelsPerLine*2);
-		} else
-			return;
-
-		vector2f com = tracker->ComputeBgCorrectedCOM();
-
-		COM[0] = com.x;
-		COM[1] = com.y;
-				
-		vector2f xcorpos = tracker->ComputeXCorInterpolated(com, xcor_iterations);
-		xcor[0] = xcorpos.x;
-		xcor[1] = xcorpos.y;
-
-		if (dbgImg) {
-#ifdef _DEBUG
-			ImageInfo di;
-			imaqGetImageInfo(dbgImg, &di);
-			float* img = tracker->GetDebugImage();
-			if (di.imageType == IMAQ_IMAGE_U16 && dbgImg) {
-				ushort* d = floatToNormalizedUShort(img, tracker->GetWidth(), tracker->GetHeight());
-				imaqArrayToImage(dbgImg, d, info.xRes, info.yRes);
-				delete[] d;
-			}
-#else
-			ImageInfo di;
-			imaqGetImageInfo(dbgImg, &di);
-			if (di.imageType == IMAQ_IMAGE_U16 && tracker->GetDebugImage()) {
-				ushort* d = floatToNormalizedUShort(tracker->GetDebugImage(), tracker->GetWidth(), tracker->GetHeight());
-				imaqArrayToImage(dbgImg, d, info.xRes, info.yRes);
-				delete[] d;
-			}
-#endif
-		}
-	}
-	catch(const std::exception& e)
-	{
-		dbgout("Exception: " + std::string(e.what()) + "\n");
-	}
-}
-
 /*
 
 median = 0: Use zero median
@@ -176,7 +105,7 @@ median = 0: Use zero median
 *median >= 0: Use given median
 
 */
-CDLL_EXPORT void DLL_CALLCONV compute_com(Tracker* tracker, float* out)
+CDLL_EXPORT void DLL_CALLCONV compute_com(CPUTracker* tracker, float* out)
 {
 	float m;
 	vector2f com = tracker->ComputeBgCorrectedCOM();
@@ -184,7 +113,7 @@ CDLL_EXPORT void DLL_CALLCONV compute_com(Tracker* tracker, float* out)
 	out[1] = com.y;
 }
 
-CDLL_EXPORT void DLL_CALLCONV compute_xcor(Tracker* tracker, vector2f* position, int iterations, int profileWidth, int useInterpolation)
+CDLL_EXPORT void DLL_CALLCONV compute_xcor(CPUTracker* tracker, vector2f* position, int iterations, int profileWidth, int useInterpolation)
 {
 	if (useInterpolation)
 		*position = tracker->ComputeXCorInterpolated(*position, iterations, profileWidth);
@@ -193,7 +122,7 @@ CDLL_EXPORT void DLL_CALLCONV compute_xcor(Tracker* tracker, vector2f* position,
 }
 
 
-CDLL_EXPORT void DLL_CALLCONV set_image(Tracker* tracker, Image* img, int offsetX, int offsetY, ErrorCluster* error)
+CDLL_EXPORT void DLL_CALLCONV set_image(CPUTracker* tracker, Image* img, int offsetX, int offsetY, ErrorCluster* error)
 {
 	try {
 		ImageInfo info;
@@ -216,7 +145,7 @@ CDLL_EXPORT void DLL_CALLCONV set_image(Tracker* tracker, Image* img, int offset
 	}
 }
 
-CDLL_EXPORT void DLL_CALLCONV set_image_u8(Tracker* tracker, LVArray2D<uchar>** pData, ErrorCluster* error)
+CDLL_EXPORT void DLL_CALLCONV set_image_u8(CPUTracker* tracker, LVArray2D<uchar>** pData, ErrorCluster* error)
 {
 	LVArray2D<uchar>* data = *pData;
 	if (data->dimSizes[0] != tracker->GetWidth() || data->dimSizes[1] != tracker->GetHeight()) {
@@ -226,7 +155,7 @@ CDLL_EXPORT void DLL_CALLCONV set_image_u8(Tracker* tracker, LVArray2D<uchar>** 
 	tracker->SetImage8Bit( data->data, tracker->GetWidth(), tracker->GetHeight(), tracker->GetWidth() );
 }
 
-CDLL_EXPORT void DLL_CALLCONV set_image_u16(Tracker* tracker, LVArray2D<ushort>** pData, ErrorCluster* error)
+CDLL_EXPORT void DLL_CALLCONV set_image_u16(CPUTracker* tracker, LVArray2D<ushort>** pData, ErrorCluster* error)
 {
 	LVArray2D<ushort>* data = *pData;
 	if (data->dimSizes[0] != tracker->GetWidth() || data->dimSizes[1] != tracker->GetHeight()) {
@@ -236,7 +165,7 @@ CDLL_EXPORT void DLL_CALLCONV set_image_u16(Tracker* tracker, LVArray2D<ushort>*
 	tracker->SetImage16Bit( data->data, tracker->GetWidth(), tracker->GetHeight(), tracker->GetWidth()*sizeof(ushort) );
 }
 
-CDLL_EXPORT void DLL_CALLCONV set_image_float(Tracker* tracker, LVArray2D<float>** pData, ErrorCluster* error)
+CDLL_EXPORT void DLL_CALLCONV set_image_float(CPUTracker* tracker, LVArray2D<float>** pData, ErrorCluster* error)
 {
 	LVArray2D<float>* data = *pData;
 	if (data->dimSizes[0] != tracker->GetWidth() || data->dimSizes[1] != tracker->GetHeight()) {
@@ -247,29 +176,13 @@ CDLL_EXPORT void DLL_CALLCONV set_image_float(Tracker* tracker, LVArray2D<float>
 }
 
 
-CDLL_EXPORT void DLL_CALLCONV compute_radial_profile(Tracker* tracker, ppFloatArray result, int angularSteps, float range, float* center)
-{
-	LVArray<float>* dst = *result;
-	tracker->ComputeRadialProfile(&dst->elt[0], dst->dimSize, angularSteps, range, *(vector2f*)center);
-}
 
-CDLL_EXPORT void DLL_CALLCONV set_ZLUT(Tracker* tracker, LVArray3D<float>** pZlut, float profile_radius)
-{
-	LVArray3D<float>* zlut = *pZlut;
-
-	int numLUTs = zlut->dimSizes[0];
-	int planes = zlut->dimSizes[1];
-	int res = zlut->dimSizes[2];
-	
-	tracker->SetZLUT(zlut->data, planes, res, numLUTs, profile_radius);
-}
-
-CDLL_EXPORT float DLL_CALLCONV compute_z(Tracker* tracker, float* center, int angularSteps, int zlut_index)
+CDLL_EXPORT float DLL_CALLCONV compute_z(CPUTracker* tracker, float* center, int angularSteps, int zlut_index)
 {
 	return tracker->ComputeZ(*(vector2f*)center, angularSteps, zlut_index);
 }
 
-CDLL_EXPORT void DLL_CALLCONV get_debug_image(Tracker* tracker, Image* dbgImg)
+CDLL_EXPORT void DLL_CALLCONV get_debug_image(CPUTracker* tracker, Image* dbgImg)
 {
 	ImageInfo di;
 	imaqGetImageInfo(dbgImg, &di);
@@ -283,7 +196,7 @@ CDLL_EXPORT void DLL_CALLCONV get_debug_image(Tracker* tracker, Image* dbgImg)
 	}
 }
 
-CDLL_EXPORT void DLL_CALLCONV get_debug_img_as_array(Tracker* tracker, ppFloatArray2 pdbgImg)
+CDLL_EXPORT void DLL_CALLCONV get_debug_img_as_array(CPUTracker* tracker, ppFloatArray2 pdbgImg)
 {
 	float* src = tracker->GetDebugImage();
 	if (src) {
@@ -296,13 +209,24 @@ CDLL_EXPORT void DLL_CALLCONV get_debug_img_as_array(Tracker* tracker, ppFloatAr
 	}
 }
 
-CDLL_EXPORT TrackerQueue* create_queue(int workerThreads, int width, int height, int xcorw, ppFloatArray2 pZlut, float profile_radius)
-{
-	LVArray2D<float>* zlutdata = *pZlut;
-	ZLookupTable* zlut = new ZLookupTable (zlutdata->data, zlutdata->dimSizes[0], zlutdata->dimSizes[1], profile_radius);
 
-	// zlut is now owned by TrackerQueue
-	return 0;
+
+CDLL_EXPORT void DLL_CALLCONV compute_radial_profile(CPUTracker* tracker, LVArray<float>** result, int angularSteps, float range, float* center)
+{
+	LVArray<float>* dst = *result;
+	tracker->ComputeRadialProfile(&dst->elt[0], dst->dimSize, angularSteps, range, *(vector2f*)center);
 }
 
 
+
+
+CDLL_EXPORT void DLL_CALLCONV set_ZLUT(CPUTracker* tracker, LVArray3D<float>** pZlut, float profile_radius, int angular_steps)
+{
+	LVArray3D<float>* zlut = *pZlut;
+
+	int numLUTs = zlut->dimSizes[0];
+	int planes = zlut->dimSizes[1];
+	int res = zlut->dimSizes[2];
+	
+	tracker->SetZLUT(zlut->data, planes, res, numLUTs, profile_radius, angular_steps, false);
+}
