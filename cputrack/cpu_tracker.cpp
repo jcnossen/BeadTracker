@@ -322,8 +322,8 @@ vector2f CPUTracker::ComputeBgCorrectedCOM()
 		}
 
 	float invN = 1.0f/(width*height);
-	float stdev = sqrtf( sum2 * invN - invN*invN * sum*sum );
 	float mean = sum * invN;
+	float stdev = sqrtf(sum2 * invN - mean * mean);
 	sum = 0.0f;
 
 	for (int y=0;y<height;y++)
