@@ -47,7 +47,7 @@ public:
 	float Interpolate(float x,float y);
 	CPUTracker(int w, int h, int xcorwindow=128);
 	~CPUTracker();
-	void setXCorWindow(int xcorwindow);
+	void ResizeFFTSpace();
 
 	vector2f ComputeXCor(vector2f initial, int profileWidth=32);
 	vector2f ComputeXCor2D();

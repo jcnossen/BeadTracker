@@ -28,7 +28,6 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 {
 	width = w;
 	height = h;
-	xcorw = 0;
 	fft_out = 0;
 	fft_revout = 0;
 	fft_plan_fw = fft_plan_bw = 0;
@@ -42,13 +41,12 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 	zluts = 0;
 	zlut_planes = zlut_res = zlut_count = 0;
 	zprofile_radius = 0.0f;
-
-	setXCorWindow(xcorwindow);
+	xcorw = xcorwindow;
 }
 
-void CPUTracker::setXCorWindow(int xcorwindow)
+void CPUTracker::ResizeFFTSpace()
 {
-	if (xcorw!=xcorwindow) {
+	if (!fft_plan_fw) {
 #ifdef TRK_USE_DOUBLE
 		if (fft_plan_fw) fftw_destroy_plan(fft_plan_fw);
 		if (fft_plan_bw) fftw_destroy_plan(fft_plan_bw);
@@ -60,7 +58,6 @@ void CPUTracker::setXCorWindow(int xcorwindow)
 		delete[] fft_out;
 		delete[] fft_revout;
 	}
-	xcorw = xcorwindow;
 
 	if (xcorw>0) {
 		X_xcr.resize(xcorw);
@@ -85,7 +82,8 @@ void CPUTracker::setXCorWindow(int xcorwindow)
 
 CPUTracker::~CPUTracker()
 {
-	setXCorWindow(0);
+	xcorw=0;
+	ResizeFFTSpace(); 
 	delete[] srcImage;
 	delete[] debugImage;
 	if (tracker2D) delete tracker2D;
@@ -130,6 +128,10 @@ static void _markPixels(float x,float y, float* img, int w, float mv)
 
 vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth)
 {
+	if (!fft_plan_fw) {
+		ResizeFFTSpace();
+	}
+
 	// extract the image
 	vector2f pos = initial;
 
@@ -195,6 +197,10 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 
 vector2f CPUTracker::ComputeXCor(vector2f initial, int profileWidth)
 {
+	if (!fft_plan_fw) {
+		ResizeFFTSpace();
+	}
+
 	// extract the image
 	vector2f pos = initial;
 
