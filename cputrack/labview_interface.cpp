@@ -216,19 +216,34 @@ CDLL_EXPORT void DLL_CALLCONV set_image(Tracker* tracker, Image* img, int offset
 	}
 }
 
-CDLL_EXPORT void DLL_CALLCONV set_image_u8(Tracker* tracker, LVArray2D<uchar>** data)
+CDLL_EXPORT void DLL_CALLCONV set_image_u8(Tracker* tracker, LVArray2D<uchar>** pData, ErrorCluster* error)
 {
-	tracker->SetImage8Bit( (*data)->data, tracker->GetWidth(), tracker->GetHeight(), tracker->GetWidth() );
+	LVArray2D<uchar>* data = *pData;
+	if (data->dimSizes[0] != tracker->GetWidth() || data->dimSizes[1] != tracker->GetHeight()) {
+		ArgumentErrorMsg(error, "Given image has invalid dimensions");
+		return;
+	}
+	tracker->SetImage8Bit( data->data, tracker->GetWidth(), tracker->GetHeight(), tracker->GetWidth() );
 }
 
-CDLL_EXPORT void DLL_CALLCONV set_image_u16(Tracker* tracker, LVArray2D<ushort>** data)
+CDLL_EXPORT void DLL_CALLCONV set_image_u16(Tracker* tracker, LVArray2D<ushort>** pData, ErrorCluster* error)
 {
-	tracker->SetImage16Bit( (*data)->data, tracker->GetWidth(), tracker->GetHeight(), tracker->GetWidth() );
+	LVArray2D<ushort>* data = *pData;
+	if (data->dimSizes[0] != tracker->GetWidth() || data->dimSizes[1] != tracker->GetHeight()) {
+		ArgumentErrorMsg(error, "Given image has invalid dimensions");
+		return;
+	}
+	tracker->SetImage16Bit( data->data, tracker->GetWidth(), tracker->GetHeight(), tracker->GetWidth()*sizeof(ushort) );
 }
 
-CDLL_EXPORT void DLL_CALLCONV set_image_as_float_array(Tracker* tracker, LVArray2D<float>** data)
+CDLL_EXPORT void DLL_CALLCONV set_image_float(Tracker* tracker, LVArray2D<float>** pData, ErrorCluster* error)
 {
-	tracker->SetImageFloat( (*data)->data );
+	LVArray2D<float>* data = *pData;
+	if (data->dimSizes[0] != tracker->GetWidth() || data->dimSizes[1] != tracker->GetHeight()) {
+		ArgumentErrorMsg(error, "Given image has invalid dimensions");
+		return;
+	}
+	tracker->SetImageFloat( data->data );
 }
 
 

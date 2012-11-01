@@ -54,8 +54,8 @@ public:
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth=32);
 	vector2f ComputeQI(int iterations, int radialSteps, int angularStepsPerQuadrant, float radius, vector2f center);
 	void XCorFFTHelper(xcor_t* xc, xcor_t* xcr, xcor_t* result);
-	template<typename TPixel>
-	void SetImage(TPixel* srcImage, uint w, uint h, uint srcpitch);
+
+	template<typename TPixel> void SetImage(TPixel* srcImage, uint w, uint h, uint srcpitch);
 	void SetImage16Bit(ushort* srcImage, uint w, uint h, uint srcpitch) { SetImage(srcImage, w, h, srcpitch); }
 	void SetImage8Bit(uchar* srcImage, uint w, uint h, uint srcpitch) { SetImage(srcImage, w, h, srcpitch); }
 	void SetImageFloat(float* srcImage);

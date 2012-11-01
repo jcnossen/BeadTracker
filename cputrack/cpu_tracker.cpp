@@ -46,7 +46,7 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 
 void CPUTracker::ResizeFFTSpace()
 {
-	if (!fft_plan_fw) {
+	if (fft_plan_fw) {
 #ifdef TRK_USE_DOUBLE
 		if (fft_plan_fw) fftw_destroy_plan(fft_plan_fw);
 		if (fft_plan_bw) fftw_destroy_plan(fft_plan_bw);
@@ -54,7 +54,7 @@ void CPUTracker::ResizeFFTSpace()
 		if (fft_plan_fw) fftwf_destroy_plan(fft_plan_fw);
 		if (fft_plan_bw) fftwf_destroy_plan(fft_plan_bw);
 #endif
-
+		fft_plan_fw = fft_plan_bw = 0;
 		delete[] fft_out;
 		delete[] fft_revout;
 	}

@@ -89,12 +89,15 @@ void SpeedTest()
 
 		double t3 = getPreciseTime();
 	//	dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f\n", xp, com.x-xp, xcor.x-xp));
-		tloc+=t2-t1;
-		tgen+=t1-t0;
-		tz+=t3-t2;
+		if (k>0) { // skip first initialization round
+			tloc+=t2-t1;
+			tgen+=t1-t0;
+			tz+=t3-t2;
+		}
 	}
-	
-	dbgprintf("Time: %f s. Image gen. (img/s): %f\n2D loc. speed (img/s): %f Z estimation (img/s): %f\n", tloc+tgen, N/tgen, N/tloc, N/tz);
+
+	int Nns = N-1;
+	dbgprintf("Time: %f s. Image gen. (img/s): %f\n2D loc. speed (img/s): %f Z estimation (img/s): %f\n", tloc+tgen, Nns/tgen, Nns/tloc, Nns/tz);
 	dbgprintf("Average dist: COM x: %f, y: %f\n", comdist.x/N, comdist.y/N);
 	dbgprintf("Average dist: Cross-correlation x: %f, y: %f\n", xcordist.x/N, xcordist.y/N);
 	dbgprintf("Average dist: Z: %f. Mean error:%f\n", zdist/N, zerrsum/N); 
