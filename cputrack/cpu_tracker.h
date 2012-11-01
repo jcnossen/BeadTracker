@@ -97,32 +97,6 @@ void CPUTracker::SetImage(TPixel* data, uint w,uint h, uint pitchInBytes)
 }
 
 
-template<typename TPixel>
-float ComputeMedian(TPixel* data, uint w, uint h, uint srcpitch, float* pMedian)
-{
-	float median;
-	if (!pMedian || *pMedian<0.0f) {
-		//TPixel* sortbuf = new TPixel[w*h/4];
-		float total = 0.0f;
-		// compute mean once per 4 rows to save time
-		for (uint y=0;y<h/4;y++) {
-			for (uint x=0;x<w;x++) {
-				//sortbuf[y*w+x] = ((TPixel*)((uchar*)data + y*4*srcpitch)) [x]; 
-				total += ((TPixel*)((uchar*)data + y*4*srcpitch)) [x];
-			}
-		}
-
-		//std::sort(sortbuf, sortbuf+(w*h/4));
-//		median = *pMedian = sortbuf[w*h/8];
-		median = total / (w*h/4);
-		if (pMedian) *pMedian=median;
-		//delete[] sortbuf;
-	} else
-		median = *pMedian;
-
-	return median;
-}
-
 
 template<typename T>
 T CPUTracker::ComputeMaxInterp(T* data, int len, int numpoints)
