@@ -7,7 +7,7 @@
 
 class QueuedCPUTracker : public QueuedTracker {
 public:
-	QueuedCPUTracker(int w, int h, int xcorw, int numThreads);
+	QueuedCPUTracker(QTrkSettings* settings);
 	~QueuedCPUTracker();
 
 	void SetZLUT(float* data, int planes, int res, int num_zluts, float prof_radius, int angularSteps);

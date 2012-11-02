@@ -13,7 +13,7 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_compute_radial_profile(QueuedTracker* tracker
 	tracker->ComputeRadialProfile(&dst->elt[0], dst->dimSize, angularSteps, range, *(vector2f*)center);
 }
 
-CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pZlut, float profile_radius, int angular_steps)
+CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pZlut)
 {
 	LVArray3D<float>* zlut = *pZlut;
 
@@ -21,13 +21,12 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 	int planes = zlut->dimSizes[1];
 	int res = zlut->dimSizes[2];
 	
-	tracker->SetZLUT(zlut->data, planes, res, numLUTs, profile_radius, angular_steps);
+	tracker->SetZLUT(zlut->data, planes, res, numLUTs);
 }
 
 
-CDLL_EXPORT QueuedTracker* qtrk_create(int w, int h, int numThreads, QTrkSettings* settings)
+CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings)
 {
-
 	return 0;
 }
 

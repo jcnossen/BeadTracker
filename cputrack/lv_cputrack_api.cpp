@@ -128,14 +128,14 @@ CDLL_EXPORT void DLL_CALLCONV set_image(CPUTracker* tracker, Image* img, int off
 		ImageInfo info;
 		imaqGetImageInfo(img, &info);
 
-		if (offsetX < 0 || offsetY < 0 || offsetX + tracker->GetWidth() > info.xRes || offsetY + tracker->GetHeight() > info.yRes) {
+		if (offsetX < 0 || offsetY < 0 || offsetX + tracker->GetWidth() > info.xRes || offsetY + tracker->GetHeight() > info.yRes || info.xRes != tracker->GetWidth() || info.yRes != tracker->GetHeight()) {
 			ArgumentErrorMsg(error, "Invalid image dimension or offset given");
 			return;
 		}
 		if (info.imageType == IMAQ_IMAGE_U8)
-			tracker->SetImage8Bit((uchar*)info.imageStart + offsetX + info.pixelsPerLine * offsetY, info.xRes, info.yRes, info.pixelsPerLine);
+			tracker->SetImage8Bit((uchar*)info.imageStart + offsetX + info.pixelsPerLine * offsetY, info.pixelsPerLine);
 		else if(info.imageType == IMAQ_IMAGE_U16)
-			tracker->SetImage16Bit((ushort*)info.imageStart + offsetX + info.pixelsPerLine * offsetY, info.xRes, info.yRes, info.pixelsPerLine*2);
+			tracker->SetImage16Bit((ushort*)info.imageStart + offsetX + info.pixelsPerLine * offsetY, info.pixelsPerLine*2);
 		else
 			return;
 	}
@@ -152,7 +152,7 @@ CDLL_EXPORT void DLL_CALLCONV set_image_u8(CPUTracker* tracker, LVArray2D<uchar>
 		ArgumentErrorMsg(error, "Given image has invalid dimensions");
 		return;
 	}
-	tracker->SetImage8Bit( data->data, tracker->GetWidth(), tracker->GetHeight(), tracker->GetWidth() );
+	tracker->SetImage8Bit( data->data, tracker->GetWidth() );
 }
 
 CDLL_EXPORT void DLL_CALLCONV set_image_u16(CPUTracker* tracker, LVArray2D<ushort>** pData, ErrorCluster* error)
@@ -162,7 +162,7 @@ CDLL_EXPORT void DLL_CALLCONV set_image_u16(CPUTracker* tracker, LVArray2D<ushor
 		ArgumentErrorMsg(error, "Given image has invalid dimensions");
 		return;
 	}
-	tracker->SetImage16Bit( data->data, tracker->GetWidth(), tracker->GetHeight(), tracker->GetWidth()*sizeof(ushort) );
+	tracker->SetImage16Bit( data->data, tracker->GetWidth()*sizeof(ushort) );
 }
 
 CDLL_EXPORT void DLL_CALLCONV set_image_float(CPUTracker* tracker, LVArray2D<float>** pData, ErrorCluster* error)
@@ -228,5 +228,5 @@ CDLL_EXPORT void DLL_CALLCONV set_ZLUT(CPUTracker* tracker, LVArray3D<float>** p
 	int planes = zlut->dimSizes[1];
 	int res = zlut->dimSizes[2];
 	
-	tracker->SetZLUT(zlut->data, planes, res, numLUTs, profile_radius, angular_steps, false);
+	tracker->SetZLUT(zlut->data, planes, res, numLUTs, profile_radius, angular_steps, true);
 }

@@ -78,7 +78,8 @@ CPUTracker::~CPUTracker()
 	delete[] srcImage;
 	delete[] debugImage;
 	if (tracker2D) delete tracker2D;
-	if (zluts) delete[] zluts;
+	if (zluts && zlut_memoryOwner) 
+		delete[] zluts;
 }
 
 void CPUTracker::SetImageFloat(float *src) {
@@ -383,10 +384,12 @@ void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSt
 
 void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float prof_radius, int angularSteps, bool copyMemory)
 {
-	if (zluts && zlut_memoryOwner) delete[] zluts;
+	if (zluts && zlut_memoryOwner)
+		delete[] zluts;
+
 	if (copyMemory) {
 		zluts = new float[planes*res*numLUTs];
-		std::copy(data, data+planes*res*numLUTs, zluts);
+		std::copy(data, data+(planes*res*numLUTs), zluts);
 	} else
 		zluts = data;
 	zlut_memoryOwner = !copyMemory;

@@ -49,12 +49,13 @@ void QueuedCPUTracker::AddJob(Job* j)
 	pthread_mutex_unlock(&jobs_mutex);
 }
 
-QueuedCPUTracker::QueuedCPUTracker(int w, int h, int xcorw, int numThreads)
+QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 {
+	cfg = *pcfg;
 	quitWork = false;
-	threads.resize(numThreads);
-	for (int k=0;k<numThreads;k++) {
-		threads[k].tracker = new CPUTracker(w, h, xcorw);
+	threads.resize(cfg.numThreads);
+	for (int k=0;k<cfg.numThreads;k++) {
+		threads[k].tracker = new CPUTracker(cfg.width, cfg.height, cfg.xcorw);
 		threads[k].manager = this;
 	}
 
@@ -138,7 +139,7 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 		result.firstGuess = result.pos = com;
 	} else if(j->locType == LocalizeQI) {
 		result.firstGuess = com;
-		result.pos = th->tracker->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_maxr); 
+		result.pos = th->tracker->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_maxradius); 
 	}
 
 	pthread_mutex_lock(&results_mutex);

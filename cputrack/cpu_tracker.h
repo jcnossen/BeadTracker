@@ -89,8 +89,8 @@ void CPUTracker::SetImage(TPixel* data, uint pitchInBytes)
 {
 	uchar* bp = (uchar*)data;
 
-	for (uint y=0;y<height;y++) {
-		for (uint x=0;x<width;x++) {
+	for (int y=0;y<height;y++) {
+		for (int x=0;x<width;x++) {
 			srcImage[y*width+x] = ((TPixel*)bp)[x];
 		}
 		bp += pitchInBytes;

@@ -43,16 +43,21 @@ struct LocalizationResult {
 	uint locType;
 	float z;
 };
-// DONT CHANGE, Mapped to labview clusters!
+// DONT CHANGE, Mapped to labview clusters (QTrkSettings.ctl)!
 struct QTrkSettings {
+	int width, height;
+	int numThreads;
+
 	int xcorw;
 	int profileWidth;
 	int xcor1D_iterations;
-	float zlut_profile_radius;
+
+	float zlut_minradius, zlut_maxradius;
 	int zlut_angularsteps;
+
 	int qi_iterations;
 	int qi_radialsteps, qi_angularsteps;
-	float qi_minr, qi_maxr;
+	float qi_minradius, qi_maxradius;
 };
 #pragma pack(pop)
 
