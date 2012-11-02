@@ -9,21 +9,18 @@ CPU only tracker
 #include "cpu_tracker.h"
 #include "LsqQuadraticFit.h"
 #include "random_distr.h"
-#include "FFT2DTracker.h"
 #include <exception>
 
 const float XCorScale = 1.0f; // keep this at 1, because linear oversampling was obviously a bad idea..
 
 static int round(xcor_t f) { return (int)(f+0.5f); }
 
-CPUTracker::CPUTracker(int w, int h, int xcorwindow)
+CPUTracker::CPUTracker(int w, int h, int xcorwindow) : fft_forward(xcorwindow, false), fft_backward(xcorwindow, true)
 {
 	width = w;
 	height = h;
 	fft_out = 0;
 	fft_revout = 0;
-	fft_plan_fw = fft_plan_bw = 0;
-	tracker2D = 0;
 	
 	srcImage = new float [w*h];
 	debugImage = new float [w*h];
@@ -34,54 +31,26 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 	zlut_planes = zlut_res = zlut_count = zlut_angularSteps = 0;
 	zprofile_radius = 0.0f;
 	xcorw = xcorwindow;
-}
 
-void CPUTracker::ResizeFFTSpace()
-{
-	if (fft_plan_fw) {
-#ifdef TRK_USE_DOUBLE
-		if (fft_plan_fw) fftw_destroy_plan(fft_plan_fw);
-		if (fft_plan_bw) fftw_destroy_plan(fft_plan_bw);
-#else
-		if (fft_plan_fw) fftwf_destroy_plan(fft_plan_fw);
-		if (fft_plan_bw) fftwf_destroy_plan(fft_plan_bw);
-#endif
-		fft_plan_fw = fft_plan_bw = 0;
-		delete[] fft_out;
-		delete[] fft_revout;
-	}
+	X_xcr.resize(xcorw);
+	Y_xcr.resize(xcorw);
+	X_xc.resize(xcorw);
+	X_result.resize(xcorw);
+	Y_xc.resize(xcorw);
+	Y_result.resize(xcorw);
+	shiftedResult.resize(xcorw);
 
-	if (xcorw>0) {
-		X_xcr.resize(xcorw);
-		Y_xcr.resize(xcorw);
-		X_xc.resize(xcorw);
-		X_result.resize(xcorw);
-		Y_xc.resize(xcorw);
-		Y_result.resize(xcorw);
-		shiftedResult.resize(xcorw);
-
-		fft_out = new complexc[xcorw];
-		fft_revout = new complexc[xcorw];
-#ifdef TRK_USE_DOUBLE
-		fft_plan_fw = fftw_plan_dft_r2c_1d(xcorw, &X_xc[0], (fftw_complex*) fft_out, FFTW_ESTIMATE);
-		fft_plan_bw = fftw_plan_dft_c2r_1d(xcorw, (fftw_complex*)fft_out, &X_result[0], FFTW_ESTIMATE);
-#else
-		fft_plan_fw = fftwf_plan_dft_r2c_1d(xcorw, &X_xc[0], (fftwf_complex*) fft_out, FFTW_ESTIMATE);
-		fft_plan_bw = fftwf_plan_dft_c2r_1d(xcorw, (fftwf_complex*)fft_out, &X_result[0], FFTW_ESTIMATE);
-#endif
-		if (!fft_plan_fw || !fft_plan_bw) {
-			throw std::runtime_error("FFTW plan creation failed");
-		}
-	}
+	fft_out = new complexc[xcorw];
+	fft_revout = new complexc[xcorw];
 }
 
 CPUTracker::~CPUTracker()
 {
 	xcorw=0;
-	ResizeFFTSpace(); 
+	delete[] fft_out;
+	delete[] fft_revout;
 	delete[] srcImage;
 	delete[] debugImage;
-	if (tracker2D) delete tracker2D;
 	if (zluts && zlut_memoryOwner) 
 		delete[] zluts;
 }
@@ -124,10 +93,6 @@ static void _markPixels(float x,float y, float* img, int w, float mv)
 
 vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth)
 {
-	if (!fft_plan_fw) {
-		ResizeFFTSpace();
-	}
-
 	// extract the image
 	vector2f pos = initial;
 
@@ -189,14 +154,8 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 
 
 
-
-
 vector2f CPUTracker::ComputeXCor(vector2f initial, int profileWidth)
 {
-	if (!fft_plan_fw) {
-		ResizeFFTSpace();
-	}
-
 	// extract the image
 	vector2f pos = initial;
 
@@ -267,29 +226,20 @@ void CPUTracker::OutputDebugInfo()
 
 
 
-void CPUTracker::XCorFFTHelper(xcor_t* xc, xcor_t *xcr, xcor_t* result)
+void CPUTracker::XCorFFTHelper(complexc* xc, complexc *xcr, xcor_t* result)
 {
-#ifdef TRK_USE_DOUBLE
-	fftw_execute_dft_r2c(fft_plan_fw, xc, (fftw_complex*)fft_out);
-	fftw_execute_dft_r2c(fft_plan_fw, xcr, (fftw_complex*)fft_revout);
-#else
-	fftwf_execute_dft_r2c(fft_plan_fw, xc, (fftwf_complex*)fft_out);
-	fftwf_execute_dft_r2c(fft_plan_fw, xcr, (fftwf_complex*)fft_revout);
-#endif
+	fft_forward.transform(xc, fft_out);
+	fft_forward.transform(xcr, fft_revout);
 
 	// Multiply with conjugate of reverse
 	for (int x=0;x<xcorw;x++) {
 		fft_out[x] *= complexc(fft_revout[x].real(), -fft_revout[x].imag());
 	}
 
-#ifdef TRK_USE_DOUBLE
-	fftw_execute_dft_c2r(fft_plan_bw, (fftw_complex*)fft_out, &shiftedResult[0]);
-#else
-	fftwf_execute_dft_c2r(fft_plan_bw, (fftwf_complex*)fft_out, &shiftedResult[0]);
-#endif
+	fft_backward.transform(fft_out, &shiftedResult[0]);
 
 	for (int x=0;x<xcorw;x++)
-		result[x] = shiftedResult[ (x+xcorw/2) % xcorw ];
+		result[x] = shiftedResult[ (x+xcorw/2) % xcorw ].real();
 }
 
 
@@ -436,12 +386,17 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex)
 	return z / (float)(zlut_planes-1);
 }
 
+static void CopyCpxVector(std::vector<xcor_t>& xprof, const std::vector<complexc>& src) {
+	xprof.resize(src.size());
+	for (int k=0;k<src.size();k++)
+		xprof[k]=src[k].imag();
+}
 
 bool CPUTracker::GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
 		std::vector<xcor_t>& xconv, std::vector<xcor_t>& yconv)
 {
-	xprof = X_xc;
-	yprof = Y_xc;
+	CopyCpxVector(xprof, X_xc);
+	CopyCpxVector(yprof, Y_xc);
 	xconv = X_result;
 	yconv = Y_result;
 	return true;
@@ -466,11 +421,8 @@ CPUTrackerImageBuffer::~CPUTrackerImageBuffer ()
 
 vector2f CPUTracker::ComputeXCor2D()
 {
-	if (!tracker2D) {
-		tracker2D = new FFT2DTracker(width, height);
-	}
-
-	return tracker2D->ComputeXCor(srcImage);
+	vector2f x={};
+	return x;
 }
 
 

@@ -216,6 +216,7 @@ void ZTrackingTest()
 	}
 }
 
+/*
 void Test2DTracking()
 {
 	CPUTracker tracker(150,150);
@@ -259,14 +260,14 @@ void Test2DTracking()
 	dbgprintf("1D Xcor speed(img/s): %f\n2D Xcor speed (img/s): %f\n", N/tloc1D, N/tloc2D);
 	dbgprintf("Average dist XCor 1D: %f\n", dist1D/N);
 	dbgprintf("Average dist XCor 2D: %f\n", dist2D/N);
-}
+}*/
 
 void QTrkTest()
 {
 	QTrkSettings cfg;
 	QueuedCPUTracker qtrk(&cfg);
 
-	int NumImages=1000;
+	int NumImages=10, JobsPerImg=1000;
 	dbgprintf("Generating %d images...\n", NumImages);
 	float *image = new float[cfg.width*cfg.height];
 	float zmin = 2.0f, zmax=6.0f;
@@ -279,7 +280,8 @@ void QTrkTest()
 
 		GenerateTestImage(image, cfg.width, cfg.height, xp, yp, z, 10000);
 		double t2 = getPreciseTime();
-		qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, LocalizeXCor1D, false, n);
+		for (int k=0;k<JobsPerImg;k++)
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, LocalizeXCor1D, false, n);
 		double t3 = getPreciseTime();
 		tgen += t2-t1;
 		tschedule += t3-t2;
@@ -287,10 +289,12 @@ void QTrkTest()
 	delete[] image;
 	dbgprintf("Schedule time: %f, Generation time: %f\n", tschedule, tgen);
 
-	dbgprintf("Localizing...\n");
+	dbgprintf("Localizing on %d images...\n", NumImages*JobsPerImg);
 
+	double tstart = getPreciseTime();
 	int jobc = 0;
 	int hjobc = qtrk.JobCount();
+	int startJobs = hjobc;
 	qtrk.Start();
 	do {
 		jobc = qtrk.JobCount();
@@ -298,7 +302,10 @@ void QTrkTest()
 			if( hjobc%100==0) dbgprintf("TODO: %d\n", hjobc);
 			hjobc--;
 		}
+		Sleep(5);
 	} while (jobc!=0);
+	double tend = getPreciseTime();
+	dbgprintf("Localization Speed: %d (img/s), using %d threads\n", (int)( startJobs/(tend-tstart) ), qtrk.NumThreads());
 }
 
 int main()

@@ -3,6 +3,7 @@
 #include "QueuedTracker.h"
 #include "utils.h"
 #include "scalar_types.h"
+#include "kissfft.h"
 
 
 typedef uchar pixel_t;
@@ -23,12 +24,10 @@ public:
 class CPUTracker
 {
 public:
-	FFT2DTracker* tracker2D;
 	int width, height;
 
 	float *srcImage, *debugImage;
 	complexc *fft_out, *fft_revout;
-	fftw_plan_t fft_plan_fw, fft_plan_bw;
 	std::vector<vector2f> radialDirs; // full circle for ZLUT
 	std::vector<vector2f> quadrantDirs; // single quadrant
 
@@ -39,10 +38,13 @@ public:
 	std::vector<float> rprof, rprof_diff;
 	float zprofile_radius;
 	
+	kissfft<xcor_t> fft_forward, fft_backward;
 	int xcorw;
-	std::vector<xcor_t> shiftedResult;
-	std::vector<xcor_t> X_xc, X_xcr, X_result;
-	std::vector<xcor_t> Y_xc, Y_xcr, Y_result;
+	std::vector<complexc> shiftedResult;
+	std::vector<complexc> X_xc, X_xcr;
+	std::vector<xcor_t> X_result;
+	std::vector<complexc> Y_xc, Y_xcr;
+	std::vector<xcor_t> Y_result;
 
 	float& getPixel(int x, int y) { return srcImage[width*y+x]; }
 	int GetWidth() { return width; }
@@ -50,13 +52,12 @@ public:
 	float Interpolate(float x,float y);
 	CPUTracker(int w, int h, int xcorwindow=128);
 	~CPUTracker();
-	void ResizeFFTSpace();
 
 	vector2f ComputeXCor(vector2f initial, int profileWidth=32);
 	vector2f ComputeXCor2D();
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth=32);
 	vector2f ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQuadrant, float radius);
-	void XCorFFTHelper(xcor_t* xc, xcor_t* xcr, xcor_t* result);
+	void XCorFFTHelper(complexc* xc, complexc* xcr, xcor_t* result);
 
 	template<typename TPixel> void SetImage(TPixel* srcImage, uint srcpitch);
 	void SetImage16Bit(ushort* srcImage, uint srcpitch) { SetImage(srcImage, srcpitch); }

@@ -18,6 +18,7 @@ public:
 
 	void Start();
 	int JobCount();
+	int NumThreads() { return cfg.numThreads; }
 
 private:
 	struct Thread {

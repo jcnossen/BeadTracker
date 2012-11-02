@@ -24,8 +24,8 @@ QueuedCPUTracker::Job* QueuedCPUTracker::GetNextJob()
 	if (!jobs.empty()) {
 		j = jobs.front();
 		jobs.pop_front();
+		jobCount --;
 	}
-	jobCount --;
 	pthread_mutex_unlock(&jobs_mutex);
 	return j;
 }
@@ -71,7 +71,7 @@ QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 		#ifdef WIN32	
 		SYSTEM_INFO sysInfo;
 		GetSystemInfo(&sysInfo);
-		cfg.numThreads = sysInfo.dwNumberOfProcessors*2;
+		cfg.numThreads = sysInfo.dwNumberOfProcessors*1.5;
 		#else
 		cfg.numThreads = 4;
 		#endif
