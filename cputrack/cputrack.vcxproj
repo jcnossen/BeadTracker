@@ -188,11 +188,9 @@
     <ClInclude Include="cpu_tracker.h" />
     <ClInclude Include="FFT2DTracker.h" />
     <ClInclude Include="LsqQuadraticFit.h" />
-    <ClInclude Include="MThreadQueue.h" />
     <ClInclude Include="random_distr.h" />
     <ClInclude Include="scalar_types.h" />
     <ClInclude Include="Tracker.h" />
-    <ClInclude Include="TrackerQueue.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
