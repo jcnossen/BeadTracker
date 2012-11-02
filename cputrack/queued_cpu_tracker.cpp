@@ -105,6 +105,7 @@ void* QueuedCPUTracker::WorkerThreadMain(void* arg)
 		Job* j = this_->GetNextJob();
 		if (j) {
 			this_->ProcessJob(th, j);
+			this_->JobFinished(j);
 		} else {
 			#ifdef WIN32
 				Sleep(1);
