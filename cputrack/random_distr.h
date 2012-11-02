@@ -25,7 +25,8 @@ int rand_poisson(T lambda)
 {
 	if (lambda > 10) {
 		T v = rand_normal<T>();
-		return (int)max(0,((T)0.5 + lambda + v*sqrt(lambda)));
+		v = (T)0.5 + lambda + v*sqrt(lambda);
+		return (int)max(0,v);
 	}
 	else {
 		T L = exp(-lambda);
