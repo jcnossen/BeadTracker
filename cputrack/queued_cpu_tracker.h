@@ -10,13 +10,14 @@ public:
 	QueuedCPUTracker(QTrkSettings* settings);
 	~QueuedCPUTracker();
 
-	void SetZLUT(float* data, int planes, int res, int num_zluts, float prof_radius, int angularSteps);
+	void SetZLUT(float* data, int planes, int res, int num_zluts);
 	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center);
 
 	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, Localize2DType locType, bool computeZ, uint id, uint zlutIndex=0);
 	int PollFinished(LocalizationResult* results, int maxResults);
 
 	void Start();
+	int JobCount();
 
 private:
 	struct Thread {
@@ -39,6 +40,7 @@ private:
 	pthread_attr_t joinable_attr;
 	pthread_mutex_t jobs_mutex, jobs_buffer_mutex, results_mutex;
 	std::list<Job*> jobs;
+	int jobCount;
 	std::vector<Job*> jobs_buffer; // stores memory
 	std::list<LocalizationResult> results;
 

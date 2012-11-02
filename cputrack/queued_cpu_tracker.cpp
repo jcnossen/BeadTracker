@@ -25,6 +25,7 @@ QueuedCPUTracker::Job* QueuedCPUTracker::GetNextJob()
 		j = jobs.front();
 		jobs.pop_front();
 	}
+	jobCount --;
 	pthread_mutex_unlock(&jobs_mutex);
 	return j;
 }
@@ -46,13 +47,37 @@ void QueuedCPUTracker::AddJob(Job* j)
 {
 	pthread_mutex_lock(&jobs_mutex);
 	jobs.push_back(j);
+	jobCount++;
 	pthread_mutex_unlock(&jobs_mutex);
+}
+
+
+int QueuedCPUTracker::JobCount()
+{
+	int jc;
+	pthread_mutex_lock(&jobs_mutex);
+	jc = jobCount;
+	pthread_mutex_unlock(&jobs_mutex);
+	return jc;
 }
 
 QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 {
 	cfg = *pcfg;
 	quitWork = false;
+
+	if (cfg.numThreads < 0) {
+		// preferably 
+		#ifdef WIN32	
+		SYSTEM_INFO sysInfo;
+		GetSystemInfo(&sysInfo);
+		cfg.numThreads = sysInfo.dwNumberOfProcessors*2;
+		#else
+		cfg.numThreads = 4;
+		#endif
+		dbgprintf("Using %d threads\n", cfg.numThreads);
+	}
+
 	threads.resize(cfg.numThreads);
 	for (int k=0;k<cfg.numThreads;k++) {
 		threads[k].tracker = new CPUTracker(cfg.width, cfg.height, cfg.xcorw);
@@ -65,6 +90,7 @@ QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 	pthread_mutex_init(&jobs_mutex,0);
 	pthread_mutex_init(&results_mutex,0);
 	pthread_mutex_init(&jobs_buffer_mutex,0);
+	jobCount = 0;
 }
 
 QueuedCPUTracker::~QueuedCPUTracker()
@@ -119,9 +145,9 @@ void* QueuedCPUTracker::WorkerThreadMain(void* arg)
 void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 {
 	if (j->dataType == QTrkU8) {
-		th->tracker->SetImage8Bit(j->data, width);
+		th->tracker->SetImage8Bit(j->data, cfg.width);
 	} else if (j->dataType == QTrkU16) {
-		th->tracker->SetImage16Bit((ushort*)j->data, width*2);
+		th->tracker->SetImage16Bit((ushort*)j->data, cfg.width*2);
 	} else {
 		th->tracker->SetImageFloat((float*)j->data);
 	}
@@ -147,7 +173,7 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 	pthread_mutex_unlock(&results_mutex);
 }
 
-void QueuedCPUTracker::SetZLUT(float* data, int planes, int res, int num_zluts, float prof_radius, int angularSteps)
+void QueuedCPUTracker::SetZLUT(float* data, int planes, int res, int num_zluts)
 {
 }
 
@@ -160,13 +186,13 @@ void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDa
 				Localize2DType locType, bool computeZ, uint id, uint zlutIndex)
 {
 	Job* j = AllocateJob();
-	int dstPitch = PDT_BytesPerPixel(pdt) * width;
+	int dstPitch = PDT_BytesPerPixel(pdt) * cfg.width;
 
 	if(!j->data || j->dataType != pdt) {
 		if (j->data) delete[] j->data;
-		j->data = new uchar[dstPitch * height];
+		j->data = new uchar[dstPitch * cfg.height];
 	}
-	for (int y=0;y<height;y++)
+	for (int y=0;y<cfg.height;y++)
 		memcpy(&j->data[dstPitch*y], &data[pitch*y], dstPitch);
 
 	j->dataType = pdt;

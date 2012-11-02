@@ -10,6 +10,7 @@ CPU only tracker
 #include "LsqQuadraticFit.h"
 #include "random_distr.h"
 #include "FFT2DTracker.h"
+#include <exception>
 
 const float XCorScale = 1.0f; // keep this at 1, because linear oversampling was obviously a bad idea..
 
@@ -68,6 +69,9 @@ void CPUTracker::ResizeFFTSpace()
 		fft_plan_fw = fftwf_plan_dft_r2c_1d(xcorw, &X_xc[0], (fftwf_complex*) fft_out, FFTW_ESTIMATE);
 		fft_plan_bw = fftwf_plan_dft_c2r_1d(xcorw, (fftwf_complex*)fft_out, &X_result[0], FFTW_ESTIMATE);
 #endif
+		if (!fft_plan_fw || !fft_plan_bw) {
+			throw std::runtime_error("FFTW plan creation failed");
+		}
 	}
 }
 
