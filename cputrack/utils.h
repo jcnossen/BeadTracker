@@ -58,6 +58,14 @@ struct vector2f {
 };
 #pragma pack(pop)
 
+
+template<typename T>
+void DeleteAllElems(T& c) {
+	for(T::iterator i=c.begin();i!=c.end();++i)
+		delete *i;
+	c.clear();
+}
+
 ushort* floatToNormalizedUShort(float *data, uint w,uint h);
 
 

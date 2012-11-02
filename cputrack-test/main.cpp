@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "../cputrack/random_distr.h"
 #include "../cputrack/FFT2DTracker.h" 
+#include "../cputrack/queued_cpu_tracker.h"
 
 template<typename T> T sq(T x) { return x*x; }
 template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }
@@ -38,7 +39,7 @@ void writeImageAsCSV(const char* file, float* d, int w,int h)
 void SpeedTest()
 {
 	int N = 1000;
-	CPUTracker* tracker = CreateCPUTrackerInstance(150,150, 64);
+	CPUTracker* tracker = new CPUTracker(150,150, 64);
 
 	int radialSteps = 64, zplanes = 120;
 	float* zlut = new float[radialSteps*zplanes];
@@ -51,7 +52,8 @@ void SpeedTest()
 		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), center.x, center.y, s, 0.0f);
 		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, zradius, center);
 	}
-	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, zradius);
+	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, zradius, 64, true);
+	delete[] zlut;
 
 	// Speed test
 	vector2f comdist={}, xcordist={};
@@ -107,7 +109,7 @@ void SpeedTest()
 
 void OnePixelTest()
 {
-	CPUTracker* tracker = CreateCPUTrackerInstance(32,32, 16);
+	CPUTracker* tracker = new CPUTracker(32,32, 16);
 
 	tracker->getPixel(15,15) = 1;
 	dbgout(SPrintf("Pixel at 15,15\n"));
@@ -124,7 +126,7 @@ void OnePixelTest()
  
 void SmallImageTest()
 {
-	CPUTracker *tracker = CreateCPUTrackerInstance(32,32, 16);
+	CPUTracker *tracker = new CPUTracker(32,32, 16);
 
 	GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), 15,15, 1, 0.0f);
 
@@ -142,7 +144,7 @@ void SmallImageTest()
 
 void PixelationErrorTest()
 {
-	CPUTracker *tracker = CreateCPUTrackerInstance(128,128, 64);
+	CPUTracker *tracker = new CPUTracker(128,128, 64);
 
 	float X = tracker->GetWidth()/2;
 	float Y = tracker->GetHeight()/2;
@@ -165,7 +167,7 @@ void PixelationErrorTest()
 float EstimateZError(int zplanes)
 {
 	// build LUT
-	CPUTracker *tracker = CreateCPUTrackerInstance(128,128, 64);
+	CPUTracker *tracker = new CPUTracker(128,128, 64);
 
 	vector2f center = { tracker->GetWidth()/2, tracker->GetHeight()/2 };
 	int radialSteps = 64;
@@ -183,8 +185,9 @@ float EstimateZError(int zplanes)
 		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, zradius, center);
 	}
 
-	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, zradius);
+	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, zradius, 64, true);
 	writeImageAsCSV("zlut.csv", zlut, radialSteps, zplanes);
+	delete[] zlut;
 
 	int N=100;
 	float zdist=0.0f;

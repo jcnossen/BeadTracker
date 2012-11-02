@@ -26,12 +26,33 @@ enum Localize2DType {
 	Force32Bit = 0xffffffff
 };
 
+enum QTRK_PixelDataType
+{
+	QTrkU8 = 0,
+	QTrkU16 = 1,
+	QTrkFloat = 2
+};
+
+
 #pragma pack(push, 4)
+// DONT CHANGE, Mapped to labview clusters!
 struct LocalizationResult {
 	uint zlutIndex;
 	uint id;
 	vector2f pos, firstGuess;
 	uint locType;
+	float z;
+};
+// DONT CHANGE, Mapped to labview clusters!
+struct QTrkSettings {
+	int xcorw;
+	int profileWidth;
+	int xcor1D_iterations;
+	float zlut_profile_radius;
+	int zlut_angularsteps;
+	int qi_iterations;
+	int qi_radialsteps, qi_angularsteps;
+	float qi_minr, qi_maxr;
 };
 #pragma pack(pop)
 
@@ -46,10 +67,10 @@ public:
 	int GetWidth() { return width; }
 	int GetHeight() { return height; }
 
-	virtual void ScheduleLocalization(TrackerImageBuffer* buffer, Localize2DType locType, bool computeZ, uint id, uint zlutIndex=0) =0 ;
+	virtual void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, Localize2DType locType, bool computeZ, uint id, uint zlutIndex=0) = 0;
 	virtual int PollFinished(LocalizationResult* results, int maxResults) = 0;
 
-	virtual void SetZLUT(float* data, int planes, int res, int numLUTs, float profile_radius, int angularSteps) = 0;
+	virtual void SetZLUT(float* data, int planes, int res, int numLUTs) = 0;
 	virtual void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center) = 0;
 
 	// Debug stuff

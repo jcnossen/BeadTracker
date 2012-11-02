@@ -132,11 +132,14 @@
   <ItemGroup>
     <ClCompile Include="..\cputrack\cpu_tracker.cpp" />
     <ClCompile Include="..\cputrack\FFT2DTracker.cpp" />
+    <ClCompile Include="..\cputrack\queued_cpu_tracker.cpp" />
     <ClCompile Include="..\cputrack\utils.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cputrack\cpu_tracker.h" />
+    <ClInclude Include="..\cputrack\QueuedTracker.h" />
+    <ClInclude Include="..\cputrack\queued_cpu_tracker.h" />
     <ClInclude Include="..\cputrack\utils.h" />
     <ClInclude Include="..\cudatrack\utils.h" />
   </ItemGroup>

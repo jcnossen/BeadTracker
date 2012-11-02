@@ -196,12 +196,10 @@
     <ClInclude Include="FFT2DTracker.h" />
     <ClInclude Include="labview.h" />
     <ClInclude Include="LsqQuadraticFit.h" />
-    <ClInclude Include="MThreadQueue.h" />
     <ClInclude Include="QueuedTracker.h" />
     <ClInclude Include="queued_cpu_tracker.h" />
     <ClInclude Include="random_distr.h" />
     <ClInclude Include="scalar_types.h" />
-    <ClInclude Include="TrackerQueue.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

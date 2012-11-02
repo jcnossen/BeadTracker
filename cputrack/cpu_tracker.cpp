@@ -288,7 +288,7 @@ void CPUTracker::XCorFFTHelper(xcor_t* xc, xcor_t *xcr, xcor_t* result)
 }
 
 
-vector2f CPUTracker::ComputeQI(int iterations, int radialSteps, int angularStepsPerQ, float radius, vector2f center)
+vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQ, float radius)
 {
 	/*
 	Compute profiles for each quadrant
@@ -304,7 +304,7 @@ vector2f CPUTracker::ComputeQI(int iterations, int radialSteps, int angularSteps
 	}
 
 
-	return center;
+	return initial;
 }
 
 
