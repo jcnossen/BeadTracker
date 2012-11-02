@@ -27,7 +27,7 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 
 CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings)
 {
-	return 0;
+	return CreateQueuedTracker(settings);
 }
 
 CDLL_EXPORT void qtrk_destroy(QueuedTracker* qtrk)
@@ -35,6 +35,15 @@ CDLL_EXPORT void qtrk_destroy(QueuedTracker* qtrk)
 	delete qtrk;
 }
 
+CDLL_EXPORT void qtrk_queue(QueuedTracker* qtrk, uchar* data, int pitch, uint pdt, uint locType, bool computeZ, uint id, uint zlutIndex)
+{
+	qtrk->ScheduleLocalization(data, pitch, (QTRK_PixelDataType)pdt, (Localize2DType) locType, computeZ, id, zlutIndex);
+}
+
+CDLL_EXPORT int qtrk_jobcount(QueuedTracker* qtrk)
+{
+	return qtrk->GetJobCount();
+}
 
 CDLL_EXPORT void DLL_CALLCONV generate_test_image(Image *img, int w, int h, float xp, float yp, float size, float photoncount)
 {

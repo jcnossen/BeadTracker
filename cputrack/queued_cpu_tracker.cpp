@@ -5,6 +5,10 @@
 #undef AddJob
 #endif
 
+QueuedTracker* CreateQueuedTracker(QTrkSettings* s) {
+	return new QueuedCPUTracker(s);
+}
+
 static int PDT_BytesPerPixel(QTRK_PixelDataType pdt) {
 	const int pdtBytes[] = {1, 2, 4};
 	return pdtBytes[(int)pdt];
@@ -52,7 +56,7 @@ void QueuedCPUTracker::AddJob(Job* j)
 }
 
 
-int QueuedCPUTracker::JobCount()
+int QueuedCPUTracker::GetJobCount()
 {
 	int jc;
 	pthread_mutex_lock(&jobs_mutex);

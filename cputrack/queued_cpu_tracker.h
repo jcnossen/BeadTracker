@@ -17,7 +17,7 @@ public:
 	int PollFinished(LocalizationResult* results, int maxResults);
 
 	void Start();
-	int JobCount();
+	int GetJobCount();
 	int NumThreads() { return cfg.numThreads; }
 
 private:

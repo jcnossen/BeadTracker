@@ -8,7 +8,6 @@
 
 typedef uchar pixel_t;
 
-class FFT2DTracker;
 
 class CPUTrackerImageBuffer : public TrackerImageBuffer
 {

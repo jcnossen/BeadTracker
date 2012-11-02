@@ -88,5 +88,9 @@ public:
 
 	// Debug stuff
 	virtual float* GetDebugImage() { return 0; }
+
+	virtual int GetJobCount() = 0;
 };
+
+QueuedTracker* CreateQueuedTracker(QTrkSettings* s);
 

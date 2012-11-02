@@ -293,11 +293,11 @@ void QTrkTest()
 
 	double tstart = getPreciseTime();
 	int jobc = 0;
-	int hjobc = qtrk.JobCount();
+	int hjobc = qtrk.GetJobCount();
 	int startJobs = hjobc;
 	qtrk.Start();
 	do {
-		jobc = qtrk.JobCount();
+		jobc = qtrk.GetJobCount();
 		while (hjobc>jobc) {
 			if( hjobc%100==0) dbgprintf("TODO: %d\n", hjobc);
 			hjobc--;
