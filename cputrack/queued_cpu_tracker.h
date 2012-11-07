@@ -22,6 +22,7 @@ public:
 
 private:
 	struct Thread {
+		Thread() { tracker=0; manager=0; }
 		CPUTracker *tracker;
 		pthread_t thread;
 		QueuedCPUTracker* manager;
@@ -47,6 +48,7 @@ private:
 
 	std::vector<Thread> threads;
 	float* zluts;
+	int zlut_count, zlut_planes, zlut_res;
 	QTrkSettings cfg;
 
 	// signal threads to stop their work

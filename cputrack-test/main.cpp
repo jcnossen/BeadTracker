@@ -38,7 +38,7 @@ void writeImageAsCSV(const char* file, float* d, int w,int h)
 
 void SpeedTest()
 {
-	int N = 1000;
+	int N = 10;
 	CPUTracker* tracker = new CPUTracker(150,150, 64);
 
 	int radialSteps = 64, zplanes = 120;
@@ -56,10 +56,10 @@ void SpeedTest()
 	delete[] zlut;
 
 	// Speed test
-	vector2f comdist={}, xcordist={};
+	vector2f comdist={}, xcordist={}, qidist={};
 	float zdist=0.0f;
 	double zerrsum=0.0f;
-	double tloc = 0.0, tgen=0.0, tz = 0.0;
+	double tloc = 0.0, tgen=0.0, tz = 0.0, tqi=0.0;
 	for (int k=0;k<N;k++)
 	{
 		double t0 = getPreciseTime();
@@ -84,17 +84,22 @@ void SpeedTest()
 		xcordist.x += fabsf(xcor.x - xp);
 		xcordist.y += fabsf(xcor.y - yp);
 		double t2 = getPreciseTime();
+		vector2f qi = tracker->ComputeQI(xcor, 1, 64, 16, 40);
+		qidist.x += fabsf(qi.x - xp);
+		qidist.y += fabsf(qi.y - yp);
+		double t3 = getPreciseTime();
 
 		float est_z = zmin + tracker->ComputeZ(xcor, 64, 0) * (zmax - zmin);
 		zdist += fabsf(est_z-z);
 		zerrsum += est_z-z;
 
-		double t3 = getPreciseTime();
+		double t4 = getPreciseTime();
 	//	dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f\n", xp, com.x-xp, xcor.x-xp));
 		if (k>0) { // skip first initialization round
 			tloc+=t2-t1;
 			tgen+=t1-t0;
-			tz+=t3-t2;
+			tz+=t4-t3;
+			tqi+=t3-t2;
 		}
 	}
 
@@ -102,6 +107,7 @@ void SpeedTest()
 	dbgprintf("Time: %f s. Image gen. (img/s): %f\n2D loc. speed (img/s): %f Z estimation (img/s): %f\n", tloc+tgen, Nns/tgen, Nns/tloc, Nns/tz);
 	dbgprintf("Average dist: COM x: %f, y: %f\n", comdist.x/N, comdist.y/N);
 	dbgprintf("Average dist: Cross-correlation x: %f, y: %f\n", xcordist.x/N, xcordist.y/N);
+	dbgprintf("Average dist: QI x: %f, y: %f\n", qidist.x/N, qidist.y/N);
 	dbgprintf("Average dist: Z: %f. Mean error:%f\n", zdist/N, zerrsum/N); 
 	
 	delete tracker;
@@ -310,12 +316,12 @@ void QTrkTest()
 
 int main()
 {
-	//SpeedTest();
+	SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
-	QTrkTest();
+	//QTrkTest();
 
 	return 0;
 }

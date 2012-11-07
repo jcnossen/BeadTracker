@@ -82,12 +82,6 @@ QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 		dbgprintf("Using %d threads\n", cfg.numThreads);
 	}
 
-	threads.resize(cfg.numThreads);
-	for (int k=0;k<cfg.numThreads;k++) {
-		threads[k].tracker = new CPUTracker(cfg.width, cfg.height, cfg.xcorw);
-		threads[k].manager = this;
-	}
-
 	pthread_attr_init(&joinable_attr);
 	pthread_attr_setdetachstate(&joinable_attr, PTHREAD_CREATE_JOINABLE);
 
@@ -120,6 +114,11 @@ QueuedCPUTracker::~QueuedCPUTracker()
 void QueuedCPUTracker::Start()
 {
 	quitWork = false;
+	threads.resize(cfg.numThreads);
+	for (int k=0;k<cfg.numThreads;k++) {
+		threads[k].tracker = new CPUTracker(cfg.width, cfg.height, cfg.xcorw);
+		threads[k].manager = this;
+	}
 
 	for (int k=0;k<threads.size();k++) {
 		pthread_create(&threads[k].thread, &joinable_attr, WorkerThreadMain, (void*)&threads[k]);
@@ -179,10 +178,16 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 
 void QueuedCPUTracker::SetZLUT(float* data, int planes, int res, int num_zluts)
 {
+	if (zluts) delete[] zluts;
+	zluts = new float[planes*res*num_zluts];
+	zlut_planes = planes;
+	zlut_res = res;
+	zlut_count = num_zluts;
 }
 
 void QueuedCPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center)
 {
+
 }
 
 	
