@@ -331,9 +331,14 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 			concat1[nr-r-1] = q2[r]+q3[r];
 		}
 		float offsetY = QI_ComputeOffset(concat0, nr);
+
+	//	dbgprintf("[%d] OffsetX: %f, OffsetY: %f\n", k, offsetX, offsetY);
+
+		center.x += offsetX;
+		center.y += offsetY;
 	}
 
-	return initial;
+	return center;
 }
 
 
@@ -361,7 +366,8 @@ float CPUTracker::QI_ComputeOffset(complexc* profile, int nr)
 	for(int x=0;x<nr*2;x++)
 		autoconv[x] = fft_out2[(x+nr)%(nr*2)].real();
 	float maxPos = ComputeMaxInterp(autoconv, nr*2);
-	return maxPos - nr;
+	float dr = (maxPos - nr) * 0.5f;
+	return dr / (3.141593f * 0.5f);
 }
 
 

@@ -143,7 +143,6 @@
     <ClInclude Include="..\cputrack\QueuedTracker.h" />
     <ClInclude Include="..\cputrack\queued_cpu_tracker.h" />
     <ClInclude Include="..\cputrack\utils.h" />
-    <ClInclude Include="..\cudatrack\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

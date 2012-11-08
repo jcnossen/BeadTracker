@@ -38,7 +38,9 @@ void writeImageAsCSV(const char* file, float* d, int w,int h)
 
 void SpeedTest()
 {
-	int N = 10;
+	int N = 200;
+	int qi_iterations = 4;
+	int xcor_iterations = 2;
 	CPUTracker* tracker = new CPUTracker(150,150, 64);
 
 	int radialSteps = 64, zplanes = 120;
@@ -59,7 +61,7 @@ void SpeedTest()
 	vector2f comdist={}, xcordist={}, qidist={};
 	float zdist=0.0f;
 	double zerrsum=0.0f;
-	double tloc = 0.0, tgen=0.0, tz = 0.0, tqi=0.0;
+	double tcom = 0.0, tgen=0.0, tz = 0.0, tqi=0.0, txcor=0.0;
 	for (int k=0;k<N;k++)
 	{
 		double t0 = getPreciseTime();
@@ -72,7 +74,8 @@ void SpeedTest()
 		double t1 = getPreciseTime();
 		vector2f com = tracker->ComputeBgCorrectedCOM();
 		vector2f initial = {com.x, com.y};
-		vector2f xcor = tracker->ComputeXCorInterpolated(initial, 2);
+		double t2 = getPreciseTime();
+		vector2f xcor = tracker->ComputeXCorInterpolated(initial, xcor_iterations);
 /*		if (k == 1) {
 			tracker.OutputDebugInfo();
 			writeImageAsCSV("test.csv", tracker.srcImage, tracker.width, tracker.height);
@@ -83,28 +86,32 @@ void SpeedTest()
 
 		xcordist.x += fabsf(xcor.x - xp);
 		xcordist.y += fabsf(xcor.y - yp);
-		double t2 = getPreciseTime();
-		vector2f qi = tracker->ComputeQI(xcor, 1, 64, 16, 40);
+		double t3 = getPreciseTime();
+		vector2f qi = tracker->ComputeQI(xcor, qi_iterations, 64, 16, 40);
 		qidist.x += fabsf(qi.x - xp);
 		qidist.y += fabsf(qi.y - yp);
-		double t3 = getPreciseTime();
+		double t4 = getPreciseTime();
 
 		float est_z = zmin + tracker->ComputeZ(xcor, 64, 0) * (zmax - zmin);
 		zdist += fabsf(est_z-z);
 		zerrsum += est_z-z;
 
-		double t4 = getPreciseTime();
+		double t5 = getPreciseTime();
 	//	dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f\n", xp, com.x-xp, xcor.x-xp));
 		if (k>0) { // skip first initialization round
-			tloc+=t2-t1;
 			tgen+=t1-t0;
-			tz+=t4-t3;
-			tqi+=t3-t2;
+			tcom+=t2-t1;
+			txcor+=t3-t2;
+			tqi+=t4-t3;
+			tz+=t5-t4;
 		}
 	}
 
 	int Nns = N-1;
-	dbgprintf("Time: %f s. Image gen. (img/s): %f\n2D loc. speed (img/s): %f Z estimation (img/s): %f\n", tloc+tgen, Nns/tgen, Nns/tloc, Nns/tz);
+	dbgprintf("Image gen. (img/s): %f\nCenter-of-Mass speed (img/s): %f\n", Nns/tgen, Nns/tcom);
+	dbgprintf("XCor estimation (img*it/s): %f\n", (Nns*xcor_iterations)/txcor);
+	dbgprintf("Z estimation (img/s): %f\n", Nns/tz);
+	dbgprintf("QI speed: %f (img*it/s)\n", (Nns*qi_iterations)/tqi);
 	dbgprintf("Average dist: COM x: %f, y: %f\n", comdist.x/N, comdist.y/N);
 	dbgprintf("Average dist: Cross-correlation x: %f, y: %f\n", xcordist.x/N, xcordist.y/N);
 	dbgprintf("Average dist: QI x: %f, y: %f\n", qidist.x/N, qidist.y/N);
