@@ -77,8 +77,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Single|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
-    <OutDir>$(SolutionDir)\cudatrack-labview</OutDir>
-    <TargetName>cputrack_d</TargetName>
+    <OutDir>$(SolutionDir)\bin</OutDir>
+    <TargetName>jtrkd-labview</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Single|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -92,8 +92,8 @@
     <TargetName>cputrack</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-Single|Win32'">
-    <OutDir>$(SolutionDir)\cudatrack-labview</OutDir>
-    <TargetName>cputrack</TargetName>
+    <OutDir>$(SolutionDir)\bin</OutDir>
+    <TargetName>jtrk-labview</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -125,8 +125,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../libs/labview/vision/Lib/MSVC;../libs/labview/imaq/Lib;../libs/labview/cintools;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>labview.lib;../libs/fftw/libfftwf-3.3.lib;../libs/pthreads/lib/x86/pthreadVSE2.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(SolutionDir)/cudatrack-labview/cputrack_d.dll</OutputFile>
+      <AdditionalDependencies>labview.lib;../libs/pthreads/lib/x86/pthreadVSE2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Single|x64'">
@@ -173,8 +172,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-Single|Win32'">
     <Link>
       <AdditionalLibraryDirectories>../libs/labview/vision/Lib/MSVC;../libs/labview/imaq/Lib;../libs/labview/cintools;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>labview.lib;../libs/fftw/libfftwf-3.3.lib;../libs/pthreads/lib/x86/pthreadVSE2.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(SolutionDir)/cudatrack-labview/cputrack.dll</OutputFile>
+      <AdditionalDependencies>labview.lib;../libs/pthreads/lib/x86/pthreadVSE2.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <ClCompile>

@@ -68,7 +68,7 @@ public:
 	vector2f ComputeXCor(vector2f initial, int profileWidth=32);
 	vector2f ComputeXCor2D();
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth=32);
-	vector2f ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQuadrant, float radius);
+	vector2f ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQuadrant, float minRadius, float maxRadius);
 
 	float QI_ComputeOffset(complexc* qi_profile, int nr);
 
@@ -79,7 +79,7 @@ public:
 
 	vector2f ComputeBgCorrectedCOM();
 	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center);
-	void ComputeQuadrantProfile(float* dst, int radialSteps, int angularSteps, int quadrant, float radius, vector2f center);
+	void ComputeQuadrantProfile(float* dst, int radialSteps, int angularSteps, int quadrant, float minRadius, float maxRadius, vector2f center);
 
 	void Normalize(float *image=0);
 	void SetZLUT(float* data, int planes, int res, int num_zluts, float prof_radius, int angularSteps, bool copyMemory);
@@ -93,7 +93,7 @@ public:
 	void SelectImageBuffer(TrackerImageBuffer* b);
 };
 
-void GenerateTestImage(float* data, int w, float xp, float yp, float size, float MaxPhotons);
+
 CPUTracker* CreateCPUTrackerInstance(int w,int h,int xcorw);
 
 template<typename TPixel>

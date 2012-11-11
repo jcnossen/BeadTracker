@@ -41,7 +41,7 @@ void SpeedTest()
 	int N = 200;
 	int qi_iterations = 4;
 	int xcor_iterations = 2;
-	CPUTracker* tracker = new CPUTracker(150,150, 64);
+	CPUTracker* tracker = new CPUTracker(150,150, 128);
 
 	int radialSteps = 64, zplanes = 120;
 	float* zlut = new float[radialSteps*zplanes];
@@ -87,7 +87,7 @@ void SpeedTest()
 		xcordist.x += fabsf(xcor.x - xp);
 		xcordist.y += fabsf(xcor.y - yp);
 		double t3 = getPreciseTime();
-		vector2f qi = tracker->ComputeQI(xcor, qi_iterations, 64, 16, 40);
+		vector2f qi = tracker->ComputeQI(xcor, qi_iterations, 64, 16, 5,40);
 		qidist.x += fabsf(qi.x - xp);
 		qidist.y += fabsf(qi.y - yp);
 		double t4 = getPreciseTime();
@@ -110,6 +110,7 @@ void SpeedTest()
 	int Nns = N-1;
 	dbgprintf("Image gen. (img/s): %f\nCenter-of-Mass speed (img/s): %f\n", Nns/tgen, Nns/tcom);
 	dbgprintf("XCor estimation (img*it/s): %f\n", (Nns*xcor_iterations)/txcor);
+	dbgprintf("COM+XCor(%d) (img/s): %f\n", xcor_iterations, Nns/(tcom+txcor));
 	dbgprintf("Z estimation (img/s): %f\n", Nns/tz);
 	dbgprintf("QI speed: %f (img*it/s)\n", (Nns*qi_iterations)/tqi);
 	dbgprintf("Average dist: COM x: %f, y: %f\n", comdist.x/N, comdist.y/N);
@@ -278,9 +279,10 @@ void Test2DTracking()
 void QTrkTest()
 {
 	QTrkSettings cfg;
+	cfg.numThreads = 1;
 	QueuedCPUTracker qtrk(&cfg);
 
-	int NumImages=10, JobsPerImg=1000;
+	int NumImages=1, JobsPerImg=1000;
 	dbgprintf("Generating %d images...\n", NumImages);
 	float *image = new float[cfg.width*cfg.height];
 	float zmin = 2.0f, zmax=6.0f;
@@ -315,7 +317,7 @@ void QTrkTest()
 			if( hjobc%100==0) dbgprintf("TODO: %d\n", hjobc);
 			hjobc--;
 		}
-		Sleep(5);
+		Sleep(10);
 	} while (jobc!=0);
 	double tend = getPreciseTime();
 	dbgprintf("Localization Speed: %d (img/s), using %d threads\n", (int)( startJobs/(tend-tstart) ), qtrk.NumThreads());
@@ -328,7 +330,7 @@ int main()
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
-	//QTrkTest();
+	QTrkTest();
 
 	return 0;
 }

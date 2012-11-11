@@ -116,7 +116,7 @@ void QueuedCPUTracker::Start()
 	quitWork = false;
 	threads.resize(cfg.numThreads);
 	for (int k=0;k<cfg.numThreads;k++) {
-		threads[k].tracker = new CPUTracker(cfg.width, cfg.height, cfg.xcorw);
+		threads[k].tracker = new CPUTracker(cfg.width, cfg.height, cfg.xc1_profileLength);
 		threads[k].manager = this;
 	}
 
@@ -131,7 +131,6 @@ void* QueuedCPUTracker::WorkerThreadMain(void* arg)
 	QueuedCPUTracker* this_ = th->manager;
 
 	while (!this_->quitWork) {
-
 		Job* j = this_->GetNextJob();
 		if (j) {
 			this_->ProcessJob(th, j);
@@ -161,14 +160,19 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 	result.zlutIndex = j->zlut;
 
 	vector2f com = th->tracker->ComputeBgCorrectedCOM();
-	if (j->locType == LocalizeXCor1D) {
+
+	if (j->locType & LocalizeXCor1D) {
 		result.firstGuess = com;
-		result.pos = th->tracker->ComputeXCorInterpolated(com, cfg.xcor1D_iterations, cfg.profileWidth);
-	} else if(j->locType == LocalizeOnlyCOM) {
+		result.pos = th->tracker->ComputeXCorInterpolated(com, cfg.xc1_iterations, cfg.xc1_profileWidth);
+	} else if(j->locType & LocalizeOnlyCOM) {
 		result.firstGuess = result.pos = com;
 	} else if(j->locType == LocalizeQI) {
 		result.firstGuess = com;
-		result.pos = th->tracker->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_maxradius); 
+		result.pos = th->tracker->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_minradius, cfg.qi_maxradius);
+	}
+
+	if(j->locType & LocalizeZ) {
+		result.z = th->tracker->ComputeZ(result.pos, cfg.zlut_angularsteps, j->zlut);
 	}
 
 	pthread_mutex_lock(&results_mutex);
@@ -185,14 +189,14 @@ void QueuedCPUTracker::SetZLUT(float* data, int planes, int res, int num_zluts)
 	zlut_count = num_zluts;
 }
 
-void QueuedCPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center)
+void QueuedCPUTracker::ComputeRadialProfile(float *image, int width, int height, float* dst, int radialSteps, int angularSteps, float radius, vector2f center)
 {
-
+	::ComputeRadialProfile(dst, radialSteps, angularSteps, radius, center, image ,width,height);
 }
 
 	
 void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, 
-				Localize2DType locType, bool computeZ, uint id, uint zlutIndex)
+				LocalizeType locType, uint id, uint zlutIndex)
 {
 	Job* j = AllocateJob();
 	int dstPitch = PDT_BytesPerPixel(pdt) * cfg.width;

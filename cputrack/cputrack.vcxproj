@@ -30,7 +30,7 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Single|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -46,7 +46,7 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release-Single|Win32'">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release-Single|Win32'">
     <CharacterSet>MultiByte</CharacterSet>
@@ -76,7 +76,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Single|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
-    <TargetName>cputrack_d</TargetName>
+    <TargetName>jtrkd</TargetName>
+    <TargetExt>$(TargetExt)</TargetExt>
+    <OutDir>$(SolutionDir)\bin</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Single|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -90,7 +92,9 @@
     <TargetName>cputrack</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-Single|Win32'">
-    <TargetName>cputrack</TargetName>
+    <TargetName>jtrk</TargetName>
+    <TargetExt>$(TargetExt)</TargetExt>
+    <OutDir>$(SolutionDir)\bin</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -123,7 +127,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
-      <AdditionalDependencies>../libs/fftw/libfftwf-3.3.lib;../libs/pthreads/lib/x86/pthreadVSE2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>../libs/pthreads/lib/x86/pthreadVSE2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(SolutionDir)/cudatrack-labview/cputrack_d.dll</OutputFile>
     </Link>
   </ItemDefinitionGroup>
@@ -181,16 +185,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="cpu_tracker.cpp" />
-    <ClCompile Include="FFT2DTracker.cpp" />
+    <ClCompile Include="queued_cpu_tracker.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpu_tracker.h" />
-    <ClInclude Include="FFT2DTracker.h" />
     <ClInclude Include="LsqQuadraticFit.h" />
+    <ClInclude Include="QueuedTracker.h" />
+    <ClInclude Include="queued_cpu_tracker.h" />
     <ClInclude Include="random_distr.h" />
     <ClInclude Include="scalar_types.h" />
-    <ClInclude Include="Tracker.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

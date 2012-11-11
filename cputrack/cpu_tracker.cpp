@@ -58,21 +58,6 @@ void CPUTracker::SetImageFloat(float *src) {
 		srcImage[k]=src[k];
 }
 
-const inline float interp(float a, float b, float x) { return a + (b-a)*x; }
-
-float Interpolate(float* image, int width, int height, float x,float y)
-{
-	int rx=x, ry=y;
-	float v00 = image[width*ry+rx];
-	float v10 = image[width*ry+rx+1];
-	float v01 = image[width*(ry+1)+rx];
-	float v11 = image[width*(ry+1)+rx+1];
-
-	float v0 = interp (v00, v10, x-rx);
-	float v1 = interp (v01, v11, x-rx);
-
-	return interp (v0, v1, y-ry);
-}
 
 #ifdef _DEBUG
 	#define MARKPIXEL(x,y) (debugImage[ (int)(y)*width+ (int) (x)]+=maxValue*0.1f)
@@ -277,7 +262,7 @@ vector2f CPUTracker::ComputeXCor(vector2f initial, int profileWidth)
 }
 
 
-vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQ, float radius)
+vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQ, float minRadius, float maxRadius)
 {
 	int nr=radialSteps;
 	/*
@@ -310,7 +295,7 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 
 	for (int k=0;k<iterations;k++){
 		for (int q=0;q<4;q++) {
-			ComputeQuadrantProfile(buf+q*nr, nr, angularStepsPerQ, q, radius, center);
+			ComputeQuadrantProfile(buf+q*nr, nr, angularStepsPerQ, q, minRadius, maxRadius, center);
 		}
 		
 		// Build Ix = qL(-r) || qR(r)
@@ -371,7 +356,7 @@ float CPUTracker::QI_ComputeOffset(complexc* profile, int nr)
 }
 
 
-void CPUTracker::ComputeQuadrantProfile(float* dst, int radialSteps, int angularSteps, int quadrant, float radius, vector2f center)
+void CPUTracker::ComputeQuadrantProfile(float* dst, int radialSteps, int angularSteps, int quadrant, float minRadius, float maxRadius, vector2f center)
 {
 	const int qmat[] = {
 		1, 1,
@@ -385,13 +370,14 @@ void CPUTracker::ComputeQuadrantProfile(float* dst, int radialSteps, int angular
 		dst[i]=0.0f;
 
 	float total = 0.0f;
-	float rstep = radius / radialSteps;
+	float rstep = (maxRadius - minRadius) / radialSteps;
 	for (int i=0;i<radialSteps; i++) {
 		float sum = 0.0f;
+		float r = minRadius + rstep * i;
 
 		for (int a=0;a<angularSteps;a++) {
-			float x = center.x + mx*quadrantDirs[a].x * rstep*i;
-			float y = center.y + my*quadrantDirs[a].y * rstep*i;
+			float x = center.x + mx*quadrantDirs[a].x * r;
+			float y = center.y + my*quadrantDirs[a].y * r;
 			sum += Interpolate(srcImage,width,height, x,y);
 		}
 
@@ -445,36 +431,9 @@ void CPUTracker::Normalize(float* d)
 }
 
 
-void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float range, vector2f center)
+void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center)
 {
-	if (radialDirs.size() != angularSteps) {
-		radialDirs.resize(angularSteps);
-		for (int j=0;j<angularSteps;j++) {
-			float ang = 2*3.141593f*j/(float)angularSteps;
-			vector2f d = { cosf(ang), sinf(ang) };
-			radialDirs[j] = d;
-		}
-	}
-
-	for (int i=0;i<radialSteps;i++)
-		dst[i]=0.0f;
-
-	float total = 0.0f;
-	float rstep = range / radialSteps;
-	for (int i=0;i<radialSteps; i++) {
-		float sum = 0.0f;
-
-		for (int a=0;a<angularSteps;a++) {
-			float x = center.x + radialDirs[a].x * rstep*i;
-			float y = center.y + radialDirs[a].y * rstep*i;
-			sum += Interpolate(srcImage,width,height, x,y);
-		}
-
-		dst[i] = sum;
-		total += dst[i];
-	}
-	for (int i=0;i<radialSteps;i++)
-		dst[i] /= total;
+	::ComputeRadialProfile(dst, radialSteps, angularSteps, radius, center, srcImage, width, height);
 }
 
 void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float prof_radius, int angularSteps, bool copyMemory)

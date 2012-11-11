@@ -11,9 +11,9 @@ public:
 	~QueuedCPUTracker();
 
 	void SetZLUT(float* data, int planes, int res, int num_zluts);
-	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center);
+	void ComputeRadialProfile(float *image, int width, int height, float* dst, int radialSteps, int angularSteps, float radius, vector2f center);
 
-	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, Localize2DType locType, bool computeZ, uint id, uint zlutIndex=0);
+	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, uint zlutIndex=0);
 	int PollFinished(LocalizationResult* results, int maxResults);
 
 	void Start();
@@ -34,7 +34,7 @@ private:
 
 		uchar* data;
 		QTRK_PixelDataType dataType;
-		Localize2DType locType;
+		LocalizeType locType;
 		uint id;
 		uint zlut;
 	};

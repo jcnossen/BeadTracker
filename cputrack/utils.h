@@ -83,3 +83,22 @@ void normalize(TPixel* d, uint w,uint h)
 }
 
 void GenerateTestImage(float* data, int w, int h, float xp, float yp, float size, float MaxPhotons);
+void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, 
+	vector2f center, float* srcImage, int width, int height);
+
+
+const inline float interp(float a, float b, float x) { return a + (b-a)*x; }
+
+inline float Interpolate(float* image, int width, int height, float x,float y)
+{
+	int rx=x, ry=y;
+	float v00 = image[width*ry+rx];
+	float v10 = image[width*ry+rx+1];
+	float v01 = image[width*(ry+1)+rx];
+	float v11 = image[width*(ry+1)+rx+1];
+
+	float v0 = interp (v00, v10, x-rx);
+	float v1 = interp (v01, v11, x-rx);
+
+	return interp (v0, v1, y-ry);
+}

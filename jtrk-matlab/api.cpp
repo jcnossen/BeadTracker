@@ -237,9 +237,9 @@ static void map_QTrkSettings(QTrkSettings *cfg, bool get, std::map<std::string, 
 	CFGITEM(numThreads);
 	CFGITEM(maxQueueSize);
 
-	CFGITEM(xcorw);
-	CFGITEM(profileWidth);
-	CFGITEM(xcor1D_iterations);
+	CFGITEM(xc1_profileLength);
+	CFGITEM(xc1_profileWidth);
+	CFGITEM(xc1_iterations);
 
 	CFGITEM(zlut_minradius);
 	CFGITEM(zlut_maxradius);
