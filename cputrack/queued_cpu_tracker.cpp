@@ -14,6 +14,15 @@ static int PDT_BytesPerPixel(QTRK_PixelDataType pdt) {
 	return pdtBytes[(int)pdt];
 }
 
+int QueuedCPUTracker::GetResultCount()
+{
+	pthread_mutex_lock(&results_mutex);
+	int rc = resultCount;
+	pthread_mutex_unlock(&results_mutex);
+	return resultCount;
+}
+
+
 void QueuedCPUTracker::JobFinished(QueuedCPUTracker::Job* j)
 {
 	pthread_mutex_lock(&jobs_buffer_mutex);
@@ -55,7 +64,6 @@ void QueuedCPUTracker::AddJob(Job* j)
 	pthread_mutex_unlock(&jobs_mutex);
 }
 
-
 int QueuedCPUTracker::GetJobCount()
 {
 	int jc;
@@ -89,6 +97,10 @@ QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 	pthread_mutex_init(&results_mutex,0);
 	pthread_mutex_init(&jobs_buffer_mutex,0);
 	jobCount = 0;
+	resultCount = 0;
+
+	zluts = 0;
+	zlut_count = zlut_planes = zlut_res = 0;
 }
 
 QueuedCPUTracker::~QueuedCPUTracker()
@@ -177,6 +189,7 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 
 	pthread_mutex_lock(&results_mutex);
 	results.push_back(result);
+	resultCount++;
 	pthread_mutex_unlock(&results_mutex);
 }
 
@@ -189,9 +202,9 @@ void QueuedCPUTracker::SetZLUT(float* data, int planes, int res, int num_zluts)
 	zlut_count = num_zluts;
 }
 
-void QueuedCPUTracker::ComputeRadialProfile(float *image, int width, int height, float* dst, int radialSteps, int angularSteps, float radius, vector2f center)
+void QueuedCPUTracker::ComputeRadialProfile(float *image, int width, int height, float* dst, int profileLen, vector2f center)
 {
-	::ComputeRadialProfile(dst, radialSteps, angularSteps, radius, center, image ,width,height);
+	::ComputeRadialProfile(dst, profileLen, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, center, image, width,height);
 }
 
 	
@@ -223,6 +236,7 @@ int QueuedCPUTracker::PollFinished(LocalizationResult* dstResults, int maxResult
 	while (numResults < maxResults && !results.empty()) {
 		dstResults[numResults++] = results.front();
 		results.pop_front();
+		resultCount--;
 	}
 	pthread_mutex_unlock(&results_mutex);
 	return numResults;

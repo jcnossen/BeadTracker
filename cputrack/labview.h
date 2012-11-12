@@ -18,7 +18,7 @@ typedef struct {
 template<typename T>
 struct LVArray {
 	int32_t dimSize;
-	T elt[1];
+	T elem[1];
 };
 typedef LVArray<float> **ppFloatArray;
 
@@ -26,10 +26,10 @@ typedef LVArray<float> **ppFloatArray;
 template<typename T>
 struct LVArray2D {
 	int32_t dimSizes[2];
-	T data[1];
+	T elem[1];
 
-	T & elem(int col, int row) {
-		return data[row*dimSizes[0]+col];
+	T & at(int col, int row) {
+		return elem[row*dimSizes[0]+col];
 	}
 	int numElem() { return dimSizes[0]*dimSizes[1]; }
 };
@@ -37,7 +37,7 @@ struct LVArray2D {
 template<typename T>
 struct LVArray3D {
 	int32_t dimSizes[3];
-	T data[1];
+	T elem[1];
 
 	int numElem() { return dimSizes[0]*dimSizes[1]*dimSizes[2]; }
 };

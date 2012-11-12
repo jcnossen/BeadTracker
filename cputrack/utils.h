@@ -83,7 +83,7 @@ void normalize(TPixel* d, uint w,uint h)
 }
 
 void GenerateTestImage(float* data, int w, int h, float xp, float yp, float size, float MaxPhotons);
-void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, 
+void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius,
 	vector2f center, float* srcImage, int width, int height);
 
 

@@ -30,7 +30,7 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 
 	zluts = 0;
 	zlut_planes = zlut_res = zlut_count = zlut_angularSteps = 0;
-	zprofile_radius = 0.0f;
+	zlut_minradius = zlut_maxradius = 0.0f;
 	xcorw = xcorwindow;
 
 	qi_radialsteps = 0;
@@ -265,9 +265,11 @@ vector2f CPUTracker::ComputeXCor(vector2f initial, int profileWidth)
 vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQ, float minRadius, float maxRadius)
 {
 	int nr=radialSteps;
-	/*
-	Compute profiles for each quadrant
-	*/
+#ifdef _DEBUG
+	std::copy(srcImage, srcImage+width*height, debugImage);
+	float maxValue = *std::max_element(srcImage,srcImage+width*height);
+#endif
+
 	if (angularStepsPerQ != quadrantDirs.size()) {
 		quadrantDirs.resize(angularStepsPerQ);
 		for (int j=0;j<angularStepsPerQ;j++) {
@@ -293,6 +295,8 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 
 	vector2f center = initial;
 
+	float pixelsPerProfLen = (maxRadius-minRadius)/radialSteps;
+
 	for (int k=0;k<iterations;k++){
 		for (int q=0;q<4;q++) {
 			ComputeQuadrantProfile(buf+q*nr, nr, angularStepsPerQ, q, minRadius, maxRadius, center);
@@ -317,10 +321,10 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 		}
 		float offsetY = QI_ComputeOffset(concat0, nr);
 
-	//	dbgprintf("[%d] OffsetX: %f, OffsetY: %f\n", k, offsetX, offsetY);
+		//dbgprintf("[%d] OffsetX: %f, OffsetY: %f\n", k, offsetX, offsetY);
 
-		center.x += offsetX;
-		center.y += offsetY;
+		center.x += offsetX * pixelsPerProfLen;
+		center.y += offsetY * pixelsPerProfLen;
 	}
 
 	return center;
@@ -351,8 +355,7 @@ float CPUTracker::QI_ComputeOffset(complexc* profile, int nr)
 	for(int x=0;x<nr*2;x++)
 		autoconv[x] = fft_out2[(x+nr)%(nr*2)].real();
 	float maxPos = ComputeMaxInterp(autoconv, nr*2);
-	float dr = (maxPos - nr) * 0.5f;
-	return dr / (3.141593f * 0.5f);
+	return (maxPos - nr) / (3.141593f * 0.5f);
 }
 
 
@@ -379,6 +382,7 @@ void CPUTracker::ComputeQuadrantProfile(float* dst, int radialSteps, int angular
 			float x = center.x + mx*quadrantDirs[a].x * r;
 			float y = center.y + my*quadrantDirs[a].y * r;
 			sum += Interpolate(srcImage,width,height, x,y);
+			MARKPIXELI(x,y);
 		}
 
 		dst[i] = sum;
@@ -431,12 +435,12 @@ void CPUTracker::Normalize(float* d)
 }
 
 
-void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center)
+void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center)
 {
-	::ComputeRadialProfile(dst, radialSteps, angularSteps, radius, center, srcImage, width, height);
+	::ComputeRadialProfile(dst, radialSteps, angularSteps, minradius, maxradius, center, srcImage, width, height);
 }
 
-void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float prof_radius, int angularSteps, bool copyMemory)
+void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float minradius, float maxradius, int angularSteps, bool copyMemory)
 {
 	if (zluts && zlut_memoryOwner)
 		delete[] zluts;
@@ -450,7 +454,8 @@ void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float pr
 	zlut_planes = planes;
 	zlut_res = res;
 	zlut_count = numLUTs;
-	zprofile_radius = prof_radius;
+	zlut_minradius = minradius;
+	zlut_maxradius = maxradius;
 	zlut_angularSteps = angularSteps;
 }
 
@@ -465,7 +470,7 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex)
 	if (rprof.size() != zlut_res)
 		rprof.resize(zlut_res);
 
-	ComputeRadialProfile(&rprof[0], zlut_res, angularSteps, zprofile_radius, center);
+	ComputeRadialProfile(&rprof[0], zlut_res, angularSteps, zlut_minradius, zlut_maxradius, center);
 
 	// Now compare the radial profile to the profiles stored in Z
 	if (rprof_diff.size() != zlut_planes)

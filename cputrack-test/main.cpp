@@ -38,23 +38,27 @@ void writeImageAsCSV(const char* file, float* d, int w,int h)
 
 void SpeedTest()
 {
-	int N = 200;
-	int qi_iterations = 4;
+#ifdef _DEBUG
+	int N = 20;
+#else
+	int N = 2000;
+#endif
+	int qi_iterations = 8;
 	int xcor_iterations = 2;
 	CPUTracker* tracker = new CPUTracker(150,150, 128);
 
 	int radialSteps = 64, zplanes = 120;
-	float* zlut = new float[radialSteps*zplanes];
 	float zmin = 2, zmax = 8;
 	float zradius = tracker->xcorw/2;
 
+	float* zlut = new float[radialSteps*zplanes];
 	for (int x=0;x<zplanes;x++)  {
 		vector2f center = { tracker->GetWidth()/2, tracker->GetHeight()/2 };
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), center.x, center.y, s, 0.0f);
-		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, zradius, center);
+		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1, zradius, center);
 	}
-	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, zradius, 64, true);
+	tracker->SetZLUT(zlut, zplanes, radialSteps, 1,1, zradius, 64, true);
 	delete[] zlut;
 
 	// Speed test
@@ -87,7 +91,7 @@ void SpeedTest()
 		xcordist.x += fabsf(xcor.x - xp);
 		xcordist.y += fabsf(xcor.y - yp);
 		double t3 = getPreciseTime();
-		vector2f qi = tracker->ComputeQI(xcor, qi_iterations, 64, 16, 5,40);
+		vector2f qi = tracker->ComputeQI(xcor, qi_iterations, 64, 16, 5,50);
 		qidist.x += fabsf(qi.x - xp);
 		qidist.y += fabsf(qi.y - yp);
 		double t4 = getPreciseTime();
@@ -196,10 +200,10 @@ float EstimateZError(int zplanes)
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), center.x, center.y, s, 0.0f);
 	//	dbgout(SPrintf("z=%f\n", s));
-		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, zradius, center);
+		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1.0f, zradius, center);
 	}
 
-	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, zradius, 64, true);
+	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, 1.0f, zradius, 64, true);
 	writeImageAsCSV("zlut.csv", zlut, radialSteps, zplanes);
 	delete[] zlut;
 
@@ -279,13 +283,26 @@ void Test2DTracking()
 void QTrkTest()
 {
 	QTrkSettings cfg;
-	cfg.numThreads = 1;
+	//cfg.numThreads = 1;
 	QueuedCPUTracker qtrk(&cfg);
-
-	int NumImages=1, JobsPerImg=1000;
-	dbgprintf("Generating %d images...\n", NumImages);
 	float *image = new float[cfg.width*cfg.height];
-	float zmin = 2.0f, zmax=6.0f;
+
+	// Generate ZLUT
+	int radialSteps=64, zplanes=100;
+	float zmin=2,zmax=6;
+	float* zlut = new float[radialSteps*zplanes];
+	for (int x=0;x<zplanes;x++)  {
+		vector2f center = { cfg.width/2, cfg.height/2 };
+		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
+		GenerateTestImage(image, cfg.width, cfg.height, center.x, center.y, s, 0.0f);
+		qtrk.ComputeRadialProfile(image, cfg.width, cfg.height, &zlut[x*radialSteps], radialSteps, center);
+	}
+	qtrk.SetZLUT(zlut, zplanes, radialSteps, 1);
+	delete[] zlut;
+
+	// Schedule images to localize on
+	int NumImages=10, JobsPerImg=1000;
+	dbgprintf("Generating %d images...\n", NumImages);
 	double tgen = 0.0, tschedule = 0.0;
 	for (int n=0;n<NumImages;n++) {
 		double t1 = getPreciseTime();
@@ -296,7 +313,7 @@ void QTrkTest()
 		GenerateTestImage(image, cfg.width, cfg.height, xp, yp, z, 10000);
 		double t2 = getPreciseTime();
 		for (int k=0;k<JobsPerImg;k++)
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, LocalizeXCor1D, false, n);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeXCor1D | LocalizeZ), n, 0);
 		double t3 = getPreciseTime();
 		tgen += t2-t1;
 		tschedule += t3-t2;
@@ -304,8 +321,8 @@ void QTrkTest()
 	delete[] image;
 	dbgprintf("Schedule time: %f, Generation time: %f\n", tschedule, tgen);
 
+	// Measure speed
 	dbgprintf("Localizing on %d images...\n", NumImages*JobsPerImg);
-
 	double tstart = getPreciseTime();
 	int jobc = 0;
 	int hjobc = qtrk.GetJobCount();
@@ -330,7 +347,7 @@ int main()
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
-	QTrkTest();
+//	QTrkTest();
 
 	return 0;
 }

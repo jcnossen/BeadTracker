@@ -50,7 +50,7 @@ public:
 	bool zlut_memoryOwner; // is this instance the owner of the zluts memory, or is it external?
 	int zlut_planes, zlut_res, zlut_count, zlut_angularSteps; 
 	std::vector<float> rprof, rprof_diff;
-	float zprofile_radius;
+	float zlut_minradius, zlut_maxradius;
 
 	XCor1DBuffer* xcorBuffer;
 	
@@ -78,11 +78,11 @@ public:
 	void SetImageFloat(float* srcImage);
 
 	vector2f ComputeBgCorrectedCOM();
-	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, vector2f center);
+	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center);
 	void ComputeQuadrantProfile(float* dst, int radialSteps, int angularSteps, int quadrant, float minRadius, float maxRadius, vector2f center);
 
 	void Normalize(float *image=0);
-	void SetZLUT(float* data, int planes, int res, int num_zluts, float prof_radius, int angularSteps, bool copyMemory);
+	void SetZLUT(float* data, int planes, int res, int num_zluts, float minradius, float maxradius, int angularSteps, bool copyMemory);
 	float ComputeZ(vector2f center, int angularSteps, int zlutIndex); // radialSteps is given by zlut_res
 
 	bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 

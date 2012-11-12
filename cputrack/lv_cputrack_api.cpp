@@ -78,7 +78,7 @@ void copyToLVArray (LVArray<T>**& r, const std::vector<T>& a)
 {
 	ResizeLVArray(r, a.size());
 	for (int x=0;x<a.size();x++)
-		(*r)->elt[x] = a[x];
+		(*r)->elem[x] = a[x];
 }
 
 CDLL_EXPORT void DLL_CALLCONV copy_crosscorrelation_result(CPUTracker* tracker, LVArray<float>** x_result, LVArray<float>** y_result, LVArray<float>** x_xc, LVArray<float>** y_xc)
@@ -122,6 +122,12 @@ CDLL_EXPORT void DLL_CALLCONV compute_xcor(CPUTracker* tracker, vector2f* positi
 }
 
 
+CDLL_EXPORT void DLL_CALLCONV compute_qi(CPUTracker* tracker, vector2f* position, int iterations, int radialSteps, int angularStepsPerQ, float minRadius, float maxRadius)
+{
+	*position = tracker->ComputeQI(*position, iterations, radialSteps, angularStepsPerQ, minRadius,maxRadius);
+}
+
+
 CDLL_EXPORT void DLL_CALLCONV set_image(CPUTracker* tracker, Image* img, int offsetX, int offsetY, ErrorCluster* error)
 {
 	try {
@@ -152,7 +158,7 @@ CDLL_EXPORT void DLL_CALLCONV set_image_u8(CPUTracker* tracker, LVArray2D<uchar>
 		ArgumentErrorMsg(error, "Given image has invalid dimensions");
 		return;
 	}
-	tracker->SetImage8Bit( data->data, tracker->GetWidth() );
+	tracker->SetImage8Bit( data->elem, tracker->GetWidth() );
 }
 
 CDLL_EXPORT void DLL_CALLCONV set_image_u16(CPUTracker* tracker, LVArray2D<ushort>** pData, ErrorCluster* error)
@@ -162,7 +168,7 @@ CDLL_EXPORT void DLL_CALLCONV set_image_u16(CPUTracker* tracker, LVArray2D<ushor
 		ArgumentErrorMsg(error, "Given image has invalid dimensions");
 		return;
 	}
-	tracker->SetImage16Bit( data->data, tracker->GetWidth()*sizeof(ushort) );
+	tracker->SetImage16Bit( data->elem, tracker->GetWidth()*sizeof(ushort) );
 }
 
 CDLL_EXPORT void DLL_CALLCONV set_image_float(CPUTracker* tracker, LVArray2D<float>** pData, ErrorCluster* error)
@@ -172,7 +178,7 @@ CDLL_EXPORT void DLL_CALLCONV set_image_float(CPUTracker* tracker, LVArray2D<flo
 		ArgumentErrorMsg(error, "Given image has invalid dimensions");
 		return;
 	}
-	tracker->SetImageFloat( data->data );
+	tracker->SetImageFloat( data->elem );
 }
 
 
@@ -205,7 +211,7 @@ CDLL_EXPORT void DLL_CALLCONV get_debug_img_as_array(CPUTracker* tracker, ppFloa
 
 	//	dbgout(SPrintf("copying %d elements to Labview array\n", len));
 		for (size_t i=0;i<dst->numElem();i++)
-			dst->data[i] = src[i];
+			dst->elem[i] = src[i];
 	}
 }
 
@@ -214,7 +220,7 @@ CDLL_EXPORT void DLL_CALLCONV get_debug_img_as_array(CPUTracker* tracker, ppFloa
 CDLL_EXPORT void DLL_CALLCONV compute_radial_profile(CPUTracker* tracker, LVArray<float>** result, int angularSteps, float range, float* center)
 {
 	LVArray<float>* dst = *result;
-	tracker->ComputeRadialProfile(&dst->elt[0], dst->dimSize, angularSteps, range, *(vector2f*)center);
+	tracker->ComputeRadialProfile(&dst->elem[0], dst->dimSize, angularSteps, 1.0f, range, *(vector2f*)center);
 }
 
 
@@ -228,5 +234,5 @@ CDLL_EXPORT void DLL_CALLCONV set_ZLUT(CPUTracker* tracker, LVArray3D<float>** p
 	int planes = zlut->dimSizes[1];
 	int res = zlut->dimSizes[2];
 	
-	tracker->SetZLUT(zlut->data, planes, res, numLUTs, profile_radius, angular_steps, true);
+	tracker->SetZLUT(zlut->elem, planes, res, numLUTs, 1.0f,  profile_radius, angular_steps, true);
 }

@@ -7,10 +7,12 @@ Labview API for the functionality in QueuedTracker.h
 #include "QueuedTracker.h"
 
 
-CDLL_EXPORT void DLL_CALLCONV qtrk_compute_radial_profile(QueuedTracker* tracker, LVArray<float>** result, int angularSteps, float range, float* center)
+CDLL_EXPORT void DLL_CALLCONV qtrk_compute_radial_profile(QueuedTracker* tracker, LVArray2D<float>** p_image, LVArray<float>** result, vector2f* center)
 {
 	LVArray<float>* dst = *result;
-	tracker->ComputeRadialProfile(&dst->elt[0], dst->dimSize, angularSteps, range, *(vector2f*)center);
+	LVArray2D<float>* image = *p_image;
+
+	tracker->ComputeRadialProfile(image->elem, image->dimSizes[1], image->dimSizes[0], dst->elem, dst->dimSize, *center);
 }
 
 CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pZlut)
@@ -21,7 +23,7 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 	int planes = zlut->dimSizes[1];
 	int res = zlut->dimSizes[2];
 	
-	tracker->SetZLUT(zlut->data, planes, res, numLUTs);
+	tracker->SetZLUT(zlut->elem, planes, res, numLUTs);
 }
 
 
@@ -37,13 +39,29 @@ CDLL_EXPORT void qtrk_destroy(QueuedTracker* qtrk)
 
 CDLL_EXPORT void qtrk_queue(QueuedTracker* qtrk, uchar* data, int pitch, uint pdt, uint locType, bool computeZ, uint id, uint zlutIndex)
 {
-	qtrk->ScheduleLocalization(data, pitch, (QTRK_PixelDataType)pdt, (Localize2DType) locType, computeZ, id, zlutIndex);
+	if (computeZ) {
+		locType |= LocalizeZ;
+	}
+
+	qtrk->ScheduleLocalization(data, pitch, (QTRK_PixelDataType)pdt, (LocalizeType) locType, id, zlutIndex);
 }
 
 CDLL_EXPORT int qtrk_jobcount(QueuedTracker* qtrk)
 {
 	return qtrk->GetJobCount();
 }
+
+
+CDLL_EXPORT int qtrk_resultcount(QueuedTracker* qtrk)
+{
+	return qtrk->GetResultCount();
+}
+
+CDLL_EXPORT int qtrk_get_results(QueuedTracker* qtrk, LocalizationResult* results, int maxResults)
+{
+	return qtrk->PollFinished(results, maxResults);
+}
+
 
 CDLL_EXPORT void DLL_CALLCONV generate_test_image(Image *img, int w, int h, float xp, float yp, float size, float photoncount)
 {

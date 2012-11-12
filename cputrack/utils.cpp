@@ -71,7 +71,7 @@ void GenerateTestImage(float* data, int w, int h, float xp, float yp, float size
 	normalize(data,w,h);
 }
 
-void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float radius, 
+void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius,
 	vector2f center, float* srcImage, int width, int height)
 {
 	vector2f* radialDirs = (vector2f*)ALLOCA(sizeof(vector2f)*angularSteps);
@@ -85,13 +85,14 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float r
 		dst[i]=0.0f;
 
 	float total = 0.0f;
-	float rstep = radius / radialSteps;
+	float rstep = (maxradius-minradius) / radialSteps;
 	for (int i=0;i<radialSteps; i++) {
 		float sum = 0.0f;
 
+		float r = minradius+rstep*i;
 		for (int a=0;a<angularSteps;a++) {
-			float x = center.x + radialDirs[a].x * rstep*i;
-			float y = center.y + radialDirs[a].y * rstep*i;
+			float x = center.x + radialDirs[a].x * r;
+			float y = center.y + radialDirs[a].y * r;
 			sum += Interpolate(srcImage,width,height, x,y);
 		}
 

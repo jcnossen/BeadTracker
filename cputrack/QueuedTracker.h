@@ -86,12 +86,13 @@ public:
 	virtual int PollFinished(LocalizationResult* results, int maxResults) = 0;
 
 	virtual void SetZLUT(float* data, int planes, int res, int numLUTs) = 0;
-	virtual void ComputeRadialProfile(float *image, int width, int height, float* dst, int radialSteps, int angularSteps, float radius, vector2f center) = 0;
+	virtual void ComputeRadialProfile(float *image, int width, int height, float* dst, int profileLength, vector2f center) = 0;
 
 	// Debug stuff
 	virtual float* GetDebugImage() { return 0; }
 
 	virtual int GetJobCount() = 0;
+	virtual int GetResultCount() = 0;
 };
 
 QueuedTracker* CreateQueuedTracker(QTrkSettings* s);
