@@ -301,19 +301,27 @@ void QTrkTest()
 	delete[] zlut;
 
 	// Schedule images to localize on
+#ifdef _DEBUG
+	int NumImages=10, JobsPerImg=10;
+#else
 	int NumImages=10, JobsPerImg=1000;
+#endif
 	dbgprintf("Generating %d images...\n", NumImages);
 	double tgen = 0.0, tschedule = 0.0;
+	std::vector<float> truepos(NumImages*JobsPerImg*3);
 	for (int n=0;n<NumImages;n++) {
 		double t1 = getPreciseTime();
 		float xp = cfg.width/2+(rand_uniform<float>() - 0.5) * 5;
 		float yp = cfg.height/2+(rand_uniform<float>() - 0.5) * 5;
 		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
+		truepos[n*3+0] = xp;
+		truepos[n*3+1] = yp;
+		truepos[n*3+2] = z;
 
 		GenerateTestImage(image, cfg.width, cfg.height, xp, yp, z, 10000);
 		double t2 = getPreciseTime();
 		for (int k=0;k<JobsPerImg;k++)
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeXCor1D | LocalizeZ), n, 0);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI | LocalizeZ), n*JobsPerImg+k, 0);
 		double t3 = getPreciseTime();
 		tgen += t2-t1;
 		tschedule += t3-t2;
@@ -337,17 +345,36 @@ void QTrkTest()
 		Sleep(10);
 	} while (jobc!=0);
 	double tend = getPreciseTime();
+
+	// Wait for last jobs
+	jobc = NumImages*JobsPerImg;
+	int rc = jobc;
+	double errX=0.0, errY=0.0, errZ=0.0;
+
+	while(rc>0) {
+		LocalizationResult result;
+
+		if (qtrk.PollFinished(&result, 1)) {
+			int iid = result.id/JobsPerImg;
+			errX += fabs(truepos[iid*3+0]-result.pos.x);
+			errY += fabs(truepos[iid*3+1]-result.pos.y);
+			errZ += fabs(truepos[iid*3+2]-result.z);
+			dbgprintf("ID: %d\n", result.id);
+			rc--;
+		}
+	}
 	dbgprintf("Localization Speed: %d (img/s), using %d threads\n", (int)( startJobs/(tend-tstart) ), qtrk.NumThreads());
+	dbgprintf("ErrX: %f, ErrY: %f, ErrZ: %f\n", errX/jobc, errY/jobc,errZ/jobc);
 }
 
 int main()
 {
-	SpeedTest();
+//	SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
-//	QTrkTest();
+	QTrkTest();
 
 	return 0;
 }

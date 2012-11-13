@@ -19,10 +19,12 @@ public:
 
 enum LocalizeType {
 	// Flags for selecting 2D localization type
-	LocalizeOnlyCOM = 1, // use only COM
-	LocalizeXCor1D = 2, // COM+XCor1D
-	LocalizeQI = 4, // COM+QI
-	LocalizeXCor2D = 8,   // XCor2D
+	LocalizeOnlyCOM = 0, // use only COM
+	LocalizeXCor1D = 1, // COM+XCor1D
+	LocalizeQI = 2, // COM+QI
+	LocalizeXCor2D = 3,   // XCor2D
+
+	Localize2DMask = 7,
 	LocalizeZ = 16,
 	Force32Bit = 0xffffffff
 };
@@ -41,8 +43,9 @@ struct LocalizationResult {
 	uint id;
 	int zlutIndex;
 	uint locType;
-	vector2f pos, firstGuess;
+	vector2f pos;
 	float z;
+	vector2f firstGuess;
 };
 // DONT CHANGE, Mapped to labview clusters (QTrkSettings.ctl)!
 struct QTrkSettings {
@@ -82,6 +85,7 @@ public:
 	QueuedTracker() {}
 	virtual ~QueuedTracker() {}
 
+	virtual void Start () = 0;
 	virtual void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, uint zlutIndex=0) = 0;
 	virtual int PollFinished(LocalizationResult* results, int maxResults) = 0;
 

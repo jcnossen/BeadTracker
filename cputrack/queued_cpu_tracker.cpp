@@ -83,7 +83,7 @@ QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 		#ifdef WIN32	
 		SYSTEM_INFO sysInfo;
 		GetSystemInfo(&sysInfo);
-		cfg.numThreads = sysInfo.dwNumberOfProcessors*1.5;
+		cfg.numThreads = sysInfo.dwNumberOfProcessors;
 		#else
 		cfg.numThreads = 4;
 		#endif
@@ -173,14 +173,20 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 
 	vector2f com = th->tracker->ComputeBgCorrectedCOM();
 
-	if (j->locType & LocalizeXCor1D) {
+	LocalizeType locType = (LocalizeType)(j->locType&Localize2DMask);
+
+	switch(locType) {
+	case LocalizeXCor1D:
 		result.firstGuess = com;
 		result.pos = th->tracker->ComputeXCorInterpolated(com, cfg.xc1_iterations, cfg.xc1_profileWidth);
-	} else if(j->locType & LocalizeOnlyCOM) {
+		break;
+	case LocalizeOnlyCOM:
 		result.firstGuess = result.pos = com;
-	} else if(j->locType == LocalizeQI) {
+		break;
+	case LocalizeQI:
 		result.firstGuess = com;
 		result.pos = th->tracker->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_minradius, cfg.qi_maxradius);
+		break;
 	}
 
 	if(j->locType & LocalizeZ) {
@@ -207,7 +213,7 @@ void QueuedCPUTracker::ComputeRadialProfile(float *image, int width, int height,
 	::ComputeRadialProfile(dst, profileLen, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, center, image, width,height);
 }
 
-	
+
 void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, 
 				LocalizeType locType, uint id, uint zlutIndex)
 {

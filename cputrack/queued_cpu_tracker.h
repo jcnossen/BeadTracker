@@ -10,13 +10,13 @@ public:
 	QueuedCPUTracker(QTrkSettings* settings);
 	~QueuedCPUTracker();
 
+	void Start();
 	void SetZLUT(float* data, int planes, int res, int num_zluts);
 	void ComputeRadialProfile(float *image, int width, int height, float* dst, int profileLen, vector2f center);
 
 	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, uint zlutIndex=0);
 	int PollFinished(LocalizationResult* results, int maxResults);
 
-	void Start();
 	int GetJobCount();
 	int GetResultCount();
 	int NumThreads() { return cfg.numThreads; }

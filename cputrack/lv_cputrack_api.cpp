@@ -77,7 +77,7 @@ template<typename T>
 void copyToLVArray (LVArray<T>**& r, const std::vector<T>& a)
 {
 	ResizeLVArray(r, a.size());
-	for (int x=0;x<a.size();x++)
+	for (size_t x=0;x<a.size();x++)
 		(*r)->elem[x] = a[x];
 }
 
@@ -202,7 +202,7 @@ CDLL_EXPORT void DLL_CALLCONV get_debug_image(CPUTracker* tracker, Image* dbgImg
 	}
 }
 
-CDLL_EXPORT void DLL_CALLCONV get_debug_img_as_array(CPUTracker* tracker, ppFloatArray2 pdbgImg)
+CDLL_EXPORT void DLL_CALLCONV get_debug_img_as_array(CPUTracker* tracker, LVArray2D<float>** pdbgImg)
 {
 	float* src = tracker->GetDebugImage();
 	if (src) {
@@ -210,7 +210,7 @@ CDLL_EXPORT void DLL_CALLCONV get_debug_img_as_array(CPUTracker* tracker, ppFloa
 		LVArray2D<float>* dst = *pdbgImg;
 
 	//	dbgout(SPrintf("copying %d elements to Labview array\n", len));
-		for (size_t i=0;i<dst->numElem();i++)
+		for (int i=0;i<dst->numElem();i++)
 			dst->elem[i] = src[i];
 	}
 }
@@ -236,3 +236,24 @@ CDLL_EXPORT void DLL_CALLCONV set_ZLUT(CPUTracker* tracker, LVArray3D<float>** p
 	
 	tracker->SetZLUT(zlut->elem, planes, res, numLUTs, 1.0f,  profile_radius, angular_steps, true);
 }
+
+
+
+CDLL_EXPORT void DLL_CALLCONV generate_test_image(Image *img, int w, int h, float xp, float yp, float size, float photoncount)
+{
+	try {
+		float *d = new float[w*h];
+		GenerateTestImage(d, w, h, xp, yp, size, photoncount);
+		ushort* intd = floatToNormalizedUShort(d, w,h);
+
+		imaqArrayToImage(img, intd, w,h);
+		delete[] d;
+		delete[] intd;
+	}
+	catch(const std::exception& e)
+	{
+		dbgout("Exception: " + std::string(e.what()) + "\n");
+	}
+}
+
+
