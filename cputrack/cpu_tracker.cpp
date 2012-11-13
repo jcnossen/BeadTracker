@@ -60,8 +60,8 @@ void CPUTracker::SetImageFloat(float *src) {
 
 
 #ifdef _DEBUG
-	#define MARKPIXEL(x,y) (debugImage[ (int)(y)*width+ (int) (x)]+=maxValue*0.1f)
-	#define MARKPIXELI(x,y) _markPixels(x,y,debugImage, width, maxValue*0.1f);
+	#define MARKPIXEL(x,y) (debugImage[ (int)(y)*width+ (int) (x)]+=maxImageValue*0.1f)
+	#define MARKPIXELI(x,y) _markPixels(x,y,debugImage, width, maxImageValue*0.1f);
 static void _markPixels(float x,float y, float* img, int w, float mv)
 {
 	img[ (int)floorf(y)*w+(int)floorf(x) ] += mv;
@@ -137,7 +137,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 
 #ifdef _DEBUG
 	std::copy(srcImage, srcImage+width*height, debugImage);
-	float maxValue = *std::max_element(srcImage,srcImage+width*height);
+	maxImageValue = *std::max_element(srcImage,srcImage+width*height);
 #endif
 
 	for (int k=0;k<iterations;k++) {
@@ -207,7 +207,7 @@ vector2f CPUTracker::ComputeXCor(vector2f initial, int profileWidth)
 
 #ifdef _DEBUG
 	std::copy(srcImage, srcImage+width*height, debugImage);
-	float maxValue = *std::max_element(srcImage,srcImage+width*height);
+	maxImageValue = *std::max_element(srcImage,srcImage+width*height);
 #endif
 
 	int rx = round(pos.x);
@@ -267,8 +267,11 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 	int nr=radialSteps;
 #ifdef _DEBUG
 	std::copy(srcImage, srcImage+width*height, debugImage);
-	float maxValue = *std::max_element(srcImage,srcImage+width*height);
+	maxImageValue = *std::max_element(srcImage,srcImage+width*height);
 #endif
+
+	// check bounds
+
 
 	if (angularStepsPerQ != quadrantDirs.size()) {
 		quadrantDirs.resize(angularStepsPerQ);
