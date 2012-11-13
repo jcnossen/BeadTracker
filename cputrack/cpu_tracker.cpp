@@ -302,7 +302,7 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 			ComputeQuadrantProfile(buf+q*nr, nr, angularStepsPerQ, q, minRadius, maxRadius, center);
 		}
 		
-		// Build Ix = qL(-r) || qR(r)
+		// Build Ix = [ qL(-r)  qR(r) ]
 		// qL = q1 + q2   (concat0)
 		// qR = q0 + q3   (concat1)
 		for(int r=0;r<nr;r++) {
@@ -312,7 +312,7 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 
 		float offsetX = QI_ComputeOffset(concat0, nr);
 
-		// Build Iy = qB(-r) || qT(r)
+		// Build Iy = [ qB(-r)  qT(r) ]
 		// qT = q0 + q1
 		// qB = q2 + q3
 		for(int r=0;r<nr;r++) {
