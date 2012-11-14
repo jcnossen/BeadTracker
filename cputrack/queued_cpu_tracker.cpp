@@ -174,20 +174,23 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 	vector2f com = th->tracker->ComputeBgCorrectedCOM();
 
 	LocalizeType locType = (LocalizeType)(j->locType&Localize2DMask);
+	bool boundaryHit = false;
 
 	switch(locType) {
 	case LocalizeXCor1D:
 		result.firstGuess = com;
-		result.pos = th->tracker->ComputeXCorInterpolated(com, cfg.xc1_iterations, cfg.xc1_profileWidth);
+		result.pos = th->tracker->ComputeXCorInterpolated(com, cfg.xc1_iterations, cfg.xc1_profileWidth, boundaryHit);
 		break;
 	case LocalizeOnlyCOM:
 		result.firstGuess = result.pos = com;
 		break;
 	case LocalizeQI:
 		result.firstGuess = com;
-		result.pos = th->tracker->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_minradius, cfg.qi_maxradius);
+		result.pos = th->tracker->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
 		break;
 	}
+
+	result.error = boundaryHit ? 1 : 0;
 
 	if(j->locType & LocalizeZ) {
 		result.z = th->tracker->ComputeZ(result.pos, cfg.zlut_angularsteps, j->zlut);

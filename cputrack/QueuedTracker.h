@@ -46,6 +46,7 @@ struct LocalizationResult {
 	vector2f pos;
 	float z;
 	vector2f firstGuess;
+	uint error;
 };
 // DONT CHANGE, Mapped to labview clusters (QTrkSettings.ctl)!
 struct QTrkSettings {

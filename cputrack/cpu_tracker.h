@@ -47,7 +47,6 @@ public:
 	float maxImageValue;
 #endif
 
-
 	std::vector<vector2f> radialDirs; // full circle for ZLUT
 
 	// The ZLUT system stores 'zlut_count' number of 2D zlut's, so every bead can be tracked with its own unique ZLUT.
@@ -69,11 +68,11 @@ public:
 	int GetHeight() { return height; }
 	CPUTracker(int w, int h, int xcorwindow=128);
 	~CPUTracker();
-
-	vector2f ComputeXCor(vector2f initial, int profileWidth=32);
+	bool CheckBounds(vector2f center, float radius);
+	vector2f ComputeXCor(vector2f initial, int profileWidth, bool& boundaryHit);
 	vector2f ComputeXCor2D();
-	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth=32);
-	vector2f ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQuadrant, float minRadius, float maxRadius);
+	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth, bool& boundaryHit);
+	vector2f ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQuadrant, float minRadius, float maxRadius, bool& boundaryHit);
 
 	float QI_ComputeOffset(complexc* qi_profile, int nr);
 
