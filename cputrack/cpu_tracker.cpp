@@ -124,13 +124,13 @@ void XCor1DBuffer::XCorFFTHelper(complexc* xc, complexc *xcr, xcor_t* result)
 		result[x] = shiftedResult[ (x+xcorw/2) % xcorw ].real();
 }
 
-// Returns true if no bounds are crossed
-bool CPUTracker::CheckBounds(vector2f center, float radius)
+// Returns true if bounds are crossed
+bool CPUTracker::IsCrossingImageBoundaries(vector2f center, float radius)
 {
-	return ! (center.x + radius >= width ||
+	return center.x + radius >= width ||
 		center.x - radius < 0 ||
 		center.y + radius >= height ||
-		center.y - radius < 0);
+		center.y - radius < 0;
 }
 
 vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth, bool& boundaryHit)
@@ -154,7 +154,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 		float xmin = pos.x - XCorScale * xcorw/2;
 		float ymin = pos.y - XCorScale * xcorw/2;
 
-		if (!CheckBounds(pos, XCorScale*xcorw/2)) {
+		if (IsCrossingImageBoundaries(pos, XCorScale*xcorw/2)) {
 			boundaryHit = true;
 			return pos;
 		}
@@ -227,7 +227,7 @@ vector2f CPUTracker::ComputeXCor(vector2f initial, int profileWidth, bool& bound
 	int ymin = ry - xcorw/2;
 
 	boundaryHit = false;
-	if (CheckBounds(pos, xcorw/2)) {
+	if (IsCrossingImageBoundaries(pos, xcorw/2)) {
 		boundaryHit=true;
 		return pos;
 	}
@@ -311,7 +311,7 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 
 	for (int k=0;k<iterations;k++){
 		// check bounds
-		if (CheckBounds(center, maxRadius)) {
+		if (IsCrossingImageBoundaries(center, maxRadius)) {
 			boundaryHit = true;
 			return center;
 		}
@@ -525,23 +525,6 @@ bool CPUTracker::GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xco
 		yconv = xcorBuffer->Y_result;
 	}
 	return true;
-}
-
-void CPUTrackerImageBuffer::Assign(ushort* srcData, int pitch)
-{
-	uchar *d = (uchar*)srcData;
-	for (int y=0;y<h;y++) {
-		memcpy(&data[y*w], d, sizeof(ushort)*w);
-		d += pitch;
-	}
-}
-
-
-
-
-CPUTrackerImageBuffer::~CPUTrackerImageBuffer ()
-{
-	delete[] data;
 }
 
 vector2f CPUTracker::ComputeXCor2D()

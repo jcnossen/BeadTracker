@@ -17,6 +17,8 @@ public:
 	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, uint zlutIndex=0);
 	int PollFinished(LocalizationResult* results, int maxResults);
 
+	void GenerateTestImage(float* dst, float xp,float yp, float z, float photoncount);
+
 	int GetJobCount();
 	int GetResultCount();
 	int NumThreads() { return cfg.numThreads; }
@@ -51,7 +53,6 @@ private:
 	std::vector<Thread> threads;
 	float* zluts;
 	int zlut_count, zlut_planes, zlut_res;
-	QTrkSettings cfg;
 
 	// signal threads to stop their work
 	bool quitWork;

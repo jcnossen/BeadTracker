@@ -252,4 +252,9 @@ int QueuedCPUTracker::PollFinished(LocalizationResult* dstResults, int maxResult
 }
 
 
+void QueuedCPUTracker::GenerateTestImage(float* dst, float xp,float yp, float z, float photoncount)
+{
+	::GenerateTestImage(dst, cfg.width,cfg.height,xp,yp,z,photoncount);
+}
+
 

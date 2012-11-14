@@ -3,19 +3,7 @@
 
 #pragma once
 
-#include <vector>
-#include "utils.h"
-
-class TrackerImageBuffer
-{
-public:
-	TrackerImageBuffer() {}
-
-	virtual ~TrackerImageBuffer() {}
-	virtual void Assign(uchar* data, int pitch) = 0;
-	virtual void Assign(ushort* data, int pitch) = 0;
-	virtual void Assign(float* data, int pitch) = 0;
-};
+#include "std_incl.h" 
 
 enum LocalizeType {
 	// Flags for selecting 2D localization type
@@ -98,6 +86,10 @@ public:
 
 	virtual int GetJobCount() = 0;
 	virtual int GetResultCount() = 0;
+
+	virtual void GenerateTestImage(float* dstImg, float xp, float yp, float size, float photoncount) = 0;
+
+	QTrkSettings cfg;
 };
 
 QueuedTracker* CreateQueuedTracker(QTrkSettings* s);

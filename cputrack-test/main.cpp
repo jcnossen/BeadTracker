@@ -2,7 +2,6 @@
 #include <Windows.h>
 #include <stdint.h>
 #include "../cputrack/random_distr.h"
-#include "../cputrack/FFT2DTracker.h" 
 #include "../cputrack/queued_cpu_tracker.h"
 
 template<typename T> T sq(T x) { return x*x; }
@@ -79,7 +78,8 @@ void SpeedTest()
 		vector2f com = tracker->ComputeBgCorrectedCOM();
 		vector2f initial = {com.x, com.y};
 		double t2 = getPreciseTime();
-		vector2f xcor = tracker->ComputeXCorInterpolated(initial, xcor_iterations);
+		bool boundaryHit = false;
+		vector2f xcor = tracker->ComputeXCorInterpolated(initial, xcor_iterations, 32, boundaryHit);
 /*		if (k == 1) {
 			tracker.OutputDebugInfo();
 			writeImageAsCSV("test.csv", tracker.srcImage, tracker.width, tracker.height);
@@ -91,7 +91,8 @@ void SpeedTest()
 		xcordist.x += fabsf(xcor.x - xp);
 		xcordist.y += fabsf(xcor.y - yp);
 		double t3 = getPreciseTime();
-		vector2f qi = tracker->ComputeQI(xcor, qi_iterations, 64, 16, 5,50);
+		boundaryHit = false;
+		vector2f qi = tracker->ComputeQI(xcor, qi_iterations, 64, 16, 5,50, boundaryHit);
 		qidist.x += fabsf(qi.x - xp);
 		qidist.y += fabsf(qi.y - yp);
 		double t4 = getPreciseTime();
@@ -135,7 +136,8 @@ void OnePixelTest()
 	dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
 	
 	vector2f initial = {15,15};
-	vector2f xcor = tracker->ComputeXCor(initial);
+	bool boundaryHit = false;
+	vector2f xcor = tracker->ComputeXCor(initial, 16, boundaryHit);
 	dbgout(SPrintf("XCor: %f,%f\n", xcor.x, xcor.y));
 
 	assert(xcor.x == 15.0f && xcor.y == 15.0f);
@@ -152,10 +154,41 @@ void SmallImageTest()
 	dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
 	
 	vector2f initial = {15,15};
-	vector2f xcor = tracker->ComputeXCor(initial);
+	bool boundaryHit = false;
+	vector2f xcor = tracker->ComputeXCor(initial, 16, boundaryHit);
 	dbgout(SPrintf("XCor: %f,%f\n", xcor.x, xcor.y));
 
 	assert(fabsf(xcor.x-15.0f) < 1e-6 && fabsf(xcor.y-15.0f) < 1e-6);
+	delete tracker;
+}
+
+
+
+ 
+void TestBoundCheck()
+{
+	CPUTracker *tracker = new CPUTracker(32,32, 16);
+	bool boundaryHit;
+
+	for (int i=0;i<10;i++) {
+		float xp = tracker->GetWidth()/2+(rand_uniform<float>() - 0.5) * 20;
+		float yp = tracker->GetHeight()/2+(rand_uniform<float>() - 0.5) * 20;
+		
+		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), xp, yp, 1, 0.0f);
+
+		vector2f com = tracker->ComputeBgCorrectedCOM();
+		dbgout(SPrintf("COM: %f,%f\n", com.x-xp, com.y-yp));
+	
+		vector2f initial = com;
+		boundaryHit=false;
+		vector2f xcor = tracker->ComputeXCorInterpolated(initial, 3, 16, boundaryHit);
+		dbgprintf("XCor: %f,%f. Err: %d\n", xcor.x-xp, xcor.y-yp, boundaryHit);
+
+		boundaryHit=false;
+		vector2f qi = tracker->ComputeQI(initial, 3, 64, 32, 1, 10, boundaryHit);
+		dbgprintf("QI: %f,%f. Err: %d\n", qi.x-xp, qi.y-yp, boundaryHit);
+	}
+
 	delete tracker;
 }
 
@@ -175,8 +208,9 @@ void PixelationErrorTest()
 		//dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
 
 		vector2f initial = {X,Y};
-		vector2f xcor = tracker->ComputeXCor(initial);
-		vector2f xcorInterp = tracker->ComputeXCorInterpolated(initial, 3);
+		bool boundaryHit = false;
+		vector2f xcor = tracker->ComputeXCor(initial, 16, boundaryHit);
+		vector2f xcorInterp = tracker->ComputeXCorInterpolated(initial, 3, 32, boundaryHit);
 		dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f, XCorInterp err: %f\n", xpos, com.x-xpos, xcor.x-xpos, xcorInterp.x-xpos));
 	}
 	delete tracker;
@@ -359,13 +393,14 @@ void QTrkTest()
 			errX += fabs(truepos[iid*3+0]-result.pos.x);
 			errY += fabs(truepos[iid*3+1]-result.pos.y);
 			errZ += fabs(truepos[iid*3+2]-result.z);
-			dbgprintf("ID: %d\n", result.id);
+			dbgprintf("ID: %d. Error:%d\n", result.id, result.error);
 			rc--;
 		}
 	}
 	dbgprintf("Localization Speed: %d (img/s), using %d threads\n", (int)( startJobs/(tend-tstart) ), qtrk.NumThreads());
 	dbgprintf("ErrX: %f, ErrY: %f, ErrZ: %f\n", errX/jobc, errY/jobc,errZ/jobc);
 }
+
 
 int main()
 {
@@ -374,6 +409,7 @@ int main()
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
+	TestBoundCheck();
 	QTrkTest();
 
 	return 0;

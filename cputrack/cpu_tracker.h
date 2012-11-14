@@ -9,16 +9,6 @@
 typedef uchar pixel_t;
 
 
-class CPUTrackerImageBuffer : public TrackerImageBuffer
-{
-public:
-	void Assign(ushort* src_data, int pitch);
-	~CPUTrackerImageBuffer ();
-
-	int w,h;
-	ushort* data;
-};
-
 class XCor1DBuffer {
 public:
 	XCor1DBuffer(int xcorw);
@@ -68,7 +58,7 @@ public:
 	int GetHeight() { return height; }
 	CPUTracker(int w, int h, int xcorwindow=128);
 	~CPUTracker();
-	bool CheckBounds(vector2f center, float radius);
+	bool IsCrossingImageBoundaries(vector2f center, float radius);
 	vector2f ComputeXCor(vector2f initial, int profileWidth, bool& boundaryHit);
 	vector2f ComputeXCor2D();
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth, bool& boundaryHit);
@@ -94,7 +84,6 @@ public:
 
 	void OutputDebugInfo();
 	float* GetDebugImage() { return debugImage; }
-	void SelectImageBuffer(TrackerImageBuffer* b);
 };
 
 

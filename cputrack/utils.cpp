@@ -33,18 +33,23 @@ void dbgprintf(const char *fmt,...) {
 	va_end(ap);
 }
 
-ushort* floatToNormalizedUShort(float *data, uint w,uint h)
+ushort* floatToNormalizedUShort(float *src, uint w,uint h)
+{ 
+	ushort* r = new ushort[w*h]; 
+	floatToNormalizedUShort(r,src,w,h); 
+	return r; 
+}
+
+void floatToNormalizedUShort(ushort* dst, float *src, uint w,uint h)
 {
-	float maxv = data[0];
-	float minv = data[0];
+	float maxv = src[0];
+	float minv = src[0];
 	for (uint k=0;k<w*h;k++) {
-		maxv = max(maxv, data[k]);
-		minv = min(minv, data[k]);
+		maxv = max(maxv, src[k]);
+		minv = min(minv, src[k]);
 	}
-	ushort *norm = new ushort[w*h];
 	for (uint k=0;k<w*h;k++)
-		norm[k] = ((1<<16)-1) * (data[k]-minv) / (maxv-minv);
-	return norm;
+		dst[k] = ((1<<16)-1) * (src[k]-minv) / (maxv-minv);
 }
 
 

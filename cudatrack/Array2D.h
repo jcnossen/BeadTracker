@@ -8,7 +8,7 @@ Contains the CUDA code to apply per-pixel calculations to arrays and sum them by
 
 #include "cuda_shared_mem.h"
 
-#include "utils.h"
+#include "std_incl.h"
 
 void throwCudaError(cudaError_t err);
 
