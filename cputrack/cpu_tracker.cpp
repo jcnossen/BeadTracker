@@ -434,7 +434,7 @@ vector2f CPUTracker::ComputeBgCorrectedCOM()
 		for(int x=0;x<width;x++)
 		{
 			float v = getPixel(x,y);
-			v = std::max(0.0f, fabs(v-mean)-stdev);
+			v = std::max(0.0f, fabs(v-mean)-2.0f*stdev);
 			sum += v;
 			momentX += x*v;
 			momentY += y*v;

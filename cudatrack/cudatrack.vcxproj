@@ -19,7 +19,6 @@
     <ClInclude Include="GPUBase.h" />
     <ClInclude Include="LsqQuadraticFit.h" />
     <ClInclude Include="QueuedCUDATracker.h" />
-    <ClInclude Include="tracker.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\cputrack\utils.cpp" />
@@ -27,7 +26,6 @@
   <ItemGroup>
     <CudaCompile Include="cuda_kissfft\kiss_fft.cu" />
     <CudaCompile Include="QueuedCUDATracker.cu" />
-    <CudaCompile Include="tracker.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{ACF7861A-4D51-4035-BD25-D0A0FD1C1530}</ProjectGuid>
