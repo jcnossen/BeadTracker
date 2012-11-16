@@ -64,7 +64,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <CodeGeneration>compute_20,sm_20</CodeGeneration>
-      <Include>../cputrack</Include>
+      <Include>../cputrack;../cudatrack</Include>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -89,22 +89,25 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <CodeGeneration>compute_20,sm_20</CodeGeneration>
-      <Include>../cputrack</Include>
+      <Include>../cputrack;../cudatrack</Include>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <CudaCompile Include="..\cudatrack\cuda_kissfft\kiss_fft.cu" />
     <CudaCompile Include="..\cudatrack\tracker.cu" />
     <CudaCompile Include="test.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\cputrack\utils.h" />
     <ClInclude Include="..\cudatrack\Array2D.h" />
+    <ClInclude Include="..\cudatrack\cuda_kissfft\kiss_fft.h" />
+    <ClInclude Include="..\cudatrack\cuda_kissfft\_kiss_fft_guts.h" />
     <ClInclude Include="..\cudatrack\cuda_shared_mem.h" />
     <ClInclude Include="..\cudatrack\GPUBase.h" />
     <ClInclude Include="..\cudatrack\tracker.h" />
-    <ClInclude Include="..\cudatrack\utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\cudatrack\utils.cpp" />
+    <ClCompile Include="..\cputrack\utils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

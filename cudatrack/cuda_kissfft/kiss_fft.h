@@ -54,6 +54,7 @@ typedef struct {
 }kiss_fft_cpx;
 
 typedef struct kiss_fft_state* kiss_fft_cfg;
+typedef kiss_fft_state ck_fft_state; // indicating CUDA memory instead of host memory
 
 /* 
  *  kiss_fft_alloc
@@ -65,20 +66,10 @@ typedef struct kiss_fft_state* kiss_fft_cfg;
  *  The return value from fft_alloc is a cfg buffer used internally
  *  by the fft routine or NULL.
  *
- *  If lenmem is NULL, then kiss_fft_alloc will allocate a cfg buffer using malloc.
- *  The returned value should be free()d when done to avoid memory leaks.
- *  
- *  The state can be placed in a user supplied buffer 'mem':
- *  If lenmem is not NULL and mem is not NULL and *lenmem is large enough,
- *      then the function places the cfg in mem and the size used in *lenmem
- *      and returns mem.
- *  
- *  If lenmem is not NULL and ( mem is NULL or *lenmem is not large enough),
- *      then the function returns NULL and places the minimum cfg 
- *      buffer size in *lenmem.
  * */
 
-kiss_fft_cfg kiss_fft_alloc(int nfft,int inverse_fft,void * mem,size_t * lenmem); 
+ck_fft_state* ck_fft_alloc(int nfft,int inverse_fft); 
+kiss_fft_state* kiss_fft_alloc(int nfft,int inverse_fft, int* memneeded=0); 
 
 /*
  * kiss_fft(cfg,in_out_buf)
@@ -90,7 +81,7 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,int inverse_fft,void * mem,size_t * lenmem)
  * Note that each element is complex and can be accessed like
     f[k].r and f[k].i
  * */
-void kiss_fft(kiss_fft_cfg cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
+void kiss_fft(ck_fft_state* cfg, const kiss_fft_cpx *fin, kiss_fft_cpx *fout);
 
 /*
  A more generic version of the above function. It reads its input from every Nth sample.

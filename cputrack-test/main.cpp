@@ -42,7 +42,7 @@ void SpeedTest()
 #else
 	int N = 2000;
 #endif
-	int qi_iterations = 8;
+	int qi_iterations = 4;
 	int xcor_iterations = 2;
 	CPUTracker* tracker = new CPUTracker(150,150, 128);
 
@@ -404,13 +404,13 @@ void QTrkTest()
 
 int main()
 {
-//	SpeedTest();
+	SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
-	TestBoundCheck();
-	QTrkTest();
+	//TestBoundCheck();
+	//QTrkTest();
 
 	return 0;
 }

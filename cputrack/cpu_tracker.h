@@ -50,8 +50,9 @@ public:
 	
 	std::vector<vector2f> quadrantDirs; // single quadrant
 	int qi_radialsteps;
-//	std::vector<complexc> qi_out, qi_revout;
-	kissfft<float> *qi_fft_forward, *qi_fft_backward;
+	typedef double qi_t;
+	typedef std::complex<qi_t> qic_t;
+	kissfft<qi_t> *qi_fft_forward, *qi_fft_backward;
 
 	float& getPixel(int x, int y) { return srcImage[width*y+x]; }
 	int GetWidth() { return width; }
@@ -64,7 +65,7 @@ public:
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth, bool& boundaryHit);
 	vector2f ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQuadrant, float minRadius, float maxRadius, bool& boundaryHit);
 
-	float QI_ComputeOffset(complexc* qi_profile, int nr);
+	qi_t QI_ComputeOffset(qic_t* qi_profile, int nr);
 
 	template<typename TPixel> void SetImage(TPixel* srcImage, uint srcpitch);
 	void SetImage16Bit(ushort* srcImage, uint srcpitch) { SetImage(srcImage, srcpitch); }
@@ -73,7 +74,7 @@ public:
 
 	vector2f ComputeBgCorrectedCOM();
 	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center);
-	void ComputeQuadrantProfile(float* dst, int radialSteps, int angularSteps, int quadrant, float minRadius, float maxRadius, vector2f center);
+	void ComputeQuadrantProfile(qi_t* dst, int radialSteps, int angularSteps, int quadrant, float minRadius, float maxRadius, vector2f center);
 
 	void Normalize(float *image=0);
 	void SetZLUT(float* data, int planes, int res, int num_zluts, float minradius, float maxradius, int angularSteps, bool copyMemory);

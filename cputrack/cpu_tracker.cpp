@@ -295,14 +295,14 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 			delete qi_fft_backward;
 		}
 		qi_radialsteps = nr;
-		qi_fft_forward = new kissfft<float>(nr*2,false);
-		qi_fft_backward = new kissfft<float>(nr*2,true);
+		qi_fft_forward = new kissfft<qi_t>(nr*2,false);
+		qi_fft_backward = new kissfft<qi_t>(nr*2,true);
 	}
 
-	float* buf = (float*)ALLOCA(sizeof(float)*nr*4);
-	float* q0=buf, *q1=buf+nr, *q2=buf+nr*2, *q3=buf+nr*3;
-	complexc* concat0 = (complexc*)ALLOCA(sizeof(complexc)*nr*2);
-	complexc* concat1 = concat0 + nr;
+	qi_t* buf = (qi_t*)ALLOCA(sizeof(qi_t)*nr*4);
+	qi_t* q0=buf, *q1=buf+nr, *q2=buf+nr*2, *q3=buf+nr*3;
+	qic_t* concat0 = (qic_t*)ALLOCA(sizeof(qic_t)*nr*2);
+	qic_t* concat1 = concat0 + nr;
 
 	vector2f center = initial;
 
@@ -350,11 +350,11 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 
 
 // Profile is complexc[nr*2]
-float CPUTracker::QI_ComputeOffset(complexc* profile, int nr)
+CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr)
 {
-	complexc* reverse = (complexc*)ALLOCA(sizeof(complexc)*nr*2);
-	complexc* fft_out = (complexc*)ALLOCA(sizeof(complexc)*nr*2);
-	complexc* fft_out2 = (complexc*)ALLOCA(sizeof(complexc)*nr*2);
+	qic_t* reverse = (qic_t*)ALLOCA(sizeof(qic_t)*nr*2);
+	qic_t* fft_out = (qic_t*)ALLOCA(sizeof(qic_t)*nr*2);
+	qic_t* fft_out2 = (qic_t*)ALLOCA(sizeof(qic_t)*nr*2);
 
 	for(int x=0;x<nr*2;x++)
 		reverse[x] = profile[nr*2-1-x];
@@ -369,15 +369,15 @@ float CPUTracker::QI_ComputeOffset(complexc* profile, int nr)
 	qi_fft_backward->transform(fft_out, fft_out2);
 	// fft_out2 now contains the autoconvolution
 	// convert it to float
-	float* autoconv = (float*)ALLOCA(sizeof(float)*nr*2);
+	qi_t* autoconv = (qi_t*)ALLOCA(sizeof(qi_t)*nr*2);
 	for(int x=0;x<nr*2;x++)
 		autoconv[x] = fft_out2[(x+nr)%(nr*2)].real();
 	float maxPos = ComputeMaxInterp(autoconv, nr*2);
-	return (maxPos - nr) / (3.141593f * 0.5f);
+	return (maxPos - nr) / (3.141593 * 0.5);
 }
 
 
-void CPUTracker::ComputeQuadrantProfile(float* dst, int radialSteps, int angularSteps, int quadrant, float minRadius, float maxRadius, vector2f center)
+void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, int angularSteps, int quadrant, float minRadius, float maxRadius, vector2f center)
 {
 	const int qmat[] = {
 		1, 1,

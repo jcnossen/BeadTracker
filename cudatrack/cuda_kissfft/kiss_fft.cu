@@ -1,5 +1,6 @@
 /*
 Copyright (c) 2003-2010, Mark Borgerding
+Modified for use in CUDA kernels by Jelmer Cnossen
 
 All rights reserved.
 
@@ -12,6 +13,8 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
 
 #include "_kiss_fft_guts.h"
 /* The guts header contains all the multiplication and addition macros that are defined for
@@ -234,15 +237,8 @@ static void kf_bfly_generic(
     KISS_FFT_TMP_FREE(scratch);
 }
 
-static
-void kf_work(
-        kiss_fft_cpx * Fout,
-        const kiss_fft_cpx * f,
-        const size_t fstride,
-        int in_stride,
-        int * factors,
-        const kiss_fft_cfg st
-        )
+static void kf_work(kiss_fft_cpx * Fout, const kiss_fft_cpx * f,
+        const size_t fstride, int in_stride, int * factors, const kiss_fft_cfg st)
 {
     kiss_fft_cpx * Fout_beg=Fout;
     const int p=*factors++; /* the radix  */
@@ -336,47 +332,51 @@ void kf_factor(int n,int * facbuf)
  * The return value is a contiguous block of memory, allocated with malloc.  As such,
  * It can be freed with free(), rather than a kiss_fft-specific function.
  * */
-kiss_fft_cfg kiss_fft_alloc(int nfft,int inverse_fft,void * mem,size_t * lenmem )
+
+
+kiss_fft_state* kiss_fft_alloc(int nfft,int inverse_fft, int* pmemneeded)
 {
-    kiss_fft_cfg st=NULL;
     size_t memneeded = sizeof(struct kiss_fft_state)
         + sizeof(kiss_fft_cpx)*(nfft-1); /* twiddle factors*/
+	if (pmemneeded)
+		*pmemneeded = memneeded;
 
-    if ( lenmem==NULL ) {
-        st = ( kiss_fft_cfg)KISS_FFT_MALLOC( memneeded );
-    }else{
-        if (mem != NULL && *lenmem >= memneeded)
-            st = (kiss_fft_cfg)mem;
-        *lenmem = memneeded;
+	kiss_fft_state*st = (kiss_fft_state*)malloc(memneeded);
+    int i;
+    st->nfft=nfft;
+    st->inverse = inverse_fft;
+
+    for (i=0;i<nfft;++i) {
+        const double pi=3.141592653589793238462643383279502884197169399375105820974944;
+        double phase = -2*pi*i / nfft;
+        if (st->inverse)
+            phase *= -1;
+        kf_cexp(st->twiddles+i, phase );
     }
-    if (st) {
-        int i;
-        st->nfft=nfft;
-        st->inverse = inverse_fft;
 
-        for (i=0;i<nfft;++i) {
-            const double pi=3.141592653589793238462643383279502884197169399375105820974944;
-            double phase = -2*pi*i / nfft;
-            if (st->inverse)
-                phase *= -1;
-            kf_cexp(st->twiddles+i, phase );
-        }
+    kf_factor(nfft,st->factors);
+	return st;
+}
 
-        kf_factor(nfft,st->factors);
-    }
-    return st;
+ck_fft_state* ck_fft_alloc(int nfft, int inverse_fft)
+{
+	int bufsize;
+	kiss_fft_state* st = kiss_fft_alloc(nfft, inverse_fft,&bufsize);
+
+	// Copy to video memory
+	ck_fft_state* d_st;
+	cudaMalloc(&d_st, bufsize);
+	cudaMemcpy(d_st, st, bufsize, cudaMemcpyHostToDevice);
+
+	free(st);
+    return d_st;
 }
 
 
 void kiss_fft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
 {
     if (fin == fout) {
-        //NOTE: this is not really an in-place FFT algorithm.
-        //It just performs an out-of-place FFT into a temp buffer
-        kiss_fft_cpx * tmpbuf = (kiss_fft_cpx*)KISS_FFT_TMP_ALLOC( sizeof(kiss_fft_cpx)*st->nfft);
-        kf_work(tmpbuf,fin,1,in_stride, st->factors,st);
-        memcpy(fout,tmpbuf,sizeof(kiss_fft_cpx)*st->nfft);
-        KISS_FFT_TMP_FREE(tmpbuf);
+		return;
     }else{
         kf_work( fout, fin, 1,in_stride, st->factors,st );
     }

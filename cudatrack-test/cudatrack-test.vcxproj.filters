@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="..\cudatrack\Array2D.h" />
+    <ClInclude Include="..\cudatrack\cuda_shared_mem.h" />
+    <ClInclude Include="..\cudatrack\GPUBase.h" />
+    <ClInclude Include="..\cudatrack\tracker.h" />
+    <ClInclude Include="..\cudatrack\cuda_kissfft\_kiss_fft_guts.h">
+      <Filter>FFT</Filter>
+    </ClInclude>
+    <ClInclude Include="..\cudatrack\cuda_kissfft\kiss_fft.h">
+      <Filter>FFT</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\cudatrack\tracker.cu" />
+    <CudaCompile Include="test.cu" />
+    <CudaCompile Include="..\cudatrack\cuda_kissfft\kiss_fft.cu">
+      <Filter>FFT</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="FFT">
+      <UniqueIdentifier>{da74a339-6ee1-4e53-94e9-bd01631a49a6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
