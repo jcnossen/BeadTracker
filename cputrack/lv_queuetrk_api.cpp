@@ -75,17 +75,14 @@ CDLL_EXPORT int qtrk_get_results(QueuedTracker* qtrk, LocalizationResult* result
 	return resultCount;
 }
 
-CDLL_EXPORT void DLL_CALLCONV qtrk_generate_test_image(QueuedTracker* tracker, LVArray2D<ushort>** image, int w, int h, float xp, float yp, float size, float photoncount)
+CDLL_EXPORT void DLL_CALLCONV qtrk_generate_test_image(QueuedTracker* tracker, LVArray2D<ushort>** image, float xp, float yp, float size, float photoncount)
 {
+	int w=tracker->cfg.width, h =tracker->cfg.height;
+	ResizeLVArray2D(image, h,w);
+	
 	float *d = new float[w*h];
-	GenerateTestImage(d, w, h, xp, yp, size, photoncount);
-	ushort* intd = floatToNormalizedUShort(d, w,h);
-
-	ResizeLVArray2D(image, h, w);
-	for(int k=0;k<w*h;k++)
-		(*image)->elem[k] = intd[k];
-
+	tracker->GenerateTestImage(d, xp, yp, size, photoncount );
+	floatToNormalizedUShort((*image)->elem, d, w,h);
 	delete[] d;
-	delete[] intd;
 }
 

@@ -1,12 +1,13 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include "std_incl.h"
 
 #include <stdio.h>
 
-#include "utils.h"
 #include "tracker.h"
 #include "Array2D.h"
+#include "utils.h"
 
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
@@ -24,8 +25,8 @@ void throwCudaError(cudaError_t err)
 }
 
 
-
-template<typename T> void safeCudaFree(T*& ptr) {
+template<typename T>
+void safeCudaFree(T*& ptr) {
 	if (ptr) {
 		cudaFree(ptr);
 		ptr = 0;

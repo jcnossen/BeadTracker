@@ -178,7 +178,7 @@
     </Link>
     <ClCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;CPUTRACK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../libs/math;../libs/fftw;../cudatrack/;../libs/labview/cintools;../libs/labview/vision/Include;../libs/labview/imaq/Include;../libs/pthreads/include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../libs/math;../libs/labview/cintools;../libs/labview/vision/Include;../libs/labview/imaq/Include;../libs/pthreads/include</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
     </ClCompile>
   </ItemDefinitionGroup>

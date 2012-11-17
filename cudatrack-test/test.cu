@@ -2,125 +2,28 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
+#include "std_incl.h"
+#include "utils.h"
+
 #include <cassert>
 #include <cstdlib>
 #include <stdio.h>
 #include <windows.h>
 #include <cstdarg>
 
-#include "../cudatrack/utils.h"
-#include "../cudatrack/Array2D.h"
-
-#include <thrust/functional.h>
-
-#include "../cudatrack/tracker.h"
-
-#include "nivision.h" // write PNG file
-
-#include "../cudatrack/LsqQuadraticFit.h"
-
-using namespace gpuArray;
+#include "cuda_kissfft/kiss_fft.h"
+#include "random_distr.h"
 
 static DWORD startTime = 0;
 void BeginMeasure() { startTime = GetTickCount(); }
 DWORD EndMeasure(const std::string& msg) {
 	DWORD endTime = GetTickCount();
 	DWORD dt = endTime-startTime;
-	dbgout(SPrintf("%s: %d ms\n", msg.c_str(), dt));
+	dbgprintf("%s: %d ms\n", msg.c_str(), dt);
 	return dt;
 }
 
-void saveImage(Array2D<pixel_t, float>& img, const char* filename)
-{
-	pixel_t *norm = new pixel_t[img.w * img.h];
-	img.copyToHost(norm);
-	/*
-	pixel_t maxv = data[0];
-	pixel_t minv = data[0];
-	for (int k=0;k<img.w*img.h;k++) {
-		maxv = max(maxv, data[k]);
-		minv = min(minv, data[k]);
-	}
-	ushort *norm = new ushort[img.w*img.h];
-	for (int k=0;k<img.w*img.h;k++)
-		norm[k] = ((1<<16)-1) * (data[k]-minv) / (maxv-minv);
-		*/
-	Image* dst = imaqCreateImage(IMAQ_IMAGE_U8, 0);
-	imaqSetImageSize(dst, img.w, img.h);
-	imaqArrayToImage(dst, norm, img.w, img.h);
-	delete[] norm;
-
-	ImageInfo info;
-	imaqGetImageInfo(dst, &info);
-	int success = imaqWriteFile(dst, filename, 0);
-	if (!success) {
-		char *errStr = imaqGetErrorText(imaqGetLastError());
-		std::string msg = SPrintf("IMAQ WriteFile error: %s\n", errStr);
-		imaqDispose(errStr);
-		dbgout(msg);
-	}
-	imaqDispose(dst);
-}
-
-vector2f ComputeCOM(pixel_t* data, uint w,uint h)
-{
-	float sum=0.0f;
-	float momentX=0.0f;
-	float momentY=0.0f;
-
-	for (uint y=0;y<h;y++)
-		for(uint x=0;x<w;x++)
-		{
-			pixel_t v = data[y*w+x];
-			sum += v;
-			momentX += x*v;
-			momentY += y*v;
-		}
-	vector2f com;
-	com.x = momentX / sum;
-	com.y = momentY / sum;
-	return com;
-}
-
-void BenchmarkCOM(Tracker& tracker)
-{
-	int N=1000;
-	DWORD dt;
-	pixel_t* data = new pixel_t[tracker.width * tracker.height];
-	tracker.copyToHost(data, sizeof(pixel_t)*tracker.width);
-	pixel_t* tmp = new pixel_t[tracker.width * tracker.height];
-
-	BeginMeasure();
-	for (int k=0;k<N;k++)  {
-		tracker.computeMedianPixelValue();
-	}
-	dt = EndMeasure("GPU Median");
-	dbgout(SPrintf("GPU: %d medians per second\n", (int)(N * 1000 / dt)));
-
-	BeginMeasure();
-	for (int k=0;k<N;k++)  {
-		memcpy(tmp, data, sizeof(pixel_t)*tracker.width*tracker.height);
-		std::sort(tmp, tmp+(tracker.width*tracker.height));
-	}
-	dt = EndMeasure("CPU Median");
-	dbgout(SPrintf("CPU: %d medians per second\n", (int)(N * 1000 / dt)));
-
-	BeginMeasure();
-	for (int k=0;k<N;k++)  {
-		vector2f COM = tracker.computeCOM();
-	}
-	dt = EndMeasure("GPU COM");
-	dbgout(SPrintf("GPU: %d COMs per second\n", (int)(N * 1000 / dt)));
-
-	BeginMeasure();
-	for (int k=0;k<N;k++)  {
-		vector2f COM = ComputeCOM(data, tracker.width, tracker.height);
-	}
-	dt = EndMeasure("CPU COM");
-	dbgout(SPrintf("CPU: %d COMs per second\n", (int)(N * 1000 / dt)));
-	delete[] data;
-	delete[] tmp;
-}
+#define CB __device__ __host__
 
 
 
@@ -134,51 +37,116 @@ std::string getPath(const char *file)
 	return s.substr(0, pos);
 }
 
+
+__global__ void computeBgCorrectedCOM(float* d_images, int width,int height)
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	int imgsize = width*height;
+	float* data = &d_images[imgsize*idx];
+	float sum=0, sum2=0;
+	float momentX=0;
+	float momentY=0;
+
+	for (int y=0;y<height;y++)
+		for (int x=0;x<width;x++) {
+			float v = data[y*width+x];
+			sum += v;
+			sum2 += v*v;
+		}
+
+	float invN = 1.0f/(width*height);
+	float mean = sum * invN;
+	float stdev = sqrtf(sum2 * invN - mean * mean);
+	sum = 0.0f;
+
+	for (int y=0;y<height;y++)
+		for(int x=0;x<width;x++)
+		{
+			float v = data[y*width+x];
+			v = fabs(v-mean)-2.0f*stdev;
+			if(v<0.0f) v=0.0f;
+			sum += v;
+			momentX += x*v;
+			momentY += y*v;
+		}
+	vector2f com;
+	com.x = momentX / (float)sum;
+	com.y = momentY / (float)sum;
+}
+
+
+struct cudaImageList {
+	// No constructor used to allow passing as CUDA kernel argument
+	float* data;
+	size_t pitch;
+	int w,h;
+	int count;
+
+	static cudaImageList alloc(int w,int h, int amount) {
+		cudaImageList imgl;
+		imgl.w = w; imgl.h = h;
+		imgl.count = amount;
+		cudaMallocPitch(&imgl.data, &imgl.pitch, sizeof(float)*w, h*amount);
+		return imgl;
+	}
+
+	CB float* get(int i) {
+		return (float*)(((char*)data) + pitch*h*i);
+	}
+
+	void free()
+	{
+		cudaFree(data);
+	}
+};
+
+
+__global__ void generateTestImages(cudaImageList images, float3 *d_positions)
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	float3 pos = d_positions[idx];
+	float* data = images.get(idx);
+	
+	float S = 1.0f/pos.z;
+	for (int y=0;y<images.h;y++) {
+		for (int x=0;x<images.w;x++) {
+			float X = x - pos.x;
+			float Y = y - pos.y;
+			float r = sqrtf(X*X+Y*Y)+1;
+			float v = sinf(r/(5*S)) * expf(-r*r*S*0.01f);
+			data[y*images.pitch+x] = v;
+		}
+	}
+}	
+
 int main(int argc, char *argv[])
 {
 //	testLinearArray();
 
 	std::string path = getPath(argv[0]);
 
-	Tracker tracker(150,150);
+	cudaDeviceProp prop;
+	cudaGetDeviceProperties(&prop, 0);
 
-	tracker.loadTestImage(5,5, 1);
-	
-	Array2D<float> tmp(10,2);
-	float *tmpdata=new float[tmp.w*tmp.h];
-	float sumCPU=0.0f;
-	for (int y=0;y<tmp.h;y++){
-		for (int x=0;x<tmp.w;x++) {
-			tmpdata[y*tmp.w+x]=x;
-			sumCPU += x;
-		}
+	dbgprintf("Shared memory space:%d bytes\n", prop.sharedMemPerBlock);
+
+	// Create some space for images
+	cudaImageList images = cudaImageList::alloc(170,150, 100);
+
+	float3* positions = new float3[images.count];
+	for(int i=0;i<images.count;i++) {
+		float xp = images.w/2+(rand_uniform<float>() - 0.5) * 5;
+		float yp = images.h/2+(rand_uniform<float>() - 0.5) * 5;
+		positions[i] = make_float3(xp, yp, 10);
 	}
-	tmp.set(tmpdata, sizeof(float)*tmp.w);
+	float3* d_pos;
+	cudaMalloc(&d_pos, sizeof(float3)*images.count);
+	cudaMemcpy(d_pos, positions, sizeof(float3)*images.count, cudaMemcpyHostToDevice);
+	dim3 nBlocks = dim3(1,1,1);
+	generateTestImages<<<nBlocks, dim3(images.count,1,1)>>>(images, d_pos); 
 
-	float* checkmem=new float[tmp.w*tmp.h];
-	tmp.copyToHost(checkmem);
-	assert (memcmp(checkmem, tmpdata, sizeof(float)*tmp.w*tmp.h)==0);
-	delete[] checkmem;
-
-	delete[] tmpdata;
-	reducer_buffer<float> rbuf(tmp.w,tmp.h);
-	float sumGPU = tmp.sum(rbuf);
-	dbgout(SPrintf("SumCPU: %f, SUMGPU: %f\n", sumCPU, sumGPU));
+	cudaFree(d_pos);
+	images.free();
 	
-	BenchmarkCOM(tracker);
-
-	Array2D<pixel_t, float>* data = (Array2D<pixel_t, float>*)tracker.getCurrentBufferImage();
-	saveImage(*data, (path + "\\testImg.png").c_str());
-	//dbgout(SPrintf("COM: %f, %f\n", COM.x,COM.y));
-//	vector2f xcor = tracker.XCorLocalize(COM);
-
-	float x[] = { -2, -1 , 0, 1, 2, 3,  };
-	float y[sizeof(x)/sizeof(float)];
-	for (int k=0;k<6;k++)
-		y[k]=-x[k]*x[k]*2 + x[k]*4 - 10;
-	
-	LsqSqQuadFit<float> qfit(6, x, y);
-	dbgout( SPrintf("A: %f, B: %f, C: %f. Max:%f\n", qfit.a, qfit.b, qfit.c, qfit.maxPos()));
-
 	return 0;
 }

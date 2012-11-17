@@ -113,18 +113,23 @@ CDLL_EXPORT void DLL_CALLCONV compute_com(CPUTracker* tracker, float* out)
 	out[1] = com.y;
 }
 
-CDLL_EXPORT void DLL_CALLCONV compute_xcor(CPUTracker* tracker, vector2f* position, int iterations, int profileWidth, int useInterpolation)
+CDLL_EXPORT int DLL_CALLCONV compute_xcor(CPUTracker* tracker, vector2f* position, int iterations, int profileWidth, int useInterpolation)
 {
+	bool boundaryHit;
 	if (useInterpolation)
-		*position = tracker->ComputeXCorInterpolated(*position, iterations, profileWidth);
+		*position = tracker->ComputeXCorInterpolated(*position, iterations, profileWidth, boundaryHit);
 	else
-		*position = tracker->ComputeXCor(*position, profileWidth);
+		*position = tracker->ComputeXCor(*position, profileWidth, boundaryHit);
+
+	return boundaryHit ? 1 : 0;
 }
 
 
-CDLL_EXPORT void DLL_CALLCONV compute_qi(CPUTracker* tracker, vector2f* position, int iterations, int radialSteps, int angularStepsPerQ, float minRadius, float maxRadius)
+CDLL_EXPORT int DLL_CALLCONV compute_qi(CPUTracker* tracker, vector2f* position, int iterations, int radialSteps, int angularStepsPerQ, float minRadius, float maxRadius)
 {
-	*position = tracker->ComputeQI(*position, iterations, radialSteps, angularStepsPerQ, minRadius,maxRadius);
+	bool boundaryHit;
+	*position = tracker->ComputeQI(*position, iterations, radialSteps, angularStepsPerQ, minRadius,maxRadius, boundaryHit);
+	return boundaryHit ? 1 : 0;
 }
 
 

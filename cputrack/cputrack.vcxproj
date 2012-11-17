@@ -195,6 +195,7 @@
     <ClInclude Include="queued_cpu_tracker.h" />
     <ClInclude Include="random_distr.h" />
     <ClInclude Include="scalar_types.h" />
+    <ClInclude Include="std_incl.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

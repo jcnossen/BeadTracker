@@ -10,30 +10,13 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\cputrack\utils.h" />
-    <ClInclude Include="Array2D.h" />
-    <ClInclude Include="cuda_kissfft\kiss_fft.h" />
-    <ClInclude Include="cuda_kissfft\_kiss_fft_guts.h" />
-    <ClInclude Include="cuda_shared_mem.h" />
-    <ClInclude Include="GPUBase.h" />
-    <ClInclude Include="LsqQuadraticFit.h" />
-    <ClInclude Include="QueuedCUDATracker.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\cputrack\utils.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="cuda_kissfft\kiss_fft.cu" />
-    <CudaCompile Include="QueuedCUDATracker.cu" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{ACF7861A-4D51-4035-BD25-D0A0FD1C1530}</ProjectGuid>
-    <RootNamespace>cudatrack</RootNamespace>
+    <ProjectGuid>{74D6A840-874D-40D4-A85D-6241870EBCE9}</ProjectGuid>
+    <RootNamespace>lvcudatrack</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -59,26 +42,27 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>jtrkcuda-labview</TargetName>
+    <OutDir>$(SolutionDir)\bin</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../cputrack;../labview/cintools;../labview/vision/Include;../labview/imaq/Include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalIncludeDirectories>../libs/math;../libs/labview/cintools;../libs/labview/vision/Include;../libs/labview/imaq/Include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>../labview/vision/Lib/MSVC;../labview/imaq/Lib;../labview/cintools;%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>labview.lib;cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../libs/labview/vision/Lib/MSVC;../libs/labview/imaq/Lib;../libs/labview/cintools;%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
-      <CodeGeneration>compute_20,sm_20</CodeGeneration>
-      <Runtime>MTd</Runtime>
+      <Include>../cputrack</Include>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -87,7 +71,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>../cputrack;../labview/cintools;../labview/vision/Include;../labview/imaq/Include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../libs/math;../libs/labview/cintools;../libs/labview/vision/Include;../libs/labview/imaq/Include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -95,21 +79,31 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../labview/vision/Lib/MSVC;../labview/imaq/Lib;../labview/cintools;%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>labview.lib;cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../libs/labview/vision/Lib/MSVC;../libs/labview/imaq/Lib;../libs/labview/cintools;%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
-      <CodeGeneration>compute_20,sm_20</CodeGeneration>
-      <HostDebugInfo>true</HostDebugInfo>
-      <Optimization>O3</Optimization>
-      <Runtime>MT</Runtime>
       <Include>../cputrack</Include>
+      <CodeGeneration>compute_20,sm_20</CodeGeneration>
+      <Optimization>O2</Optimization>
+      <Runtime>MT</Runtime>
     </CudaCompile>
   </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\cputrack\lv_queuetrk_api.cpp" />
+    <ClCompile Include="..\cputrack\utils.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\cputrack\utils.h" />
+    <ClInclude Include="QueuedCUDATracker.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="QueuedCUDATracker.cu" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 4.2.targets" />
