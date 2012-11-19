@@ -213,7 +213,9 @@ void QueuedCPUTracker::SetZLUT(float* data, int planes, int res, int num_zluts)
 
 void QueuedCPUTracker::ComputeRadialProfile(float *image, int width, int height, float* dst, int profileLen, vector2f center)
 {
-	::ComputeRadialProfile(dst, profileLen, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, center, image, width,height);
+	ImageData imgData (image,  width,height);
+
+	::ComputeRadialProfile(dst, profileLen, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, center, &imgData);
 }
 
 
@@ -254,7 +256,8 @@ int QueuedCPUTracker::PollFinished(LocalizationResult* dstResults, int maxResult
 
 void QueuedCPUTracker::GenerateTestImage(float* dst, float xp,float yp, float z, float photoncount)
 {
-	::GenerateTestImage(dst, cfg.width,cfg.height,xp,yp,z,photoncount);
+	ImageData img(dst,cfg.width,cfg.height);
+	::GenerateTestImage(img,xp,yp,z,photoncount);
 }
 
 

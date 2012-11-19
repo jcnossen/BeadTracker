@@ -5,7 +5,6 @@ function error_values_plot(dirname)
         %scatter_bias_plot('dataset_result/roi80');    
         scatter_bias_plot('dataset_result/roi400');
     end
-    
 end
 
 function scatter_bias_plot(dirname)

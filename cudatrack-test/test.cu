@@ -38,7 +38,7 @@ std::string getPath(const char *file)
 }
 
 
-__global__ void computeBgCorrectedCOM(float* d_images, int width,int height)
+__global__ void computeBgCorrectedCOM(float* d_images, int width,int height, float2* d_com)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	int imgsize = width*height;
@@ -69,9 +69,9 @@ __global__ void computeBgCorrectedCOM(float* d_images, int width,int height)
 			momentX += x*v;
 			momentY += y*v;
 		}
-	vector2f com;
-	com.x = momentX / (float)sum;
-	com.y = momentY / (float)sum;
+
+	d_com[idx].x = momentX / (float)sum;
+	d_com[idx].y = momentY / (float)sum;
 }
 
 
@@ -143,8 +143,16 @@ int main(int argc, char *argv[])
 	cudaMalloc(&d_pos, sizeof(float3)*images.count);
 	cudaMemcpy(d_pos, positions, sizeof(float3)*images.count, cudaMemcpyHostToDevice);
 	dim3 nBlocks = dim3(1,1,1);
-	generateTestImages<<<nBlocks, dim3(images.count,1,1)>>>(images, d_pos); 
+	dim3 nThreads = (images.count,1,1);
+	generateTestImages<<<nBlocks, nThreads>>>(images, d_pos); 
 
+	float3* d_com;
+	cudaMalloc(&d_com, sizeof(float2)*images.count);
+	computeBgCorrectedCOM<<<nBlocks, nThreads>>>(images, d_com);
+
+
+	
+	cudaFree(d_com);
 	cudaFree(d_pos);
 	images.free();
 	

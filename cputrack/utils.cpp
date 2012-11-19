@@ -1,9 +1,12 @@
 #include <cstdarg>
 #include "utils.h"
 #include <Windows.h>
+#undef min
+#undef max
 #include <string>
 
 #include "random_distr.h"
+#include "LsqQuadraticFit.h"
 
 std::string SPrintf(const char *fmt, ...) {
 	va_list ap;
@@ -45,8 +48,8 @@ void floatToNormalizedUShort(ushort* dst, float *src, uint w,uint h)
 	float maxv = src[0];
 	float minv = src[0];
 	for (uint k=0;k<w*h;k++) {
-		maxv = max(maxv, src[k]);
-		minv = min(minv, src[k]);
+		maxv = std::max(maxv, src[k]);
+		minv = std::min(minv, src[k]);
 	}
 	for (uint k=0;k<w*h;k++)
 		dst[k] = ((1<<16)-1) * (src[k]-minv) / (maxv-minv);
@@ -54,30 +57,30 @@ void floatToNormalizedUShort(ushort* dst, float *src, uint w,uint h)
 
 
 
-void GenerateTestImage(float* data, int w, int h, float xp, float yp, float size, float MaxPhotons)
+void GenerateTestImage(ImageData& img, float xp, float yp, float size, float MaxPhotons)
 {
 	float S = 1.0f/size;
-	for (int y=0;y<h;y++) {
-		for (int x=0;x<w;x++) {
+	for (int y=0;y<img.h;y++) {
+		for (int x=0;x<img.w;x++) {
 			float X = x - xp;
 			float Y = y - yp;
 			float r = sqrtf(X*X+Y*Y)+1;
 			float v = sinf(r/(5*S)) * expf(-r*r*S*0.01f);
-			data[y*w+x] = v;
+			img.at(x,y)=v;
 		}
 	}
 
 	if (MaxPhotons>0) {
-		normalize(data,w,h);
-		for (int k=0;k<w*h;k++) {
-			data[k] = rand_poisson(data[k]*MaxPhotons);
+		normalize(img.data,img.w,img.h);
+		for (int k=0;k<img.numPixels();k++) {
+			img.data[k] = rand_poisson(img.data[k]*MaxPhotons);
 		}
 	}
-	normalize(data,w,h);
+	normalize(img.data,img.w,img.h);
 }
 
 void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius,
-	vector2f center, float* srcImage, int width, int height)
+	vector2f center, ImageData* img)
 {
 	vector2f* radialDirs = (vector2f*)ALLOCA(sizeof(vector2f)*angularSteps);
 	for (int j=0;j<angularSteps;j++) {
@@ -98,7 +101,7 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 		for (int a=0;a<angularSteps;a++) {
 			float x = center.x + radialDirs[a].x * r;
 			float y = center.y + radialDirs[a].y * r;
-			sum += Interpolate(srcImage,width,height, x,y);
+			sum += img->interpolate(x,y);
 		}
 
 		dst[i] = sum;
@@ -107,3 +110,57 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 	for (int i=0;i<radialSteps;i++)
 		dst[i] /= total;
 }
+
+
+inline float sq(float x) { return x*x; }
+
+void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float zlut_radius, vector2f pos, float z, float M)
+{
+	// Generate the interpolated ZLUT 
+	float* zinterp; 
+
+	// The two Z planes to interpolate between
+	int iz = (int)z;
+	if (iz < 0) 
+		zinterp = zlut->data;
+	else if (iz>=zlut->h-1)
+		zinterp = &zlut->data[ (zlut->h-1)*zlut->w ];
+	else {
+		float* zlut0 = &zlut->data [ (int)z * zlut->w ]; 
+		float* zlut1 = &zlut->data [ ((int)z + 1) * zlut->w ];
+		zinterp = (float*)ALLOCA(sizeof(float)*zlut->w);
+		for (int r=0;r<zlut->w;r++) 
+			zinterp[r] = interp(zlut0[r], zlut1[r], z-iz);
+	}
+
+	const int len=5;
+	float xval[len];
+	for (int i=0;i<len;i++)
+		xval[i]=i-len/2;
+
+	// Generate the image from the interpolated ZLUT
+	for (int y=0;y<image->h;y++)
+		for (int x=0;x<image->w;x++) 
+		{
+			float r = zlut->w * sqrtf( sq(x-pos.x) + sq(y-pos.y) )/(zlut_radius*M);
+
+			if (r > zlut->w-1)
+				r = zlut->w-1;
+
+			int minR = std::max(0, std::min( (int)r, zlut->w-len ) );
+			LsqSqQuadFit<float> lsq(len, xval, &zinterp[minR]);
+
+			float v = lsq.compute(r-(minR+len/2));
+			image->at(x,y) = v; // lsq.compute(r-len/2);
+		}
+}
+
+
+void ApplyPoissonNoise(ImageData& img, float factor)
+{
+	for (int k=0;k<img.numPixels();k++)
+		img.data[k] = rand_poisson<float>(factor*img.data[k]);
+}
+
+
+

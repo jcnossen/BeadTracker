@@ -2,6 +2,8 @@
 Labview API for CPU tracker
 */
 #include <Windows.h>
+#undef min
+#undef max
 
 #include "random_distr.h"
 #include "labview.h"
@@ -98,16 +100,8 @@ CDLL_EXPORT void DLL_CALLCONV copy_crosscorrelation_result(CPUTracker* tracker, 
 	}
 }
 
-/*
-
-median = 0: Use zero median
-*median < 0: Compute median, use it and store
-*median >= 0: Use given median
-
-*/
 CDLL_EXPORT void DLL_CALLCONV compute_com(CPUTracker* tracker, float* out)
 {
-	float m;
 	vector2f com = tracker->ComputeBgCorrectedCOM();
 	out[0] = com.x;
 	out[1] = com.y;
@@ -248,7 +242,8 @@ CDLL_EXPORT void DLL_CALLCONV generate_test_image(Image *img, int w, int h, floa
 {
 	try {
 		float *d = new float[w*h];
-		GenerateTestImage(d, w, h, xp, yp, size, photoncount);
+		ImageData data(d, w,h);
+		GenerateTestImage(data, xp, yp, size, photoncount);
 		ushort* intd = floatToNormalizedUShort(d, w,h);
 
 		imaqArrayToImage(img, intd, w,h);
@@ -261,4 +256,16 @@ CDLL_EXPORT void DLL_CALLCONV generate_test_image(Image *img, int w, int h, floa
 	}
 }
 
+
+
+CDLL_EXPORT void DLL_CALLCONV generate_image_from_lut(LVArray2D<float>** image, LVArray2D<float>** lut, float LUTradius, vector2f* position, float z, float M, float photonCountPP)
+{
+	ImageData img((*image)->elem, (*image)->dimSizes[1], (*image)->dimSizes[0]);
+	ImageData zlut((*lut)->elem, (*lut)->dimSizes[1], (*lut)->dimSizes[0]);
+
+	GenerateImageFromLUT(&img, &zlut, LUTradius, *position, z, M);
+	img.normalize();
+	if(photonCountPP>0)
+		ApplyPoissonNoise(img, photonCountPP);
+}
 

@@ -455,7 +455,8 @@ void CPUTracker::Normalize(float* d)
 
 void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center)
 {
-	::ComputeRadialProfile(dst, radialSteps, angularSteps, minradius, maxradius, center, srcImage, width, height);
+	ImageData imgData (srcImage, width,height);
+	::ComputeRadialProfile(dst, radialSteps, angularSteps, minradius, maxradius, center, &imgData);
 }
 
 void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float minradius, float maxradius, int angularSteps, bool copyMemory)

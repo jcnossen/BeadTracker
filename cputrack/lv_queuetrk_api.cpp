@@ -86,3 +86,4 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_generate_test_image(QueuedTracker* tracker, L
 	delete[] d;
 }
 
+
