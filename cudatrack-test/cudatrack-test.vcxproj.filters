@@ -11,6 +11,9 @@
       <Filter>FFT</Filter>
     </ClInclude>
     <ClInclude Include="..\cputrack\utils.h" />
+    <ClInclude Include="..\cudatrack\cuda_kissfft\cudafft.h">
+      <Filter>FFT</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="test.cu" />

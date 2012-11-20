@@ -1,16 +1,22 @@
+/*
+
+KISS FFT modified to run inside a CUDA kernel
+
+*/
 #ifndef KISSFFT_CLASS_HH
 #include <complex>
 #include <vector>
-#include "utils.h"
 
 namespace kissfft_utils {
+
+#define CFFT_BOTH __device__ __host__
 
 template <typename T_scalar>
 struct traits
 {
     typedef T_scalar scalar_type;
     typedef std::complex<scalar_type> cpx_type;
-    void fill_twiddles( std::complex<T_scalar> * dst ,int nfft,bool inverse) const
+    void fill_twiddles( std::complex<T_scalar> * dst ,int nfft,bool inverse)
     {
         T_scalar phinc =  (inverse?2:-2)* acos( (T_scalar) -1)  / nfft;
         for (int i=0;i<nfft;++i)
@@ -21,9 +27,8 @@ struct traits
             std::vector< std::complex<T_scalar> > & dst,
             int nfft,bool inverse, 
             std::vector<int> & stageRadix, 
-            std::vector<int> & stageRemainder ) const
+            std::vector<int> & stageRemainder )
     {
-		std::vector<cpx_type> _twiddles;
         _twiddles.resize(nfft);
         fill_twiddles( &_twiddles[0],nfft,inverse);
         dst = _twiddles;
@@ -47,8 +52,9 @@ struct traits
             stageRemainder.push_back(n);
         }while(n>1);
     }
-    
+    std::vector<cpx_type> _twiddles;
 
+    const cpx_type twiddle(int i) { return _twiddles[i]; }
 };
 
 }
@@ -56,18 +62,41 @@ struct traits
 template <typename T_Scalar,
          typename T_traits=kissfft_utils::traits<T_Scalar> 
          >
-class kissfft
+class cudafft
 {
     public:
         typedef T_traits traits_type;
         typedef typename traits_type::scalar_type scalar_type;
         typedef typename traits_type::cpx_type cpx_type;
 
-        kissfft(int nfft,bool inverse,const traits_type & traits=traits_type() ) 
-            :_nfft(nfft),_inverse(inverse)
+		struct KernelParams 
+		{
+			int* radix, *remainder;
+			cpx_type* twiddles;
+		};
+
+        cudafft(int nfft,bool inverse,const traits_type & traits=traits_type() ) 
+            :nfft(nfft),inverse(inverse),traits(traits)
         {
-            traits.prepare(_twiddles, _nfft,_inverse ,_stageRadix, _stageRemainder);
+			std::vector<cpx_type> twiddles;
+			std::vector<int> stageRadix;
+			std::vector<int> stageRemainder;
+
+			traits.prepare(twiddles, nfft, inverse, stageRadix, stageRemainder);
+
+			size_t totalMem = sizeof(cpx_type) * twiddles.size() + sizeof(int) * stageRadix.size() + sizeof(int) * stageRemainder.size();
+			char* kerneld = new char[totalMem], *p = kerneld;
+			memcpy(p, &twiddles[0], sizeof(cpx_type) * twiddles.size());
+
+			cudaMalloc(&kernelData, totalMem);
+
+			// Copy to device memory
+			
         }
+
+		~cudafft() {
+			cudaFree(kernelData);
+		}
 
         void transform(const cpx_type * src , cpx_type * dst)
         {
@@ -75,7 +104,7 @@ class kissfft
         }
 
     private:
-        void kf_work( int stage,cpx_type * Fout, const cpx_type * f, size_t fstride,size_t in_stride)
+        static CFFT_BOTH void kf_work( int stage,cpx_type * Fout, const cpx_type * f, size_t fstride,size_t in_stride, KernelParams kparm)
         {
             int p = _stageRadix[stage];
             int m = _stageRemainder[stage];
@@ -102,9 +131,9 @@ class kissfft
 
             // recombine the p smaller DFTs 
             switch (p) {
-                case 2: kf_bfly2(Fout,fstride,m); break;
-                case 3: kf_bfly3(Fout,fstride,m); break;
-                case 4: kf_bfly4(Fout,fstride,m); break;
+                case 2: kf_bfly2(Fout,fstride,m, kparm); break;
+                case 3: kf_bfly3(Fout,fstride,m, kparm); break;
+                case 4: kf_bfly4(Fout,fstride,m, kparm); break;
                 case 5: kf_bfly5(Fout,fstride,m); break;
                 default: kf_bfly_generic(Fout,fstride,m,p); break;
             }
@@ -123,7 +152,7 @@ class kissfft
         void kf_bfly2( cpx_type * Fout, const size_t fstride, int m)
         {
             for (int k=0;k<m;++k) {
-                cpx_type t = Fout[m+k] * _twiddles[k*fstride];
+                cpx_type t = Fout[m+k] * _traits.twiddle(k*fstride);
                 Fout[m+k] = Fout[k] - t;
                 Fout[k] += t;
             }
@@ -134,9 +163,9 @@ class kissfft
             cpx_type scratch[7];
             int negative_if_inverse = _inverse * -2 +1;
             for (size_t k=0;k<m;++k) {
-                scratch[0] = Fout[k+m] * _twiddles[k*fstride];
-                scratch[1] = Fout[k+2*m] * _twiddles[k*fstride*2];
-                scratch[2] = Fout[k+3*m] * _twiddles[k*fstride*3];
+                scratch[0] = Fout[k+m] * _traits.twiddle(k*fstride);
+                scratch[1] = Fout[k+2*m] * _traits.twiddle(k*fstride*2);
+                scratch[2] = Fout[k+3*m] * _traits.twiddle(k*fstride*3);
                 scratch[5] = Fout[k] - scratch[1];
 
                 Fout[k] += scratch[1];
@@ -264,7 +293,7 @@ class kissfft
             cpx_type * twiddles = &_twiddles[0];
             cpx_type t;
             int Norig = _nfft;
-            cpx_type *scratchbuf = (cpx_type*)ALLOCA(sizeof(cpx_type)*p);
+            cpx_type *scratchbuf = ALLOCA(sizeof(cpx_type)*p);
 
             for ( u=0; u<m; ++u ) {
                 k=u;
@@ -289,10 +318,9 @@ class kissfft
             }
         }
 
-        int _nfft;
-        bool _inverse;
-        std::vector<cpx_type> _twiddles;
-        std::vector<int> _stageRadix;
-        std::vector<int> _stageRemainder;
+        int nfft;
+        bool inverse;
+		char* kernelData;
+        traits_type traits;
 };
 #endif

@@ -12,9 +12,8 @@
 #include <cstdarg>
 #include <valarray>
 
-#include "cuda_kissfft/kiss_fft.h"
+#include "cuda_kissfft/cudafft.h"
 #include "random_distr.h"
-
 
 #include <stdint.h>
 
@@ -87,7 +86,6 @@ struct cudaImageList {
 
 __global__ void compute1DXcor(cudaImageList images, float2* d_initial, float2* d_xcor)
 {
-
 }
 
 __global__ void computeBgCorrectedCOM(cudaImageList images, float2* d_com)
@@ -207,9 +205,9 @@ int main(int argc, char *argv[])
 		t_com+=t_com0;
 		std::vector<float2> com(images.count);
 		cudaMemcpyAsync(&com[0], d_com, sizeof(float2)*images.count, cudaMemcpyDeviceToHost);
-		/*compute1DXcor<<<images.blocks(), images.threads()>>>(images, d_com, d_xcor);
+		compute1DXcor<<<images.blocks(), images.threads()>>>(images, d_com, d_xcor);
 		cudaEventRecord(xcor_end);
-		cudaEventSynchronize(xcor_end);*/
+		cudaEventSynchronize(xcor_end);
 
 		for (int i=0;i<images.count;i++) {
 			float dx = (com[i].x-positions[i].x);
