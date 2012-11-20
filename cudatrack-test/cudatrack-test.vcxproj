@@ -90,11 +90,11 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <CudaCompile>
       <CodeGeneration>compute_20,sm_20</CodeGeneration>
       <Include>../cputrack;../cudatrack</Include>
+      <Optimization>O2</Optimization>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="..\cudatrack\cuda_kissfft\kiss_fft.cu" />
-    <CudaCompile Include="..\cudatrack\tracker.cu" />
     <CudaCompile Include="test.cu" />
   </ItemGroup>
   <ItemGroup>
@@ -104,7 +104,6 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="..\cudatrack\cuda_kissfft\_kiss_fft_guts.h" />
     <ClInclude Include="..\cudatrack\cuda_shared_mem.h" />
     <ClInclude Include="..\cudatrack\GPUBase.h" />
-    <ClInclude Include="..\cudatrack\tracker.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\cputrack\utils.cpp" />

@@ -86,4 +86,14 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_generate_test_image(QueuedTracker* tracker, L
 	delete[] d;
 }
 
+CDLL_EXPORT void DLL_CALLCONV generate_image_from_lut(LVArray2D<float>** image, LVArray2D<float>** lut, float LUTradius, vector2f* position, float z, float M, float photonCountPP)
+{
+	ImageData img((*image)->elem, (*image)->dimSizes[1], (*image)->dimSizes[0]);
+	ImageData zlut((*lut)->elem, (*lut)->dimSizes[1], (*lut)->dimSizes[0]);
+
+	GenerateImageFromLUT(&img, &zlut, LUTradius, *position, z, M);
+	img.normalize();
+	if(photonCountPP>0)
+		ApplyPoissonNoise(img, photonCountPP);
+}
 

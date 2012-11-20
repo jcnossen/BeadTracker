@@ -10,18 +10,25 @@
 #include <stdio.h>
 #include <windows.h>
 #include <cstdarg>
+#include <valarray>
 
 #include "cuda_kissfft/kiss_fft.h"
 #include "random_distr.h"
 
-static DWORD startTime = 0;
-void BeginMeasure() { startTime = GetTickCount(); }
-DWORD EndMeasure(const std::string& msg) {
-	DWORD endTime = GetTickCount();
-	DWORD dt = endTime-startTime;
-	dbgprintf("%s: %d ms\n", msg.c_str(), dt);
-	return dt;
+
+#include <stdint.h>
+
+
+double getPreciseTime()
+{
+	uint64_t freq, time;
+
+	QueryPerformanceCounter((LARGE_INTEGER*)&time);
+	QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
+
+	return (double)time / (double)freq;
 }
+
 
 #define CB __device__ __host__
 
@@ -38,49 +45,19 @@ std::string getPath(const char *file)
 }
 
 
-__global__ void computeBgCorrectedCOM(float* d_images, int width,int height, float2* d_com)
-{
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	int imgsize = width*height;
-	float* data = &d_images[imgsize*idx];
-	float sum=0, sum2=0;
-	float momentX=0;
-	float momentY=0;
-
-	for (int y=0;y<height;y++)
-		for (int x=0;x<width;x++) {
-			float v = data[y*width+x];
-			sum += v;
-			sum2 += v*v;
-		}
-
-	float invN = 1.0f/(width*height);
-	float mean = sum * invN;
-	float stdev = sqrtf(sum2 * invN - mean * mean);
-	sum = 0.0f;
-
-	for (int y=0;y<height;y++)
-		for(int x=0;x<width;x++)
-		{
-			float v = data[y*width+x];
-			v = fabs(v-mean)-2.0f*stdev;
-			if(v<0.0f) v=0.0f;
-			sum += v;
-			momentX += x*v;
-			momentY += y*v;
-		}
-
-	d_com[idx].x = momentX / (float)sum;
-	d_com[idx].y = momentY / (float)sum;
-}
-
-
 struct cudaImageList {
 	// No constructor used to allow passing as CUDA kernel argument
 	float* data;
 	size_t pitch;
 	int w,h;
 	int count;
+	enum { numThreads=64 };
+	dim3 blocks() {
+		return dim3((count+numThreads-1)/numThreads);
+	}
+	dim3 threads() {
+		return dim3(numThreads);
+	}
 
 	static cudaImageList alloc(int w,int h, int amount) {
 		cudaImageList imgl;
@@ -94,27 +71,79 @@ struct cudaImageList {
 		return (float*)(((char*)data) + pitch*h*i);
 	}
 
+	CB float& pixel(int x,int y, int imgIndex) {
+		float* row = (float*) ( (char*)data + (h*imgIndex+y)*pitch );
+		return row[x];
+	}
+
 	void free()
 	{
 		cudaFree(data);
 	}
+
+	int totalsize() { return pitch*h*count; }
 };
+
+
+__global__ void compute1DXcor(cudaImageList images, float2* d_initial, float2* d_xcor)
+{
+
+}
+
+__global__ void computeBgCorrectedCOM(cudaImageList images, float2* d_com)
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	int imgsize = images.w*images.h;
+	float sum=0, sum2=0;
+	float momentX=0;
+	float momentY=0;
+
+	if (idx < images.count) {
+
+		for (int y=0;y<images.h;y++)
+			for (int x=0;x<images.w;x++) {
+				float v = images.pixel(x,y,idx);
+				sum += v;
+				sum2 += v*v;
+			}
+
+		float invN = 1.0f/imgsize;
+		float mean = sum * invN;
+		float stdev = sqrtf(sum2 * invN - mean * mean);
+		sum = 0.0f;
+
+		for (int y=0;y<images.h;y++)
+			for(int x=0;x<images.w;x++)
+			{
+				float v = images.pixel(x,y,idx);
+				v = fabs(v-mean)-2.0f*stdev;
+				if(v<0.0f) v=0.0f;
+				sum += v;
+				momentX += x*v;
+				momentY += y*v;
+			}
+
+		d_com[idx].x = momentX / (float)sum;
+		d_com[idx].y = momentY / (float)sum;
+	}
+}
 
 
 __global__ void generateTestImages(cudaImageList images, float3 *d_positions)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	float3 pos = d_positions[idx];
-	float* data = images.get(idx);
 	
-	float S = 1.0f/pos.z;
-	for (int y=0;y<images.h;y++) {
-		for (int x=0;x<images.w;x++) {
-			float X = x - pos.x;
-			float Y = y - pos.y;
-			float r = sqrtf(X*X+Y*Y)+1;
-			float v = sinf(r/(5*S)) * expf(-r*r*S*0.01f);
-			data[y*images.pitch+x] = v;
+	if (idx < images.count) {
+		float S = 1.0f/pos.z;
+		for (int y=0;y<images.h;y++) {
+			for (int x=0;x<images.w;x++) {
+				float X = x - pos.x;
+				float Y = y - pos.y;
+				float r = sqrtf(X*X+Y*Y)+1;
+				float v = sinf(r/(5*S)) * expf(-r*r*S*0.01f);
+				images.pixel(x,y,idx) = v;
+			}
 		}
 	}
 }	
@@ -122,16 +151,35 @@ __global__ void generateTestImages(cudaImageList images, float3 *d_positions)
 int main(int argc, char *argv[])
 {
 //	testLinearArray();
+	int repeat = 10;
 
 	std::string path = getPath(argv[0]);
 
 	cudaDeviceProp prop;
 	cudaGetDeviceProperties(&prop, 0);
 
+	float t_gen=0, t_com=0, t_xcor=0;
+
+	cudaEvent_t gen_start, gen_end, com_start, com_end, xcor_end;
+	cudaEventCreate(&gen_start);
+	cudaEventCreate(&gen_end);
+	cudaEventCreate(&com_start);
+	cudaEventCreate(&com_end);
+	cudaEventCreate(&xcor_end);
+
 	dbgprintf("Shared memory space:%d bytes\n", prop.sharedMemPerBlock);
+	dbgprintf("# of CUDA processors:%d\n", prop.multiProcessorCount);
+	dbgprintf("warp size: %d\n", prop.warpSize);
 
 	// Create some space for images
-	cudaImageList images = cudaImageList::alloc(170,150, 100);
+	cudaImageList images = cudaImageList::alloc(170,150, 2048);
+	dbgprintf("Image memory used: %d bytes\n", images.totalsize());
+	float3* d_pos;
+	cudaMalloc(&d_pos, sizeof(float3)*images.count);
+	float2* d_com;
+	cudaMalloc(&d_com, sizeof(float2)*images.count);
+	float2* d_xcor;
+	cudaMalloc(&d_xcor, sizeof(float2)*images.count);
 
 	float3* positions = new float3[images.count];
 	for(int i=0;i<images.count;i++) {
@@ -139,22 +187,47 @@ int main(int argc, char *argv[])
 		float yp = images.h/2+(rand_uniform<float>() - 0.5) * 5;
 		positions[i] = make_float3(xp, yp, 10);
 	}
-	float3* d_pos;
-	cudaMalloc(&d_pos, sizeof(float3)*images.count);
 	cudaMemcpy(d_pos, positions, sizeof(float3)*images.count, cudaMemcpyHostToDevice);
-	dim3 nBlocks = dim3(1,1,1);
-	dim3 nThreads = (images.count,1,1);
-	generateTestImages<<<nBlocks, nThreads>>>(images, d_pos); 
+	double err=0.0;
 
-	float3* d_com;
-	cudaMalloc(&d_com, sizeof(float2)*images.count);
-	computeBgCorrectedCOM<<<nBlocks, nThreads>>>(images, d_com);
+	for (int k=0;k<repeat;k++) {
+		cudaEventRecord(gen_start);
+		generateTestImages<<<images.blocks(), images.threads()>>>(images, d_pos); 
+		cudaEventRecord(gen_end);
+
+		cudaEventRecord(com_start);
+		computeBgCorrectedCOM<<<images.blocks(), images.threads()>>>(images, d_com);
+		cudaEventRecord(com_end);
+		cudaEventSynchronize(com_end);
+
+		float t_gen0, t_com0;
+		cudaEventElapsedTime(&t_gen0, gen_start, gen_end);
+		t_gen+=t_gen0;
+		cudaEventElapsedTime(&t_com0, com_start, com_end);
+		t_com+=t_com0;
+		std::vector<float2> com(images.count);
+		cudaMemcpyAsync(&com[0], d_com, sizeof(float2)*images.count, cudaMemcpyDeviceToHost);
+		/*compute1DXcor<<<images.blocks(), images.threads()>>>(images, d_com, d_xcor);
+		cudaEventRecord(xcor_end);
+		cudaEventSynchronize(xcor_end);*/
+
+		for (int i=0;i<images.count;i++) {
+			float dx = (com[i].x-positions[i].x);
+			float dy = (com[i].y-positions[i].y);
+			err += sqrt(dx*dx+dy*dy);
+		}
+	}
 
 
-	
+	int N = images.count*repeat*1000; // times are in ms
+	dbgprintf("COM error: %f pixels\n", err/(images.count*repeat));
+	dbgprintf("Image generating: %f img/s. COM computation: %f img/s.\n", N/t_gen, N/t_com);
 	cudaFree(d_com);
 	cudaFree(d_pos);
 	images.free();
+
+	cudaEventDestroy(gen_start); cudaEventDestroy(gen_end); 
+	cudaEventDestroy(com_start); cudaEventDestroy(com_end); 
 	
 	return 0;
 }
