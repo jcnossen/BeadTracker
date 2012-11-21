@@ -2,7 +2,7 @@
 #include <Windows.h>
 #include <stdint.h>
 #include "../cputrack/random_distr.h"
-#include "../cputrack/queued_cpu_tracker.h"
+#include "../cputrack/queued_cpu_tracker_win.h"
 
 template<typename T> T sq(T x) { return x*x; }
 template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }
@@ -319,7 +319,12 @@ void Test2DTracking()
 void QTrkTest()
 {
 	QTrkSettings cfg;
-	//cfg.numThreads = 1;
+	cfg.width = cfg.height = 128;
+	cfg.qi_iterations = 3;
+	cfg.qi_maxradius = 50;
+	cfg.xc1_iterations = 2;
+	cfg.xc1_profileLength = 64;
+	//cfg.numThreads = 6;
 	QueuedCPUTracker qtrk(&cfg);
 	float *image = new float[cfg.width*cfg.height];
 
@@ -357,7 +362,7 @@ void QTrkTest()
 		GenerateTestImage(ImageData(image, cfg.width, cfg.height), xp, yp, z, 10000);
 		double t2 = getPreciseTime();
 		for (int k=0;k<JobsPerImg;k++)
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI | LocalizeZ), n*JobsPerImg+k, 0);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeXCor1D), n*JobsPerImg+k, 0);
 		double t3 = getPreciseTime();
 		tgen += t2-t1;
 		tschedule += t3-t2;
@@ -406,13 +411,13 @@ void QTrkTest()
 
 int main()
 {
-	SpeedTest();
+	//SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
-	//QTrkTest();
+	QTrkTest();
 
 	return 0;
 }

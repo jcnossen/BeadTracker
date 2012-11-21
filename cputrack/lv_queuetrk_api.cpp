@@ -46,6 +46,25 @@ CDLL_EXPORT void qtrk_destroy(QueuedTracker* qtrk)
 	delete qtrk;
 }
 
+CDLL_EXPORT void qtrk_queue_u16(QueuedTracker* qtrk, LVArray2D<ushort>** data, uint locType, uint computeZ, uint id, uint zlutIndex)
+{
+	locType |= computeZ ? LocalizeZ : 0;
+	qtrk->ScheduleLocalization( (uchar*)(*data)->elem, sizeof(ushort)*(*data)->dimSizes[1], QTrkU16, (LocalizeType)locType, id, zlutIndex);
+}
+
+CDLL_EXPORT void qtrk_queue_u8(QueuedTracker* qtrk, LVArray2D<uchar>** data, uint locType, uint computeZ, uint id, uint zlutIndex)
+{
+	locType |= computeZ ? LocalizeZ : 0;
+	qtrk->ScheduleLocalization( (*data)->elem, sizeof(uchar)*(*data)->dimSizes[1], QTrkU8, (LocalizeType) locType, id, zlutIndex);
+}
+
+CDLL_EXPORT void qtrk_queue_float(QueuedTracker* qtrk, LVArray2D<float>** data, uint locType, uint computeZ, uint id, uint zlutIndex)
+{
+	locType |= computeZ ? LocalizeZ : 0;
+	qtrk->ScheduleLocalization( (uchar*) (*data)->elem, sizeof(float)*(*data)->dimSizes[1], QTrkFloat, (LocalizeType) locType, id, zlutIndex);
+}
+
+
 CDLL_EXPORT void qtrk_queue(QueuedTracker* qtrk, uchar* data, int pitch, uint pdt, uint locType, uint computeZ, uint id, uint zlutIndex)
 {
 	if (computeZ) {
