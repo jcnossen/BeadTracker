@@ -16,7 +16,7 @@ struct traits
 {
     typedef T_scalar scalar_type;
     typedef std::complex<scalar_type> cpx_type;
-    void fill_twiddles( std::complex<T_scalar> * dst ,int nfft,bool inverse)
+    void fill_twiddles( std::complex<T_scalar> * dst ,int nfft,bool inverse)const
     {
         T_scalar phinc =  (inverse?2:-2)* acos( (T_scalar) -1)  / nfft;
         for (int i=0;i<nfft;++i)
@@ -24,14 +24,13 @@ struct traits
     }
 
     void prepare(
-            std::vector< std::complex<T_scalar> > & dst,
+            std::vector< std::complex<T_scalar> > & twiddles,
             int nfft,bool inverse, 
             std::vector<int> & stageRadix, 
-            std::vector<int> & stageRemainder )
+            std::vector<int> & stageRemainder )const
     {
-        _twiddles.resize(nfft);
-        fill_twiddles( &_twiddles[0],nfft,inverse);
-        dst = _twiddles;
+        twiddles.resize(nfft);
+        fill_twiddles( &twiddles[0],nfft,inverse);
 
         //factorize
         //start factoring out 4's, then 2's, then 3,5,7,9,...
@@ -52,275 +51,289 @@ struct traits
             stageRemainder.push_back(n);
         }while(n>1);
     }
-    std::vector<cpx_type> _twiddles;
-
-    const cpx_type twiddle(int i) { return _twiddles[i]; }
 };
 
 }
+
+
 
 template <typename T_Scalar,
          typename T_traits=kissfft_utils::traits<T_Scalar> 
          >
 class cudafft
 {
-    public:
-        typedef T_traits traits_type;
-        typedef typename traits_type::scalar_type scalar_type;
-        typedef typename traits_type::cpx_type cpx_type;
+public:
+    typedef T_traits traits_type;
+    typedef typename traits_type::scalar_type scalar_type;
+    typedef typename traits_type::cpx_type cpx_type;
 
-		struct KernelParams 
-		{
-			int* radix, *remainder;
-			cpx_type* twiddles;
-		};
+	struct KernelParams 
+	{
+		char* data;
+		int twiddles_offset, remainder_offset, scratchbuf_offset;
+		bool inverse;
+		int memsize;
 
-        cudafft(int nfft,bool inverse,const traits_type & traits=traits_type() ) 
-            :nfft(nfft),inverse(inverse),traits(traits)
-        {
-			std::vector<cpx_type> twiddles;
-			std::vector<int> stageRadix;
-			std::vector<int> stageRemainder;
+		cpx_type& twiddles(int i) { return ((cpx_type*) ( data))[i]; }
+		int& radix(int i) { return ((int*)(data + radix_offset)) [i]; }
+		int& remainder(int i) { return ((int*)(data + remainder_offset)) [i]; }
+		cpx_type* scratchbuf() { return (cpx_type*)(data + scratchbuf_offset); }
+	};
 
-			traits.prepare(twiddles, nfft, inverse, stageRadix, stageRemainder);
 
-			size_t totalMem = sizeof(cpx_type) * twiddles.size() + sizeof(int) * stageRadix.size() + sizeof(int) * stageRemainder.size();
-			char* kerneld = new char[totalMem], *p = kerneld;
-			memcpy(p, &twiddles[0], sizeof(cpx_type) * twiddles.size());
+    cudafft(int nfft,bool inverse,const traits_type & traits=traits_type() ) 
+        :nfft(nfft),traits(traits)
+    {
+		std::vector<cpx_type> twiddles;
+		std::vector<int> stageRadix;
+		std::vector<int> stageRemainder;
+		kparams.inverse = inverse;
 
-			cudaMalloc(&kernelData, totalMem);
+		traits.prepare(twiddles, nfft, inverse, stageRadix, stageRemainder);
+		int maxRadix = *std::max_element(stageRadix.begin(), stageRadix.end());
+		int scratchbufsize = maxRadix * sizeof(cpx_type);
 
-			// Copy to device memory
-			
-        }
+		// parameter memory layout: [radix remainders scratchbuf twiddles]
+		kparams.remainder_offset = sizeof(int)*stageRadix.size();
+		kparams.scratchbuf_offset = kparams.remainder_offset + sizeof(int)*stageRemainder.size();
+		kparams.twiddles_offset = kparams.scratchbuf_offset + scratchbufsize;
 
-		~cudafft() {
-			cudaFree(kernelData);
-		}
+		kparams_size = kparams.twiddles_offset + sizeof(cpx_type)*twiddles.size();
+		
+		char* kerneld = new char[kparams_size];
+		memcpy(kerneld, &stageRadix[0], sizeof(int) * stageRadix.size());
+		memcpy(kerneld + kparams.remainder_offset, &stageRemainder[0], sizeof(int) * stageRemainder.size());
+		memcpy(kerneld + kparams.twiddles_offset, &twiddles[0], sizeof(cpx_type) * twiddles.size()); 
 
-        void transform(const cpx_type * src , cpx_type * dst)
-        {
-            kf_work(0, dst, src, 1,1);
-        }
+		// Copy to device memory
+		cudaMalloc(&kparams.data, kparams_size);
+		cudaMemcpy(kparams.data, kerneld, kparams_size, cudaMemcpyHostToDevice);
+		delete[] kerneld;
+		kparams.memsize = kparams_size;
+    }
 
-    private:
-        static CFFT_BOTH void kf_work( int stage,cpx_type * Fout, const cpx_type * f, size_t fstride,size_t in_stride, KernelParams kparm)
-        {
-            int p = _stageRadix[stage];
-            int m = _stageRemainder[stage];
-            cpx_type * Fout_beg = Fout;
-            cpx_type * Fout_end = Fout + p*m;
+	~cudafft() {
+		cudaFree(kparams.data);
+	}
 
-            if (m==1) {
-                do{
-                    *Fout = *f;
-                    f += fstride*in_stride;
-                }while(++Fout != Fout_end );
-            }else{
-                do{
-                    // recursive call:
-                    // DFT of size m*p performed by doing
-                    // p instances of smaller DFTs of size m, 
-                    // each one takes a decimated version of the input
-                    kf_work(stage+1, Fout , f, fstride*p,in_stride);
-                    f += fstride*in_stride;
-                }while( (Fout += m) != Fout_end );
-            }
+	static CFFT_BOTH void transform(const cpx_type * src , cpx_type * dst, KernelParams kparm)
+	{
+		kf_work(0, dst, src, 1,1, &kparm);
+	}
 
-            Fout=Fout_beg;
+    static CFFT_BOTH void kf_work( int stage,cpx_type * Fout, const cpx_type * f, size_t fstride,size_t in_stride, KernelParams* kparm)
+    {
+        int p = kparm->radix(stage);
+        int m = kparm->remainder(stage);
+        cpx_type * Fout_beg = Fout;
+        cpx_type * Fout_end = Fout + p*m;
 
-            // recombine the p smaller DFTs 
-            switch (p) {
-                case 2: kf_bfly2(Fout,fstride,m, kparm); break;
-                case 3: kf_bfly3(Fout,fstride,m, kparm); break;
-                case 4: kf_bfly4(Fout,fstride,m, kparm); break;
-                case 5: kf_bfly5(Fout,fstride,m); break;
-                default: kf_bfly_generic(Fout,fstride,m,p); break;
-            }
-        }
-
-        // these were #define macros in the original kiss_fft
-        void C_ADD( cpx_type & c,const cpx_type & a,const cpx_type & b) { c=a+b;}
-        void C_MUL( cpx_type & c,const cpx_type & a,const cpx_type & b) { c=a*b;}
-        void C_SUB( cpx_type & c,const cpx_type & a,const cpx_type & b) { c=a-b;}
-        void C_ADDTO( cpx_type & c,const cpx_type & a) { c+=a;}
-        void C_FIXDIV( cpx_type & ,int ) {} // NO-OP for float types
-        scalar_type S_MUL( const scalar_type & a,const scalar_type & b) { return a*b;}
-        scalar_type HALF_OF( const scalar_type & a) { return a*.5;}
-        void C_MULBYSCALAR(cpx_type & c,const scalar_type & a) {c*=a;}
-
-        void kf_bfly2( cpx_type * Fout, const size_t fstride, int m)
-        {
-            for (int k=0;k<m;++k) {
-                cpx_type t = Fout[m+k] * _traits.twiddle(k*fstride);
-                Fout[m+k] = Fout[k] - t;
-                Fout[k] += t;
-            }
-        }
-
-        void kf_bfly4( cpx_type * Fout, const size_t fstride, const size_t m)
-        {
-            cpx_type scratch[7];
-            int negative_if_inverse = _inverse * -2 +1;
-            for (size_t k=0;k<m;++k) {
-                scratch[0] = Fout[k+m] * _traits.twiddle(k*fstride);
-                scratch[1] = Fout[k+2*m] * _traits.twiddle(k*fstride*2);
-                scratch[2] = Fout[k+3*m] * _traits.twiddle(k*fstride*3);
-                scratch[5] = Fout[k] - scratch[1];
-
-                Fout[k] += scratch[1];
-                scratch[3] = scratch[0] + scratch[2];
-                scratch[4] = scratch[0] - scratch[2];
-                scratch[4] = cpx_type( scratch[4].imag()*negative_if_inverse , -scratch[4].real()* negative_if_inverse );
-
-                Fout[k+2*m]  = Fout[k] - scratch[3];
-                Fout[k] += scratch[3];
-                Fout[k+m] = scratch[5] + scratch[4];
-                Fout[k+3*m] = scratch[5] - scratch[4];
-            }
-        }
-
-        void kf_bfly3( cpx_type * Fout, const size_t fstride, const size_t m)
-        {
-            size_t k=m;
-            const size_t m2 = 2*m;
-            cpx_type *tw1,*tw2;
-            cpx_type scratch[5];
-            cpx_type epi3;
-            epi3 = _twiddles[fstride*m];
-
-            tw1=tw2=&_twiddles[0];
-
+        if (m==1) {
             do{
-                C_FIXDIV(*Fout,3); C_FIXDIV(Fout[m],3); C_FIXDIV(Fout[m2],3);
-
-                C_MUL(scratch[1],Fout[m] , *tw1);
-                C_MUL(scratch[2],Fout[m2] , *tw2);
-
-                C_ADD(scratch[3],scratch[1],scratch[2]);
-                C_SUB(scratch[0],scratch[1],scratch[2]);
-                tw1 += fstride;
-                tw2 += fstride*2;
-
-                Fout[m] = cpx_type( Fout->real() - HALF_OF(scratch[3].real() ) , Fout->imag() - HALF_OF(scratch[3].imag() ) );
-
-                C_MULBYSCALAR( scratch[0] , epi3.imag() );
-
-                C_ADDTO(*Fout,scratch[3]);
-
-                Fout[m2] = cpx_type(  Fout[m].real() + scratch[0].imag() , Fout[m].imag() - scratch[0].real() );
-
-                C_ADDTO( Fout[m] , cpx_type( -scratch[0].imag(),scratch[0].real() ) );
-                ++Fout;
-            }while(--k);
+                *Fout = *f;
+                f += fstride*in_stride;
+            }while(++Fout != Fout_end );
+        }else{
+            do{
+                // recursive call:
+                // DFT of size m*p performed by doing
+                // p instances of smaller DFTs of size m, 
+                // each one takes a decimated version of the input
+                kf_work(stage+1, Fout , f, fstride*p,in_stride,kparm);
+                f += fstride*in_stride;
+            }while( (Fout += m) != Fout_end );
         }
 
-        void kf_bfly5( cpx_type * Fout, const size_t fstride, const size_t m)
-        {
-            cpx_type *Fout0,*Fout1,*Fout2,*Fout3,*Fout4;
-            size_t u;
-            cpx_type scratch[13];
-            cpx_type * twiddles = &_twiddles[0];
-            cpx_type *tw;
-            cpx_type ya,yb;
-            ya = twiddles[fstride*m];
-            yb = twiddles[fstride*2*m];
+        Fout=Fout_beg;
 
-            Fout0=Fout;
-            Fout1=Fout0+m;
-            Fout2=Fout0+2*m;
-            Fout3=Fout0+3*m;
-            Fout4=Fout0+4*m;
+        // recombine the p smaller DFTs 
+        switch (p) {
+            case 2: kf_bfly2(Fout,fstride,m, kparm); break;
+            case 3: kf_bfly3(Fout,fstride,m, kparm); break;
+            case 4: kf_bfly4(Fout,fstride,m, kparm); break;
+            case 5: kf_bfly5(Fout,fstride,m, kparm); break;
+            default: kf_bfly_generic(Fout,fstride,m,p,kparm); break;
+        }
+    }
 
-            tw=twiddles;
-            for ( u=0; u<m; ++u ) {
-                C_FIXDIV( *Fout0,5); C_FIXDIV( *Fout1,5); C_FIXDIV( *Fout2,5); C_FIXDIV( *Fout3,5); C_FIXDIV( *Fout4,5);
-                scratch[0] = *Fout0;
+    // these were #define macros in the original kiss_fft
+    static CFFT_BOTH void C_ADD( cpx_type & c,const cpx_type & a,const cpx_type & b) { c=a+b;}
+    static CFFT_BOTH void C_MUL( cpx_type & c,const cpx_type & a,const cpx_type & b) { c=a*b;}
+    static CFFT_BOTH void C_SUB( cpx_type & c,const cpx_type & a,const cpx_type & b) { c=a-b;}
+    static CFFT_BOTH void C_ADDTO( cpx_type & c,const cpx_type & a) { c+=a;}
+    static CFFT_BOTH void C_FIXDIV( cpx_type & ,int ) {} // NO-OP for float types
+    static CFFT_BOTH scalar_type S_MUL( const scalar_type & a,const scalar_type & b) { return a*b;}
+    static CFFT_BOTH scalar_type HALF_OF( const scalar_type & a) { return a*.5;}
+    static CFFT_BOTH void C_MULBYSCALAR(cpx_type & c,const scalar_type & a) {c*=a;}
 
-                C_MUL(scratch[1] ,*Fout1, tw[u*fstride]);
-                C_MUL(scratch[2] ,*Fout2, tw[2*u*fstride]);
-                C_MUL(scratch[3] ,*Fout3, tw[3*u*fstride]);
-                C_MUL(scratch[4] ,*Fout4, tw[4*u*fstride]);
+    static CFFT_BOTH void kf_bfly2( cpx_type * Fout, const size_t fstride, int m, KernelParams* kparm)
+    {
+        for (int k=0;k<m;++k) {
+            cpx_type t = Fout[m+k] * kparm->twiddles(k*fstride);
+            Fout[m+k] = Fout[k] - t;
+            Fout[k] += t;
+        }
+    }
 
-                C_ADD( scratch[7],scratch[1],scratch[4]);
-                C_SUB( scratch[10],scratch[1],scratch[4]);
-                C_ADD( scratch[8],scratch[2],scratch[3]);
-                C_SUB( scratch[9],scratch[2],scratch[3]);
+	static CFFT_BOTH void kf_bfly4( cpx_type * Fout, const size_t fstride, const size_t m, KernelParams* kparm)
+    {
+        cpx_type scratch[7];
+        int negative_if_inverse = kparm->inverse ? -1 : 1;
+        for (size_t k=0;k<m;++k) {
+            scratch[0] = Fout[k+m] * kparm->twiddles(k*fstride);
+            scratch[1] = Fout[k+2*m] * kparm->twiddles(k*fstride*2);
+            scratch[2] = Fout[k+3*m] * kparm->twiddles(k*fstride*3);
+            scratch[5] = Fout[k] - scratch[1];
 
-                C_ADDTO( *Fout0, scratch[7]);
-                C_ADDTO( *Fout0, scratch[8]);
+            Fout[k] += scratch[1];
+            scratch[3] = scratch[0] + scratch[2];
+            scratch[4] = scratch[0] - scratch[2];
+            scratch[4] = cpx_type( scratch[4].imag()*negative_if_inverse , -scratch[4].real()* negative_if_inverse );
 
-                scratch[5] = scratch[0] + cpx_type(
-                        S_MUL(scratch[7].real(),ya.real() ) + S_MUL(scratch[8].real() ,yb.real() ),
-                        S_MUL(scratch[7].imag(),ya.real()) + S_MUL(scratch[8].imag(),yb.real())
+            Fout[k+2*m]  = Fout[k] - scratch[3];
+            Fout[k] += scratch[3];
+            Fout[k+m] = scratch[5] + scratch[4];
+            Fout[k+3*m] = scratch[5] - scratch[4];
+        }
+    }
+
+    static CFFT_BOTH void kf_bfly3( cpx_type * Fout, const size_t fstride, const size_t m, KernelParams* kparm)
+    {
+        size_t k=m;
+        const size_t m2 = 2*m;
+        cpx_type *tw1,*tw2;
+        cpx_type scratch[5];
+        cpx_type epi3;
+        epi3 = kparm->twiddles(fstride*m);
+
+        tw1=tw2=&kparm->twiddles(0);
+
+        do{
+            C_FIXDIV(*Fout,3); C_FIXDIV(Fout[m],3); C_FIXDIV(Fout[m2],3);
+
+            C_MUL(scratch[1],Fout[m] , *tw1);
+            C_MUL(scratch[2],Fout[m2] , *tw2);
+
+            C_ADD(scratch[3],scratch[1],scratch[2]);
+            C_SUB(scratch[0],scratch[1],scratch[2]);
+            tw1 += fstride;
+            tw2 += fstride*2;
+
+            Fout[m] = cpx_type( Fout->real() - HALF_OF(scratch[3].real() ) , Fout->imag() - HALF_OF(scratch[3].imag() ) );
+
+            C_MULBYSCALAR( scratch[0] , epi3.imag() );
+
+            C_ADDTO(*Fout,scratch[3]);
+
+            Fout[m2] = cpx_type(  Fout[m].real() + scratch[0].imag() , Fout[m].imag() - scratch[0].real() );
+
+            C_ADDTO( Fout[m] , cpx_type( -scratch[0].imag(),scratch[0].real() ) );
+            ++Fout;
+        }while(--k);
+    }
+
+    static CFFT_BOTH void kf_bfly5( cpx_type * Fout, const size_t fstride, const size_t m, KernelParams* kparm)
+    {
+        cpx_type *Fout0,*Fout1,*Fout2,*Fout3,*Fout4;
+        size_t u;
+        cpx_type scratch[13];
+        cpx_type * twiddles = &kparm->twiddles(0);
+        cpx_type *tw;
+        cpx_type ya,yb;
+        ya = twiddles[fstride*m];
+        yb = twiddles[fstride*2*m];
+
+        Fout0=Fout;
+        Fout1=Fout0+m;
+        Fout2=Fout0+2*m;
+        Fout3=Fout0+3*m;
+        Fout4=Fout0+4*m;
+
+        tw=twiddles;
+        for ( u=0; u<m; ++u ) {
+            C_FIXDIV( *Fout0,5); C_FIXDIV( *Fout1,5); C_FIXDIV( *Fout2,5); C_FIXDIV( *Fout3,5); C_FIXDIV( *Fout4,5);
+            scratch[0] = *Fout0;
+
+            C_MUL(scratch[1] ,*Fout1, tw[u*fstride]);
+            C_MUL(scratch[2] ,*Fout2, tw[2*u*fstride]);
+            C_MUL(scratch[3] ,*Fout3, tw[3*u*fstride]);
+            C_MUL(scratch[4] ,*Fout4, tw[4*u*fstride]);
+
+            C_ADD( scratch[7],scratch[1],scratch[4]);
+            C_SUB( scratch[10],scratch[1],scratch[4]);
+            C_ADD( scratch[8],scratch[2],scratch[3]);
+            C_SUB( scratch[9],scratch[2],scratch[3]);
+
+            C_ADDTO( *Fout0, scratch[7]);
+            C_ADDTO( *Fout0, scratch[8]);
+
+            scratch[5] = scratch[0] + cpx_type(
+                    S_MUL(scratch[7].real(),ya.real() ) + S_MUL(scratch[8].real() ,yb.real() ),
+                    S_MUL(scratch[7].imag(),ya.real()) + S_MUL(scratch[8].imag(),yb.real())
+                    );
+
+            scratch[6] =  cpx_type( 
+                    S_MUL(scratch[10].imag(),ya.imag()) + S_MUL(scratch[9].imag(),yb.imag()),
+                    -S_MUL(scratch[10].real(),ya.imag()) - S_MUL(scratch[9].real(),yb.imag()) 
+                    );
+
+            C_SUB(*Fout1,scratch[5],scratch[6]);
+            C_ADD(*Fout4,scratch[5],scratch[6]);
+
+            scratch[11] = scratch[0] + 
+                cpx_type(
+                        S_MUL(scratch[7].real(),yb.real()) + S_MUL(scratch[8].real(),ya.real()),
+                        S_MUL(scratch[7].imag(),yb.real()) + S_MUL(scratch[8].imag(),ya.real())
                         );
 
-                scratch[6] =  cpx_type( 
-                        S_MUL(scratch[10].imag(),ya.imag()) + S_MUL(scratch[9].imag(),yb.imag()),
-                        -S_MUL(scratch[10].real(),ya.imag()) - S_MUL(scratch[9].real(),yb.imag()) 
-                        );
+            scratch[12] = cpx_type(
+                    -S_MUL(scratch[10].imag(),yb.imag()) + S_MUL(scratch[9].imag(),ya.imag()),
+                    S_MUL(scratch[10].real(),yb.imag()) - S_MUL(scratch[9].real(),ya.imag())
+                    );
 
-                C_SUB(*Fout1,scratch[5],scratch[6]);
-                C_ADD(*Fout4,scratch[5],scratch[6]);
+            C_ADD(*Fout2,scratch[11],scratch[12]);
+            C_SUB(*Fout3,scratch[11],scratch[12]);
 
-                scratch[11] = scratch[0] + 
-                    cpx_type(
-                            S_MUL(scratch[7].real(),yb.real()) + S_MUL(scratch[8].real(),ya.real()),
-                            S_MUL(scratch[7].imag(),yb.real()) + S_MUL(scratch[8].imag(),ya.real())
-                            );
+            ++Fout0;++Fout1;++Fout2;++Fout3;++Fout4;
+        }
+    }
 
-                scratch[12] = cpx_type(
-                        -S_MUL(scratch[10].imag(),yb.imag()) + S_MUL(scratch[9].imag(),ya.imag()),
-                        S_MUL(scratch[10].real(),yb.imag()) - S_MUL(scratch[9].real(),ya.imag())
-                        );
+    /* perform the butterfly for one stage of a mixed radix FFT */
+    static CFFT_BOTH void kf_bfly_generic( cpx_type * Fout, const size_t fstride, int m, int p, KernelParams* kparm)
+    {
+        int u,k,q1,q;
+        cpx_type * twiddles = &kparm->twiddles(0);
+        cpx_type t;
+        int Norig = _nfft;
+        cpx_type *scratchbuf = kparm->scratchbuf();
 
-                C_ADD(*Fout2,scratch[11],scratch[12]);
-                C_SUB(*Fout3,scratch[11],scratch[12]);
+        for ( u=0; u<m; ++u ) {
+            k=u;
+            for ( q1=0 ; q1<p ; ++q1 ) {
+                scratchbuf[q1] = Fout[ k  ];
+                C_FIXDIV(scratchbuf[q1],p);
+                k += m;
+            }
 
-                ++Fout0;++Fout1;++Fout2;++Fout3;++Fout4;
+            k=u;
+            for ( q1=0 ; q1<p ; ++q1 ) {
+                int twidx=0;
+                Fout[ k ] = scratchbuf[0];
+                for (q=1;q<p;++q ) {
+                    twidx += fstride * k;
+                    if (twidx>=Norig) twidx-=Norig;
+                    C_MUL(t,scratchbuf[q] , twiddles[twidx] );
+                    C_ADDTO( Fout[ k ] ,t);
+                }
+                k += m;
             }
         }
+    }
 
-        /* perform the butterfly for one stage of a mixed radix FFT */
-        void kf_bfly_generic(
-                cpx_type * Fout,
-                const size_t fstride,
-                int m,
-                int p
-                )
-        {
-            int u,k,q1,q;
-            cpx_type * twiddles = &_twiddles[0];
-            cpx_type t;
-            int Norig = _nfft;
-            cpx_type *scratchbuf = ALLOCA(sizeof(cpx_type)*p);
-
-            for ( u=0; u<m; ++u ) {
-                k=u;
-                for ( q1=0 ; q1<p ; ++q1 ) {
-                    scratchbuf[q1] = Fout[ k  ];
-                    C_FIXDIV(scratchbuf[q1],p);
-                    k += m;
-                }
-
-                k=u;
-                for ( q1=0 ; q1<p ; ++q1 ) {
-                    int twidx=0;
-                    Fout[ k ] = scratchbuf[0];
-                    for (q=1;q<p;++q ) {
-                        twidx += fstride * k;
-                        if (twidx>=Norig) twidx-=Norig;
-                        C_MUL(t,scratchbuf[q] , twiddles[twidx] );
-                        C_ADDTO( Fout[ k ] ,t);
-                    }
-                    k += m;
-                }
-            }
-        }
-
-        int nfft;
-        bool inverse;
-		char* kernelData;
-        traits_type traits;
+    int nfft, kparams_size;
+	KernelParams kparams;
+    traits_type traits;
 };
+
+
 #endif

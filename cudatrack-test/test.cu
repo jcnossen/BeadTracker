@@ -12,7 +12,7 @@
 #include <cstdarg>
 #include <valarray>
 
-#include "cuda_kissfft/cudafft.h"
+#include "cudafft/cudafft.h"
 #include "random_distr.h"
 
 #include <stdint.h>
@@ -84,9 +84,31 @@ struct cudaImageList {
 };
 
 
-__global__ void compute1DXcor(cudaImageList images, float2* d_initial, float2* d_xcor)
+__shared__ char cudaSharedMemory[];
+
+__global__ void compute1DXcorKernel(cudaImageList images, float2* d_initial, float2* d_xcor, cudafft<float>::KernelParams fwkp, cudafft<float>::KernelParams bwkp)
 {
+	char* fft_fw_shared = cudaSharedMemory;
+	char* fft_bw_shared = cudaSharedMemory + fwkp.memsize;
+	char* fftdata[] = { fwkp.data, bwkp.data };
+	if (threadIdx.x < 2) { // thread 0 copies forward FFT data, thread 1 copies backward FFT data. Thread 2-31 can relax
+		memcpy(cudaSharedMemory + threadIdx.x * fwkp.memsize, fftdata[threadIdx.x], fwkp.memsize);
+	}
+
+	// Now we can forget about the global memory ptrs, as the FFT parameter data is now stored in shared memory
+	fwkp.data = fft_fw_shared;
+	bwkp.data = fft_bw_shared;
+
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	
 }
+
+void compute1DXcor(cudaImageList& images, float2* d_initial, float2* d_xcor, cudafft<float>& forward_fft, cudafft<float>& backward_fft)
+{
+	int sharedMemSize = forward_fft.kparams_size+backward_fft.kparams_size;
+	compute1DXcorKernel<<<images.blocks(), images.threads(), sharedMemSize >>>(images, d_initial, d_xcor, forward_fft.kparams, backward_fft.kparams);
+}
+
 
 __global__ void computeBgCorrectedCOM(cudaImageList images, float2* d_com)
 {
@@ -150,6 +172,7 @@ int main(int argc, char *argv[])
 {
 //	testLinearArray();
 	int repeat = 10;
+	int xcorw = 128;
 
 	std::string path = getPath(argv[0]);
 
@@ -165,6 +188,7 @@ int main(int argc, char *argv[])
 	cudaEventCreate(&com_end);
 	cudaEventCreate(&xcor_end);
 
+	dbgprintf("Device: %s\n", prop.name);
 	dbgprintf("Shared memory space:%d bytes\n", prop.sharedMemPerBlock);
 	dbgprintf("# of CUDA processors:%d\n", prop.multiProcessorCount);
 	dbgprintf("warp size: %d\n", prop.warpSize);
@@ -187,6 +211,9 @@ int main(int argc, char *argv[])
 	}
 	cudaMemcpy(d_pos, positions, sizeof(float3)*images.count, cudaMemcpyHostToDevice);
 	double err=0.0;
+	cudafft<float> forward_fft(xcorw, false);
+	cudafft<float> backward_fft(xcorw, true);
+	dbgprintf("FFT instance requires %d bytes\n", forward_fft.kparams_size);
 
 	for (int k=0;k<repeat;k++) {
 		cudaEventRecord(gen_start);
@@ -198,16 +225,18 @@ int main(int argc, char *argv[])
 		cudaEventRecord(com_end);
 		cudaEventSynchronize(com_end);
 
-		float t_gen0, t_com0;
+		float t_gen0, t_com0, t_xcor0;
 		cudaEventElapsedTime(&t_gen0, gen_start, gen_end);
 		t_gen+=t_gen0;
 		cudaEventElapsedTime(&t_com0, com_start, com_end);
 		t_com+=t_com0;
 		std::vector<float2> com(images.count);
 		cudaMemcpyAsync(&com[0], d_com, sizeof(float2)*images.count, cudaMemcpyDeviceToHost);
-		compute1DXcor<<<images.blocks(), images.threads()>>>(images, d_com, d_xcor);
+		compute1DXcor(images, d_com, d_xcor, forward_fft, backward_fft);
 		cudaEventRecord(xcor_end);
 		cudaEventSynchronize(xcor_end);
+		cudaEventElapsedTime(&t_xcor0, com_end, xcor_end);
+		t_xcor+=t_xcor0;
 
 		for (int i=0;i<images.count;i++) {
 			float dx = (com[i].x-positions[i].x);

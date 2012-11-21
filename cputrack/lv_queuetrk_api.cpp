@@ -27,12 +27,19 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 }
 
 
-CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings)
+CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings, int startNow)
 {
 	QueuedTracker* tracker = CreateQueuedTracker(settings);
-	tracker->Start();
+	if (startNow)
+		tracker->Start();
 	return tracker;
 }
+
+CDLL_EXPORT void qtrk_start(QueuedTracker* qtrk)
+{
+	qtrk->Start();
+}
+
 
 CDLL_EXPORT void qtrk_destroy(QueuedTracker* qtrk)
 {

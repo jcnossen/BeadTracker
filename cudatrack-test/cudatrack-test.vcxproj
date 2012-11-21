@@ -94,17 +94,12 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="..\cudatrack\cuda_kissfft\kiss_fft.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </CudaCompile>
     <CudaCompile Include="test.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cputrack\utils.h" />
     <ClInclude Include="..\cudatrack\Array2D.h" />
-    <ClInclude Include="..\cudatrack\cuda_kissfft\cudafft.h" />
-    <ClInclude Include="..\cudatrack\cuda_kissfft\kiss_fft.h" />
-    <ClInclude Include="..\cudatrack\cuda_kissfft\_kiss_fft_guts.h" />
+    <ClInclude Include="..\cudatrack\cudafft\cudafft.h" />
     <ClInclude Include="..\cudatrack\cuda_shared_mem.h" />
     <ClInclude Include="..\cudatrack\GPUBase.h" />
   </ItemGroup>
