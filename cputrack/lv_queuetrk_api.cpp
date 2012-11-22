@@ -64,6 +64,13 @@ CDLL_EXPORT void qtrk_queue_float(QueuedTracker* qtrk, LVArray2D<float>** data, 
 	qtrk->ScheduleLocalization( (uchar*) (*data)->elem, sizeof(float)*(*data)->dimSizes[1], QTrkFloat, (LocalizeType) locType, id, zlutIndex);
 }
 
+CDLL_EXPORT void test_array_passing(LVArray2D<float>** data, float* data2, int* len)
+{
+	int total=len[0]*len[1];
+	for(int i=0;i<total;i++)
+		dbgprintf("[%d] Data=%f, Data2=%f\n", i,(*data)->elem[i], data2[i]);
+}
+
 
 CDLL_EXPORT void qtrk_queue(QueuedTracker* qtrk, uchar* data, int pitch, uint pdt, uint locType, uint computeZ, uint id, uint zlutIndex)
 {

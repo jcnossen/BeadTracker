@@ -19,7 +19,7 @@ int QueuedCPUTracker::GetResultCount()
 	pthread_mutex_lock(&results_mutex);
 	int rc = resultCount;
 	pthread_mutex_unlock(&results_mutex);
-	return resultCount;
+	return rc;
 }
 
 

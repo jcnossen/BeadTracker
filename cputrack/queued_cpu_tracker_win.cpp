@@ -22,7 +22,7 @@ int QueuedCPUTracker::GetResultCount()
 	MutexLock(results_mutex);
 	int rc = resultCount;
 	MutexUnlock(results_mutex);
-	return resultCount;
+	return rc;
 }
 
 

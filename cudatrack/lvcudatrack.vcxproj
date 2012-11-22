@@ -99,6 +99,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cputrack\utils.h" />
+    <ClInclude Include="cudaImageList.h" />
     <ClInclude Include="QueuedCUDATracker.h" />
   </ItemGroup>
   <ItemGroup>

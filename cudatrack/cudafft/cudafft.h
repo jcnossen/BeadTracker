@@ -3,7 +3,7 @@
 KISS FFT modified to run inside a CUDA kernel
 
 */
-#ifndef KISSFFT_CLASS_HH
+#pragma once
 #include <complex>
 #include <vector>
 
@@ -336,4 +336,3 @@ public:
 };
 
 
-#endif
