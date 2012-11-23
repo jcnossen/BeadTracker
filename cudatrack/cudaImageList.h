@@ -28,11 +28,11 @@ struct cudaImageList {
 
 	
 	// Returns true if bounds are crossed
-	CUBOTH bool boundaryHit(float2 center, float radius, int width, int height)
+	CUBOTH bool boundaryHit(float2 center, float radius)
 	{
-		return center.x + radius >= width ||
+		return center.x + radius >= w ||
 			center.x - radius < 0 ||
-			center.y + radius >= height ||
+			center.y + radius >= h ||
 			center.y - radius < 0;
 	}
 
@@ -42,6 +42,23 @@ struct cudaImageList {
 		cudaFree(data);
 	}
 
-	int totalsize() { return pitch*h*count; }
+	CUBOTH int totalsize() { return pitch*h*count; }
+	
+	CUBOTH static inline float interp(float a, float b, float x) { return a + (b-a)*x; }
+
+	CUBOTH float interpolate(float x,float y, int idx)
+	{
+		int rx=x, ry=y;
+
+		float v00 = pixel(rx, ry, idx);
+		float v10 = pixel(rx+1, ry, idx);
+		float v01 = pixel(rx, ry+1, idx);
+		float v11 = pixel(rx+1, ry+1, idx);
+
+		float v0 = interp (v00, v10, x-rx);
+		float v1 = interp (v01, v11, x-rx);
+
+		return interp (v0, v1, y-ry);
+	}
 };
 

@@ -158,6 +158,7 @@ DWORD QueuedCPUTracker::WorkerThreadMain(void* arg)
 			#endif
 		}
 	}
+	dbgprintf("Thread %p ending.\n", arg);
 	return 0;
 }
 

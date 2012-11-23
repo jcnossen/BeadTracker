@@ -81,8 +81,7 @@ int main(int argc, char *argv[])
 		positions[i] = make_float3(xp, yp, 10);
 	}
 	cudaMemcpy(d_pos, positions, sizeof(float3)*images.count, cudaMemcpyHostToDevice);
-	double err=0.0;
-
+	double comErr=0.0, xcorErr=0.0;
 	QTrkSettings cfg;
 	QueuedCUDATracker qtrk(&cfg);
 
@@ -110,16 +109,24 @@ int main(int argc, char *argv[])
 		cudaEventElapsedTime(&t_xcor0, com_end, xcor_end);
 		t_xcor+=t_xcor0;
 
+		std::vector<float2> xcor(images.count);
+		cudaMemcpy(&xcor[0], d_xcor, sizeof(float2)*images.count, cudaMemcpyDeviceToHost);
+
+		float dx,dy;
 		for (int i=0;i<images.count;i++) {
-			float dx = (com[i].x-positions[i].x);
-			float dy = (com[i].y-positions[i].y);
-			err += sqrt(dx*dx+dy*dy);
+			dx = (com[i].x-positions[i].x);
+			dy = (com[i].y-positions[i].y);
+			comErr += sqrt(dx*dx+dy*dy);
+
+			dx = (xcor[i].x-positions[i].x);
+			dy = (xcor[i].y-positions[i].y);
+			xcorErr += sqrt(dx*dx+dy*dy);
 		}
 	}
 
 
 	int N = images.count*repeat*1000; // times are in ms
-	dbgprintf("COM error: %f pixels\n", err/(images.count*repeat));
+	dbgprintf("COM error: %f pixels. XCor error: %f pixels\n",comErr/(images.count*repeat), xcorErr/(images.count*repeat));
 	dbgprintf("Image generating: %f img/s. COM computation: %f img/s. 1D XCor: %f img/s\n", N/t_gen, N/t_com, N/t_xcor);
 	cudaFree(d_com);
 	cudaFree(d_pos);

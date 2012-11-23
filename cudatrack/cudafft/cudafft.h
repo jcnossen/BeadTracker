@@ -11,12 +11,33 @@ namespace kissfft_utils {
 
 #define CFFT_BOTH __device__ __host__
 
+template<typename T>
+struct cpx
+{
+	T x, y;
+	CFFT_BOTH T& imag() { return y; }
+	CFFT_BOTH T& real() { return x; }
+	CFFT_BOTH const T& imag() const { return y; }
+	CFFT_BOTH const T& real() const { return x; }
+	CFFT_BOTH cpx() : x(0.0f), y(0.0f) {}
+	CFFT_BOTH cpx(T a, T b) : x(a), y(b) {}
+
+	CFFT_BOTH cpx operator*(const T& b) const { return cpx(x*b,y*b); }
+	CFFT_BOTH cpx& operator*=(const T& b) { x*=b; y*=b; return *this; }
+	CFFT_BOTH cpx operator*(const cpx& b) const { return cpx(x*b.x - y*b.y, x*b.y + y*b.x); }
+	CFFT_BOTH cpx operator-(const cpx& b) const { return cpx(x-b.x, y-b.y); }
+	CFFT_BOTH cpx operator+(const cpx& b) const { return cpx(x+b.x, y+b.y); }
+	CFFT_BOTH cpx& operator+=(const cpx& b) { x+=b.x; y+=b.y; return *this; }
+
+	cpx(const std::complex<T>& a) : x(a.real()), y(a.imag()) {}
+};
+
 template <typename T_scalar>
 struct traits
 {
     typedef T_scalar scalar_type;
-    typedef std::complex<scalar_type> cpx_type;
-    void fill_twiddles( std::complex<T_scalar> * dst ,int nfft,bool inverse)const
+    typedef cpx<scalar_type> cpx_type;
+    void fill_twiddles( cpx_type* dst ,int nfft,bool inverse)const
     {
         T_scalar phinc =  (inverse?2:-2)* acos( (T_scalar) -1)  / nfft;
         for (int i=0;i<nfft;++i)
@@ -24,7 +45,7 @@ struct traits
     }
 
     void prepare(
-            std::vector< std::complex<T_scalar> > & twiddles,
+            std::vector< cpx_type > & twiddles,
             int nfft,bool inverse, 
             std::vector<int> & stageRadix, 
             std::vector<int> & stageRemainder )const
@@ -57,15 +78,15 @@ struct traits
 
 
 
-template <typename T_Scalar,
-         typename T_traits=kissfft_utils::traits<T_Scalar> 
+template <typename T,
+         typename T_traits=kissfft_utils::traits<T> 
          >
 class cudafft
 {
 public:
     typedef T_traits traits_type;
+	typedef typename kissfft_utils::cpx<T> cpx_type;
     typedef typename traits_type::scalar_type scalar_type;
-    typedef typename traits_type::cpx_type cpx_type;
 
 	struct KernelParams 
 	{
@@ -73,16 +94,17 @@ public:
 		int twiddles_offset, remainder_offset, scratchbuf_offset;
 		bool inverse;
 		int memsize;
+		int nfft;
 
-		cpx_type& twiddles(int i) { return ((cpx_type*) ( data))[i]; }
-		int& radix(int i) { return ((int*)(data + radix_offset)) [i]; }
-		int& remainder(int i) { return ((int*)(data + remainder_offset)) [i]; }
-		cpx_type* scratchbuf() { return (cpx_type*)(data + scratchbuf_offset); }
+		CFFT_BOTH cpx_type& twiddles(int i) { return ((cpx_type*) (data + twiddles_offset))[i]; }
+		CFFT_BOTH int& radix(int i) { return ((int*)data) [i]; }
+		CFFT_BOTH int& remainder(int i) { return ((int*)(data + remainder_offset)) [i]; }
+		CFFT_BOTH cpx_type* scratchbuf() { return (cpx_type*)(data + scratchbuf_offset); }
 	};
 
 
     cudafft(int nfft,bool inverse,const traits_type & traits=traits_type() ) 
-        :nfft(nfft),traits(traits)
+        :traits(traits)
     {
 		std::vector<cpx_type> twiddles;
 		std::vector<int> stageRadix;
@@ -110,6 +132,7 @@ public:
 		cudaMemcpy(kparams.data, kerneld, kparams_size, cudaMemcpyHostToDevice);
 		delete[] kerneld;
 		kparams.memsize = kparams_size;
+		kparams.nfft = nfft;
     }
 
 	~cudafft() {
@@ -157,11 +180,21 @@ public:
     }
 
     // these were #define macros in the original kiss_fft
-    static CFFT_BOTH void C_ADD( cpx_type & c,const cpx_type & a,const cpx_type & b) { c=a+b;}
-    static CFFT_BOTH void C_MUL( cpx_type & c,const cpx_type & a,const cpx_type & b) { c=a*b;}
-    static CFFT_BOTH void C_SUB( cpx_type & c,const cpx_type & a,const cpx_type & b) { c=a-b;}
-    static CFFT_BOTH void C_ADDTO( cpx_type & c,const cpx_type & a) { c+=a;}
-    static CFFT_BOTH void C_FIXDIV( cpx_type & ,int ) {} // NO-OP for float types
+    static CFFT_BOTH void C_ADD( cpx_type & c,const cpx_type & a,const cpx_type & b) { 
+		c.x=a.x+b.x;
+		c.y=a.y+b.y;
+	}
+    static CFFT_BOTH void C_MUL( cpx_type & c,const cpx_type & a,const cpx_type & b) { 
+		c=a*b;
+	}
+    static CFFT_BOTH void C_SUB( cpx_type & c,const cpx_type & a,const cpx_type & b) { 
+		c.x=a.x-b.x;
+		c.y=a.y-b.y;
+	}
+    static CFFT_BOTH void C_ADDTO( cpx_type & c,const cpx_type & a) { 
+		c.x+=a.x;
+		c.y+=a.y;
+	}
     static CFFT_BOTH scalar_type S_MUL( const scalar_type & a,const scalar_type & b) { return a*b;}
     static CFFT_BOTH scalar_type HALF_OF( const scalar_type & a) { return a*.5;}
     static CFFT_BOTH void C_MULBYSCALAR(cpx_type & c,const scalar_type & a) {c*=a;}
@@ -209,10 +242,8 @@ public:
         tw1=tw2=&kparm->twiddles(0);
 
         do{
-            C_FIXDIV(*Fout,3); C_FIXDIV(Fout[m],3); C_FIXDIV(Fout[m2],3);
-
-            C_MUL(scratch[1],Fout[m] , *tw1);
-            C_MUL(scratch[2],Fout[m2] , *tw2);
+			scratch[1] = Fout[m]* *tw1;
+			scratch[2] = Fout[m2]* *tw2;
 
             C_ADD(scratch[3],scratch[1],scratch[2]);
             C_SUB(scratch[0],scratch[1],scratch[2]);
@@ -251,7 +282,6 @@ public:
 
         tw=twiddles;
         for ( u=0; u<m; ++u ) {
-            C_FIXDIV( *Fout0,5); C_FIXDIV( *Fout1,5); C_FIXDIV( *Fout2,5); C_FIXDIV( *Fout3,5); C_FIXDIV( *Fout4,5);
             scratch[0] = *Fout0;
 
             C_MUL(scratch[1] ,*Fout1, tw[u*fstride]);
@@ -304,14 +334,13 @@ public:
         int u,k,q1,q;
         cpx_type * twiddles = &kparm->twiddles(0);
         cpx_type t;
-        int Norig = _nfft;
+        int Norig = kparm->nfft;
         cpx_type *scratchbuf = kparm->scratchbuf();
 
         for ( u=0; u<m; ++u ) {
             k=u;
             for ( q1=0 ; q1<p ; ++q1 ) {
                 scratchbuf[q1] = Fout[ k  ];
-                C_FIXDIV(scratchbuf[q1],p);
                 k += m;
             }
 
@@ -330,7 +359,7 @@ public:
         }
     }
 
-    int nfft, kparams_size;
+    int kparams_size;
 	KernelParams kparams;
     traits_type traits;
 };

@@ -7,6 +7,9 @@
 #include "cudaImageList.h"
 #include "utils.h"
 
+#define LSQFIT_FUNC __device__ __host__
+#include "LsqQuadraticFit.h"
+
 QueuedTracker* CreateQueuedTracker(QTrkSettings* cfg)
 {
 	return new QueuedCUDATracker(cfg);
@@ -87,6 +90,71 @@ void QueuedCUDATracker::GenerateTestImage(float* dst, float xp,float yp, float z
 
 __shared__ char cudaSharedMemory[];
 
+__device__ float2 mul_conjugate(float2 a, float2 b)
+{
+	float2 r;
+	r.x = a.x*b.x + a.y*b.y;
+	r.y = a.y*b.x - a.x*b.y;
+	return r;
+}
+
+template<typename T>
+__device__ T max_(T a, T b) { return a>b ? a : b; }
+template<typename T>
+__device__ T min_(T a, T b) { return a<b ? a : b; }
+
+template<typename T, int numPts>
+__device__ T ComputeMaxInterp(T* data, int len)
+{
+	int iMax=0;
+	T vMax=data[0];
+	for (int k=1;k<len;k++) {
+		if (data[k]>vMax) {
+			vMax = data[k];
+			iMax = k;
+		}
+	}
+	T xs[numPts]; 
+	int startPos = max_(iMax-numPts/2, 0);
+	int endPos = min_(iMax+(numPts-numPts/2), len);
+	int numpoints = endPos - startPos;
+
+	if (numpoints<3) 
+		return iMax;
+	else {
+		for(int i=startPos;i<endPos;i++)
+			xs[i-startPos] = i-iMax;
+		LsqSqQuadFit<T> qfit(numpoints, xs, &data[startPos]);
+		T interpMax = qfit.maxPos();
+
+		return (T)iMax + interpMax;
+	}
+}
+
+
+__device__ float XCor1D_ComputeOffset(float2* profile, float2* reverseProfile, float2* result, 
+			cudafft<float>::KernelParams fwkp, cudafft<float>::KernelParams bwkp, int len)
+{
+	cudafft<float>::transform((cudafft<float>::cpx_type*) profile, (cudafft<float>::cpx_type*)result, fwkp);
+	// data in 'profile' is no longer needed since we have the fourier domain version
+	cudafft<float>::transform((cudafft<float>::cpx_type*) reverseProfile, (cudafft<float>::cpx_type*)profile, fwkp);
+
+	// multiply with complex conjugate
+	for (int k=0;k<len;k++)
+		profile[k] = mul_conjugate(profile[k], result[k]);
+
+	cudafft<float>::transform((cudafft<float>::cpx_type*) profile, (cudafft<float>::cpx_type*) result, bwkp);
+
+	// shift by len/2, so the maximum will be somewhere in the middle of the array
+	float* shifted = (float*)profile; // use as temp space
+	for (int k=0;k<len;k++)
+		shifted[(k+len/2)%len] = result[k].x;
+	
+	// find the interpolated maximum peak
+	float maxPos = ComputeMaxInterp<float, 5>(shifted, len) - len/2;
+	return maxPos;
+}
+
 __global__ void compute1DXcorKernel(cudaImageList images, float2* d_initial, float2* d_xcor, float2* d_workspace,  
 					cudafft<float>::KernelParams fwkp, cudafft<float>::KernelParams bwkp, int profileLength, int profileWidth)
 {
@@ -131,39 +199,30 @@ __global__ void compute1DXcorKernel(cudaImageList images, float2* d_initial, flo
 				s += images.interpolate(xp, yp, idx);
 			}
 			profile [x].x = s;
-			profile [profileLength-x-1].x = s;
+			profile [x].y = 0.0f;
+			reverseProf[profileLength-x-1] = profile[x];
 		}
 
-		xcorBuffer->XCorFFTHelper(xc, xcr, &xcorBuffer->X_result[0]);
-		xcor_t offsetX = ComputeMaxInterp(&xcorBuffer->X_result[0],xcorBuffer->X_result.size()) - (xcor_t)xcorw/2;
+		float offsetX = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
 
 		// generate Y position xcor array (summing over x range)
-		xc = &xcorBuffer->Y_xc[0];
-		xcr = &xcorBuffer->Y_xcr[0];
-		for (int y=0;y<xcorw;y++) {
-			xcor_t s = 0.0f; 
+		for (int y=0;y<profileLength;y++) {
+			float s = 0.0f; 
 			for (int x=0;x<profileWidth;x++) {
-				float xp = pos.x + XCorScale * (x - profileWidth/2);
-				float yp = y * XCorScale + ymin;
-				s += Interpolate(srcImage,width,height, xp, yp);
-				MARKPIXELI(xp,yp);
+				float xp = pos.x + (x - profileWidth/2);
+				float yp = y + ymin;
+				s += images.interpolate(xp, yp, idx);
 			}
-			xc[y] = s;
-			xcr [xcorw-y-1] = xc[y];
+			profile[y].x = s;
+			profile[y].y = 0.0f;
+			reverseProf[profileLength-y-1] = profile[y];
 		}
 
-		xcorBuffer->XCorFFTHelper(xc,xcr, &xcorBuffer->Y_result[0]);
-		xcor_t offsetY = ComputeMaxInterp(&xcorBuffer->Y_result[0], xcorBuffer->Y_result.size()) - (xcor_t)xcorw/2;
-
-		pos.x += (offsetX - 1) * XCorScale * 0.5f;
-		pos.y += (offsetY - 1) * XCorScale * 0.5f;
+		float offsetY = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
+		pos.x += (offsetX - 1) * 0.5f;
+		pos.y += (offsetY - 1) * 0.5f;
 	}
-	//cudafft<float>::transform(profile, 
-	/*
-	profile = (float2*) malloc(sizeof(float2) * profileLength * 3);
-	reverseProf = profile + profileLength;
-	result = profile + 2 * profileLength;
-	free(profile);*/
+
 }
 
 void QueuedCUDATracker::Compute1DXCor(cudaImageList& images, float2* d_initial, float2* d_result)

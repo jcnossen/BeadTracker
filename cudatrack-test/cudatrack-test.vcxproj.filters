@@ -9,6 +9,7 @@
       <Filter>cudafft</Filter>
     </ClInclude>
     <ClInclude Include="..\cudatrack\QueuedCUDATracker.h" />
+    <ClInclude Include="..\cudatrack\cudaImageList.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="test.cu" />
