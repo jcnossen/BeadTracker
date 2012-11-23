@@ -188,7 +188,7 @@
     <ClCompile Include="cpu_tracker.cpp" />
     <ClCompile Include="lv_cputrack_api.cpp" />
     <ClCompile Include="lv_queuetrk_api.cpp" />
-    <ClCompile Include="queued_cpu_tracker_nothread.cpp" />
+    <ClCompile Include="queued_cpu_tracker_win.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -196,7 +196,7 @@
     <ClInclude Include="labview.h" />
     <ClInclude Include="LsqQuadraticFit.h" />
     <ClInclude Include="QueuedTracker.h" />
-    <ClInclude Include="queued_cpu_tracker_nothread.h" />
+    <ClInclude Include="queued_cpu_tracker_win.h" />
     <ClInclude Include="random_distr.h" />
     <ClInclude Include="scalar_types.h" />
     <ClInclude Include="utils.h" />
