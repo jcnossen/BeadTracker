@@ -1,5 +1,9 @@
 #pragma once
 #include "QueuedTracker.h"
+#include <cuda_runtime_api.h>
+#include "cudafft/cudafft.h"
+
+struct cudaImageList;
 
 class QueuedCUDATracker : public QueuedTracker {
 public:
@@ -22,9 +26,39 @@ public:
 	int GetJobCount();
 	int GetResultCount();
 
+	// Direct kernel wrappers
+	void GenerateImages(cudaImageList& imgList, float3 *d_positions);
+	void ComputeBgCorrectedCOM(cudaImageList& imgList, float2* d_com);
+	void Compute1DXCor(cudaImageList& images, float2* d_initial, float2* d_result);
+
 protected:
 	QTrkSettings cfg;
+
+	struct Batch {
+
+//		texture<
+
+	};
+
+	enum { numThreads = 32 };
+	int batchSize;
+
+	dim3 blocks(int workItems) {
+		return dim3((workItems+numThreads-1)/numThreads);
+	}
+	dim3 blocks() {
+		return dim3((batchSize+numThreads-1)/numThreads);
+	}
+	dim3 threads() {
+		return dim3(numThreads);
+	}
+
+	cudafft<float> *forward_fft, *backward_fft;
+	float2* xcor_workspace;
 };
+
+
+
 
 
 

@@ -10,7 +10,7 @@ struct traits
 {
     typedef T_scalar scalar_type;
     typedef std::complex<scalar_type> cpx_type;
-    void fill_twiddles( std::complex<T_scalar> * dst ,int nfft,bool inverse)
+    void fill_twiddles( std::complex<T_scalar> * dst ,int nfft,bool inverse) const
     {
         T_scalar phinc =  (inverse?2:-2)* acos( (T_scalar) -1)  / nfft;
         for (int i=0;i<nfft;++i)
@@ -21,8 +21,9 @@ struct traits
             std::vector< std::complex<T_scalar> > & dst,
             int nfft,bool inverse, 
             std::vector<int> & stageRadix, 
-            std::vector<int> & stageRemainder )
+            std::vector<int> & stageRemainder ) const
     {
+		std::vector<cpx_type> _twiddles;
         _twiddles.resize(nfft);
         fill_twiddles( &_twiddles[0],nfft,inverse);
         dst = _twiddles;
@@ -46,10 +47,8 @@ struct traits
             stageRemainder.push_back(n);
         }while(n>1);
     }
-    std::vector<cpx_type> _twiddles;
+    
 
-
-    const cpx_type twiddle(int i) { return _twiddles[i]; }
 };
 
 }
@@ -65,9 +64,9 @@ class kissfft
         typedef typename traits_type::cpx_type cpx_type;
 
         kissfft(int nfft,bool inverse,const traits_type & traits=traits_type() ) 
-            :_nfft(nfft),_inverse(inverse),_traits(traits)
+            :_nfft(nfft),_inverse(inverse)
         {
-            _traits.prepare(_twiddles, _nfft,_inverse ,_stageRadix, _stageRemainder);
+            traits.prepare(_twiddles, _nfft,_inverse ,_stageRadix, _stageRemainder);
         }
 
         void transform(const cpx_type * src , cpx_type * dst)
@@ -124,7 +123,7 @@ class kissfft
         void kf_bfly2( cpx_type * Fout, const size_t fstride, int m)
         {
             for (int k=0;k<m;++k) {
-                cpx_type t = Fout[m+k] * _traits.twiddle(k*fstride);
+                cpx_type t = Fout[m+k] * _twiddles[k*fstride];
                 Fout[m+k] = Fout[k] - t;
                 Fout[k] += t;
             }
@@ -135,9 +134,9 @@ class kissfft
             cpx_type scratch[7];
             int negative_if_inverse = _inverse * -2 +1;
             for (size_t k=0;k<m;++k) {
-                scratch[0] = Fout[k+m] * _traits.twiddle(k*fstride);
-                scratch[1] = Fout[k+2*m] * _traits.twiddle(k*fstride*2);
-                scratch[2] = Fout[k+3*m] * _traits.twiddle(k*fstride*3);
+                scratch[0] = Fout[k+m] * _twiddles[k*fstride];
+                scratch[1] = Fout[k+2*m] * _twiddles[k*fstride*2];
+                scratch[2] = Fout[k+3*m] * _twiddles[k*fstride*3];
                 scratch[5] = Fout[k] - scratch[1];
 
                 Fout[k] += scratch[1];
@@ -295,6 +294,5 @@ class kissfft
         std::vector<cpx_type> _twiddles;
         std::vector<int> _stageRadix;
         std::vector<int> _stageRemainder;
-        traits_type _traits;
 };
 #endif

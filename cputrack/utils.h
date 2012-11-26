@@ -39,11 +39,6 @@ void normalize(TPixel* d, uint w,uint h)
 		d[k]=(d[k]-minv)/(maxv-minv);
 }
 
-void GenerateTestImage(float* data, int w, int h, float xp, float yp, float size, float MaxPhotons);
-void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius,
-	vector2f center, float* srcImage, int width, int height);
-
-
 const inline float interp(float a, float b, float x) { return a + (b-a)*x; }
 
 inline float Interpolate(float* image, int width, int height, float x,float y)
@@ -59,3 +54,20 @@ inline float Interpolate(float* image, int width, int height, float x,float y)
 
 	return interp (v0, v1, y-ry);
 }
+
+
+struct ImageData {
+	float* data;
+	int w,h;
+	ImageData(float *d, int w, int h) : data(d), w(w),h(h) {}
+	float& at(int x, int y) { return data[w*y+x]; }
+	float interpolate(float x, float y) { return Interpolate(data, w,h, x,y); }
+	int numPixels() { return w*h; }
+	void normalize() { ::normalize(data,w,h); }
+};
+
+void GenerateTestImage(ImageData& img, float xp, float yp, float size, float MaxPhotons);
+void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, ImageData* src);
+void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float zlut_radius, vector2f pos, float z, float M);
+void ApplyPoissonNoise(ImageData& img, float factor);
+

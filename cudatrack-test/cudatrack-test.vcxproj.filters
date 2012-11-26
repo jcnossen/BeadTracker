@@ -4,24 +4,23 @@
     <ClInclude Include="..\cudatrack\Array2D.h" />
     <ClInclude Include="..\cudatrack\cuda_shared_mem.h" />
     <ClInclude Include="..\cudatrack\GPUBase.h" />
-    <ClInclude Include="..\cudatrack\tracker.h" />
-    <ClInclude Include="..\cudatrack\cuda_kissfft\_kiss_fft_guts.h">
-      <Filter>FFT</Filter>
+    <ClInclude Include="..\cputrack\utils.h" />
+    <ClInclude Include="..\cudatrack\cudafft\cudafft.h">
+      <Filter>cudafft</Filter>
     </ClInclude>
-    <ClInclude Include="..\cudatrack\cuda_kissfft\kiss_fft.h">
-      <Filter>FFT</Filter>
-    </ClInclude>
+    <ClInclude Include="..\cudatrack\QueuedCUDATracker.h" />
+    <ClInclude Include="..\cudatrack\cudaImageList.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\cudatrack\tracker.cu" />
     <CudaCompile Include="test.cu" />
-    <CudaCompile Include="..\cudatrack\cuda_kissfft\kiss_fft.cu">
-      <Filter>FFT</Filter>
-    </CudaCompile>
+    <CudaCompile Include="..\cudatrack\QueuedCUDATracker.cu" />
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="FFT">
+    <Filter Include="cudafft">
       <UniqueIdentifier>{da74a339-6ee1-4e53-94e9-bd01631a49a6}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\cputrack\utils.cpp" />
   </ItemGroup>
 </Project>

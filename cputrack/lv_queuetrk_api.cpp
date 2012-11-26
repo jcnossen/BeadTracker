@@ -27,17 +27,50 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 }
 
 
-CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings)
+CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings, int startNow)
 {
 	QueuedTracker* tracker = CreateQueuedTracker(settings);
-	tracker->Start();
+	if (startNow)
+		tracker->Start();
 	return tracker;
 }
+
+CDLL_EXPORT void qtrk_start(QueuedTracker* qtrk)
+{
+	qtrk->Start();
+}
+
 
 CDLL_EXPORT void qtrk_destroy(QueuedTracker* qtrk)
 {
 	delete qtrk;
 }
+
+CDLL_EXPORT void qtrk_queue_u16(QueuedTracker* qtrk, LVArray2D<ushort>** data, uint locType, uint computeZ, uint id, uint zlutIndex)
+{
+	locType |= computeZ ? LocalizeZ : 0;
+	qtrk->ScheduleLocalization( (uchar*)(*data)->elem, sizeof(ushort)*(*data)->dimSizes[1], QTrkU16, (LocalizeType)locType, id, zlutIndex);
+}
+
+CDLL_EXPORT void qtrk_queue_u8(QueuedTracker* qtrk, LVArray2D<uchar>** data, uint locType, uint computeZ, uint id, uint zlutIndex)
+{
+	locType |= computeZ ? LocalizeZ : 0;
+	qtrk->ScheduleLocalization( (*data)->elem, sizeof(uchar)*(*data)->dimSizes[1], QTrkU8, (LocalizeType) locType, id, zlutIndex);
+}
+
+CDLL_EXPORT void qtrk_queue_float(QueuedTracker* qtrk, LVArray2D<float>** data, uint locType, uint computeZ, uint id, uint zlutIndex)
+{
+	locType |= computeZ ? LocalizeZ : 0;
+	qtrk->ScheduleLocalization( (uchar*) (*data)->elem, sizeof(float)*(*data)->dimSizes[1], QTrkFloat, (LocalizeType) locType, id, zlutIndex);
+}
+
+CDLL_EXPORT void test_array_passing(LVArray2D<float>** data, float* data2, int* len)
+{
+	int total=len[0]*len[1];
+	for(int i=0;i<total;i++)
+		dbgprintf("[%d] Data=%f, Data2=%f\n", i,(*data)->elem[i], data2[i]);
+}
+
 
 CDLL_EXPORT void qtrk_queue(QueuedTracker* qtrk, uchar* data, int pitch, uint pdt, uint locType, uint computeZ, uint id, uint zlutIndex)
 {
@@ -84,5 +117,16 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_generate_test_image(QueuedTracker* tracker, L
 	tracker->GenerateTestImage(d, xp, yp, size, photoncount );
 	floatToNormalizedUShort((*image)->elem, d, w,h);
 	delete[] d;
+}
+
+CDLL_EXPORT void DLL_CALLCONV generate_image_from_lut(LVArray2D<float>** image, LVArray2D<float>** lut, float LUTradius, vector2f* position, float z, float M, float photonCountPP)
+{
+	ImageData img((*image)->elem, (*image)->dimSizes[1], (*image)->dimSizes[0]);
+	ImageData zlut((*lut)->elem, (*lut)->dimSizes[1], (*lut)->dimSizes[0]);
+
+	GenerateImageFromLUT(&img, &zlut, LUTradius, *position, z, M);
+	img.normalize();
+	if(photonCountPP>0)
+		ApplyPoissonNoise(img, photonCountPP);
 }
 

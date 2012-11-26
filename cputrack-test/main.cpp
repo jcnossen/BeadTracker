@@ -2,10 +2,12 @@
 #include <Windows.h>
 #include <stdint.h>
 #include "../cputrack/random_distr.h"
-#include "../cputrack/queued_cpu_tracker.h"
+#include "../cputrack/queued_cpu_tracker_win.h"
 
 template<typename T> T sq(T x) { return x*x; }
 template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }
+
+
 
 
 double getPreciseTime()
@@ -54,7 +56,7 @@ void SpeedTest()
 	for (int x=0;x<zplanes;x++)  {
 		vector2f center = { tracker->GetWidth()/2, tracker->GetHeight()/2 };
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
-		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), center.x, center.y, s, 0.0f);
+		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, s, 0.0f);
 		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1, zradius, center);
 	}
 	tracker->SetZLUT(zlut, zplanes, radialSteps, 1,1, zradius, 64, true);
@@ -72,7 +74,7 @@ void SpeedTest()
 		float yp = tracker->GetHeight()/2+(rand_uniform<float>() - 0.5) * 5;
 		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
 
-		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), xp, yp, z, 10000);
+		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), xp, yp, z, 10000);
 
 		double t1 = getPreciseTime();
 		vector2f com = tracker->ComputeBgCorrectedCOM();
@@ -148,7 +150,7 @@ void SmallImageTest()
 {
 	CPUTracker *tracker = new CPUTracker(32,32, 16);
 
-	GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), 15,15, 1, 0.0f);
+	GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), 15,15, 1, 0.0f);
 
 	vector2f com = tracker->ComputeBgCorrectedCOM();
 	dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
@@ -174,7 +176,7 @@ void TestBoundCheck()
 		float xp = tracker->GetWidth()/2+(rand_uniform<float>() - 0.5) * 20;
 		float yp = tracker->GetHeight()/2+(rand_uniform<float>() - 0.5) * 20;
 		
-		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), xp, yp, 1, 0.0f);
+		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), xp, yp, 1, 0.0f);
 
 		vector2f com = tracker->ComputeBgCorrectedCOM();
 		dbgout(SPrintf("COM: %f,%f\n", com.x-xp, com.y-yp));
@@ -202,7 +204,7 @@ void PixelationErrorTest()
 	int N = 20;
 	for (int x=0;x<N;x++)  {
 		float xpos = X + 2.0f * x / (float)N;
-		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), xpos, X, 1, 0.0f);
+		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), xpos, X, 1, 0.0f);
 
 		vector2f com = tracker->ComputeBgCorrectedCOM();
 		//dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
@@ -232,7 +234,7 @@ float EstimateZError(int zplanes)
 
 	for (int x=0;x<zplanes;x++)  {
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
-		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), center.x, center.y, s, 0.0f);
+		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, s, 0.0f);
 	//	dbgout(SPrintf("z=%f\n", s));
 		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1.0f, zradius, center);
 	}
@@ -245,7 +247,7 @@ float EstimateZError(int zplanes)
 	float zdist=0.0f;
 	for (int k=0;k<N;k++) {
 		float z = zmin + k/float(N-1) * (zmax-zmin);
-		GenerateTestImage(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight(), center.x, center.y, z, 0.0f);
+		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, z, 0.0f);
 		
 		float est_z = zmin + tracker->ComputeZ(center, 64, 0) * (zmax - zmin);
 		zdist += fabsf(est_z-z);
@@ -317,7 +319,12 @@ void Test2DTracking()
 void QTrkTest()
 {
 	QTrkSettings cfg;
-	//cfg.numThreads = 1;
+	cfg.width = cfg.height = 128;
+	cfg.qi_iterations = 3;
+	cfg.qi_maxradius = 50;
+	cfg.xc1_iterations = 2;
+	cfg.xc1_profileLength = 64;
+	//cfg.numThreads = 6;
 	QueuedCPUTracker qtrk(&cfg);
 	float *image = new float[cfg.width*cfg.height];
 
@@ -328,7 +335,7 @@ void QTrkTest()
 	for (int x=0;x<zplanes;x++)  {
 		vector2f center = { cfg.width/2, cfg.height/2 };
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
-		GenerateTestImage(image, cfg.width, cfg.height, center.x, center.y, s, 0.0f);
+		GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
 		qtrk.ComputeRadialProfile(image, cfg.width, cfg.height, &zlut[x*radialSteps], radialSteps, center);
 	}
 	qtrk.SetZLUT(zlut, zplanes, radialSteps, 1);
@@ -352,10 +359,10 @@ void QTrkTest()
 		truepos[n*3+1] = yp;
 		truepos[n*3+2] = z;
 
-		GenerateTestImage(image, cfg.width, cfg.height, xp, yp, z, 10000);
+		GenerateTestImage(ImageData(image, cfg.width, cfg.height), xp, yp, z, 10000);
 		double t2 = getPreciseTime();
 		for (int k=0;k<JobsPerImg;k++)
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI | LocalizeZ), n*JobsPerImg+k, 0);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeXCor1D), n*JobsPerImg+k, 0);
 		double t3 = getPreciseTime();
 		tgen += t2-t1;
 		tschedule += t3-t2;
@@ -404,13 +411,13 @@ void QTrkTest()
 
 int main()
 {
-	SpeedTest();
+	//SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
-	//QTrkTest();
+	QTrkTest();
 
 	return 0;
 }

@@ -13,10 +13,11 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{74D6A840-874D-40D4-A85D-6241870EBCE9}</ProjectGuid>
     <RootNamespace>lvcudatrack</RootNamespace>
+    <ProjectName>lvcudatrack</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -99,6 +100,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cputrack\utils.h" />
+    <ClInclude Include="cudaImageList.h" />
     <ClInclude Include="QueuedCUDATracker.h" />
   </ItemGroup>
   <ItemGroup>

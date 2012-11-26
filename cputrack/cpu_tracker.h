@@ -36,7 +36,6 @@ public:
 #ifdef _DEBUG
 	float maxImageValue;
 #endif
-
 	std::vector<vector2f> radialDirs; // full circle for ZLUT
 
 	// The ZLUT system stores 'zlut_count' number of 2D zlut's, so every bead can be tracked with its own unique ZLUT.
