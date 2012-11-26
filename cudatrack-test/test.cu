@@ -43,18 +43,10 @@ std::string getPath(const char *file)
 	return s.substr(0, pos);
 }
 
-
-int main(int argc, char *argv[])
+void TestLocalization()
 {
-//	testLinearArray();
 	int repeat = 10;
 	int xcorProfileLen = 128, xcorProfileWidth = 16;
-
-	std::string path = getPath(argv[0]);
-
-	cudaDeviceProp prop;
-	cudaGetDeviceProperties(&prop, 0);
-
 	float t_gen=0, t_com=0, t_xcor=0;
 
 	cudaEvent_t gen_start, gen_end, com_start, com_end, xcor_end;
@@ -134,6 +126,60 @@ int main(int argc, char *argv[])
 
 	cudaEventDestroy(gen_start); cudaEventDestroy(gen_end); 
 	cudaEventDestroy(com_start); cudaEventDestroy(com_end); 
+}
+
+__global__ void runCudaFFT(cudafft<float>::cpx_type *src, cudafft<float>::cpx_type *dst, cudafft<float>::KernelParams kparams)
+{
+	cudafft<float>::transform(src,dst, kparams);
+}
+
+void TestKernelFFT()
+{
+	int N=64;
+	cudafft<float> fft(N, false);
+
+	std::vector< cudafft<float>::cpx_type > data(N), result(N);
+	for (int x=0;x<N;x++)
+		data[x].x = 10*cos(x*0.1f);
+
+	fft.host_transform(&data[0], &result[0]);
+	for (int x=0;x<N;x++)
+		dbgprintf("[%d] %f+%fi\n", x, result[x].x, result[x].y);
+
+	// now put data in video mem
+	cudafft<float>::cpx_type *src,*d_result;
+	cudaMalloc(&src, sizeof(cudafft<float>::cpx_type)*N);
+	cudaMemcpy(src, &data[0], sizeof(cudafft<float>::cpx_type)*N, cudaMemcpyHostToDevice);
+	cudaMalloc(&d_result, sizeof(cudafft<float>::cpx_type)*N);
+
+	runCudaFFT<<<dim3(1),dim3(1)>>>(src,d_result, fft.kparams);
+
+	std::vector< cudafft<float>::cpx_type > result2(N);
+	cudaMemcpy(&result2[0], d_result, sizeof(cudafft<float>::cpx_type)*N, cudaMemcpyDeviceToHost);
+
+	for (int i=0;i<N;i++) {
+		cudafft<float>::cpx_type d=result2[i]-result[i];
+		dbgprintf("[%d] %f+%fi\n", i, d.x, d.y);
+	}
+
+	cudaFree(src);
+	cudaFree(d_result);
+
+}
+
+int main(int argc, char *argv[])
+{
+//	testLinearArray();
+
+	std::string path = getPath(argv[0]);
+
+	cudaDeviceProp prop;
+	cudaGetDeviceProperties(&prop, 0);
+
+//	TestLocalization();
+
+	TestKernelFFT();
+
 	
 	return 0;
 }

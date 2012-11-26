@@ -122,26 +122,33 @@ public:
 
 		kparams_size = kparams.twiddles_offset + sizeof(cpx_type)*twiddles.size();
 		
-		char* kerneld = new char[kparams_size];
-		memcpy(kerneld, &stageRadix[0], sizeof(int) * stageRadix.size());
-		memcpy(kerneld + kparams.remainder_offset, &stageRemainder[0], sizeof(int) * stageRemainder.size());
-		memcpy(kerneld + kparams.twiddles_offset, &twiddles[0], sizeof(cpx_type) * twiddles.size()); 
+		hostbuf = new char[kparams_size];
+		memcpy(hostbuf, &stageRadix[0], sizeof(int) * stageRadix.size());
+		memcpy(hostbuf+ kparams.remainder_offset, &stageRemainder[0], sizeof(int) * stageRemainder.size());
+		memcpy(hostbuf+ kparams.twiddles_offset, &twiddles[0], sizeof(cpx_type) * twiddles.size()); 
 
 		// Copy to device memory
 		cudaMalloc(&kparams.data, kparams_size);
-		cudaMemcpy(kparams.data, kerneld, kparams_size, cudaMemcpyHostToDevice);
-		delete[] kerneld;
+		cudaMemcpy(kparams.data, hostbuf, kparams_size, cudaMemcpyHostToDevice);
 		kparams.memsize = kparams_size;
 		kparams.nfft = nfft;
     }
 
 	~cudafft() {
+		delete[] hostbuf;
 		cudaFree(kparams.data);
 	}
 
 	static CFFT_BOTH void transform(const cpx_type * src , cpx_type * dst, KernelParams kparm)
 	{
 		kf_work(0, dst, src, 1,1, &kparm);
+	}
+
+	void host_transform(const cpx_type * src , cpx_type * dst)
+	{
+		KernelParams kp = kparams;
+		kp.data = hostbuf;
+		kf_work(0, dst, src, 1,1, &kp);
 	}
 
     static CFFT_BOTH void kf_work( int stage,cpx_type * Fout, const cpx_type * f, size_t fstride,size_t in_stride, KernelParams* kparm)
@@ -171,11 +178,13 @@ public:
 
         // recombine the p smaller DFTs 
         switch (p) {
-            case 2: kf_bfly2(Fout,fstride,m, kparm); break;
-            case 3: kf_bfly3(Fout,fstride,m, kparm); break;
-            case 4: kf_bfly4(Fout,fstride,m, kparm); break;
-            case 5: kf_bfly5(Fout,fstride,m, kparm); break;
-            default: kf_bfly_generic(Fout,fstride,m,p,kparm); break;
+            case 2:  
+				kf_bfly2(Fout,fstride,m, kparm); 
+				break;
+           case 3: kf_bfly3(Fout,fstride,m, kparm); break;
+           case 4: kf_bfly4(Fout,fstride,m, kparm); break;
+           case 5: kf_bfly5(Fout,fstride,m, kparm); break;
+           default: kf_bfly_generic(Fout,fstride,m,p,kparm); break;
         }
     }
 
@@ -361,6 +370,7 @@ public:
 
     int kparams_size;
 	KernelParams kparams;
+	char* hostbuf;
     traits_type traits;
 };
 
