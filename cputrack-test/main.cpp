@@ -42,7 +42,7 @@ void SpeedTest()
 #ifdef _DEBUG
 	int N = 20;
 #else
-	int N = 2000;
+	int N = 1000;
 #endif
 	int qi_iterations = 4;
 	int xcor_iterations = 2;
@@ -57,9 +57,9 @@ void SpeedTest()
 		vector2f center = { tracker->GetWidth()/2, tracker->GetHeight()/2 };
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, s, 0.0f);
-		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1, zradius, center);
+		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1, zradius, center);	
 	}
-	tracker->SetZLUT(zlut, zplanes, radialSteps, 1,1, zradius, 64, true);
+	tracker->SetZLUT(zlut, zplanes, radialSteps, 1,1, zradius, 64, true, false);
 	delete[] zlut;
 
 	// Speed test
@@ -99,7 +99,7 @@ void SpeedTest()
 		qidist.y += fabsf(qi.y - yp);
 		double t4 = getPreciseTime();
 
-		float est_z = zmin + tracker->ComputeZ(xcor, 64, 0) * (zmax - zmin);
+		float est_z = zmin + (zmax-zmin)*tracker->ComputeZ(xcor, 64, 0, &boundaryHit, 0) / (zplanes-1);
 		zdist += fabsf(est_z-z);
 		zerrsum += est_z-z;
 
@@ -112,6 +112,8 @@ void SpeedTest()
 			tqi+=t4-t3;
 			tz+=t5-t4;
 		}
+		if (boundaryHit)
+			dbgprintf("boundaryhit!!\n");
 	}
 
 	int Nns = N-1;
@@ -139,7 +141,7 @@ void OnePixelTest()
 	
 	vector2f initial = {15,15};
 	bool boundaryHit = false;
-	vector2f xcor = tracker->ComputeXCor(initial, 16, boundaryHit);
+	vector2f xcor = tracker->ComputeXCorInterpolated(initial,2, 16, boundaryHit);
 	dbgout(SPrintf("XCor: %f,%f\n", xcor.x, xcor.y));
 
 	assert(xcor.x == 15.0f && xcor.y == 15.0f);
@@ -157,7 +159,7 @@ void SmallImageTest()
 	
 	vector2f initial = {15,15};
 	bool boundaryHit = false;
-	vector2f xcor = tracker->ComputeXCor(initial, 16, boundaryHit);
+	vector2f xcor = tracker->ComputeXCorInterpolated(initial, 2, 16, boundaryHit);
 	dbgout(SPrintf("XCor: %f,%f\n", xcor.x, xcor.y));
 
 	assert(fabsf(xcor.x-15.0f) < 1e-6 && fabsf(xcor.y-15.0f) < 1e-6);
@@ -211,9 +213,8 @@ void PixelationErrorTest()
 
 		vector2f initial = {X,Y};
 		bool boundaryHit = false;
-		vector2f xcor = tracker->ComputeXCor(initial, 16, boundaryHit);
 		vector2f xcorInterp = tracker->ComputeXCorInterpolated(initial, 3, 32, boundaryHit);
-		dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f, XCorInterp err: %f\n", xpos, com.x-xpos, xcor.x-xpos, xcorInterp.x-xpos));
+		dbgout(SPrintf("xpos:%f, COM err: %f, XCorInterp err: %f\n", xpos, com.x-xpos, xcorInterp.x-xpos));
 	}
 	delete tracker;
 }
@@ -239,22 +240,23 @@ float EstimateZError(int zplanes)
 		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1.0f, zradius, center);
 	}
 
-	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, 1.0f, zradius, 64, true);
+	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, 1.0f, zradius, 64, true, true);
 	writeImageAsCSV("zlut.csv", zlut, radialSteps, zplanes);
 	delete[] zlut;
 
 	int N=100;
 	float zdist=0.0f;
+	std::vector<float> cmpProf;
 	for (int k=0;k<N;k++) {
 		float z = zmin + k/float(N-1) * (zmax-zmin);
 		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, z, 0.0f);
 		
-		float est_z = zmin + tracker->ComputeZ(center, 64, 0) * (zmax - zmin);
+		float est_z = zmin + tracker->ComputeZ(center, 64, 0, 0, 0, &cmpProf);
 		zdist += fabsf(est_z-z);
 		//dbgout(SPrintf("Z: %f, EstZ: %f\n", z, est_z));
 
 		if(k==50) {
-			writeImageAsCSV("rprofdiff.csv", &tracker->rprof_diff[0], tracker->rprof_diff.size(),1);
+			writeImageAsCSV("rprofdiff.csv", &cmpProf[0], cmpProf.size(),1);
 		}
 	}
 	return zdist/N;
@@ -263,7 +265,7 @@ float EstimateZError(int zplanes)
 
 void ZTrackingTest()
 {
-	for (int k=20;k<100;k+=10)
+	for (int k=20;k<100;k+=20)
 	{
 		float err = EstimateZError(k);
 		dbgout(SPrintf("average Z difference: %f. zplanes=%d\n", err, k));
@@ -411,13 +413,13 @@ void QTrkTest()
 
 int main()
 {
-	//SpeedTest();
+	SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
-	QTrkTest();
+	//QTrkTest();
 
 	return 0;
 }

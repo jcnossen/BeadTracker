@@ -196,11 +196,10 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 		break;
 	}
 
-	result.error = boundaryHit ? 1 : 0;
-
 	if(j->locType & LocalizeZ) {
-		result.z = th->tracker->ComputeZ(result.pos, cfg.zlut_angularsteps, j->zlut);
+		result.z = th->tracker->ComputeZ(result.pos, cfg.zlut_angularsteps, j->zlut, &boundaryHit);
 	}
+	result.error = boundaryHit ? 1 : 0;
 
 	MutexLock(results_mutex);
 	results.push_back(result);

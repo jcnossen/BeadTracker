@@ -42,8 +42,8 @@ public:
 	float* zluts; // size: zlut_planes*zlut_count*zlut_res,		indexing: zlut[index * (zlut_planes * zlut_res) + plane * zlut_res + r]
 	bool zlut_memoryOwner; // is this instance the owner of the zluts memory, or is it external?
 	int zlut_planes, zlut_res, zlut_count, zlut_angularSteps; 
-	std::vector<float> rprof, rprof_diff;
 	float zlut_minradius, zlut_maxradius;
+	bool zlut_compareFourier; // Do ZLUT LSQ fitting in the fourier domain
 
 	XCor1DBuffer* xcorBuffer;
 	
@@ -58,8 +58,7 @@ public:
 	int GetHeight() { return height; }
 	CPUTracker(int w, int h, int xcorwindow=128);
 	~CPUTracker();
-	bool IsCrossingImageBoundaries(vector2f center, float radius);
-	vector2f ComputeXCor(vector2f initial, int profileWidth, bool& boundaryHit);
+	bool KeepInsideBoundaries(vector2f *center, float radius);
 	vector2f ComputeXCor2D();
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth, bool& boundaryHit);
 	vector2f ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQuadrant, float minRadius, float maxRadius, bool& boundaryHit);
@@ -72,12 +71,12 @@ public:
 	void SetImageFloat(float* srcImage);
 
 	vector2f ComputeBgCorrectedCOM();
-	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center);
+	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, bool* boundaryHit=0);
 	void ComputeQuadrantProfile(qi_t* dst, int radialSteps, int angularSteps, int quadrant, float minRadius, float maxRadius, vector2f center);
 
 	void Normalize(float *image=0);
-	void SetZLUT(float* data, int planes, int res, int num_zluts, float minradius, float maxradius, int angularSteps, bool copyMemory);
-	float ComputeZ(vector2f center, int angularSteps, int zlutIndex); // radialSteps is given by zlut_res
+	void SetZLUT(float* data, int planes, int res, int num_zluts, float minradius, float maxradius, int angularSteps, bool copyMemory, bool compareFourier);
+	float ComputeZ(vector2f center, int angularSteps, int zlutIndex, bool* boundaryHit=0, float* profile=0, std::vector<float>* cmpprof=0 ); // radialSteps is given by zlut_res
 
 	bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
 		std::vector<xcor_t>& xconv, std::vector<xcor_t>& yconv);
@@ -126,9 +125,10 @@ T ComputeMaxInterp(T* data, int len, int numpoints=5)
 		for(int i=startPos;i<endPos;i++)
 			xs[i-startPos] = i-iMax;
 		LsqSqQuadFit<T> qfit(numpoints, xs, &data[startPos]);
-		T interpMax = qfit.maxPos();
-
-		return (T)iMax + interpMax;
+		if (fabs(qfit.a)<1e-9f)
+			return (T)iMax;
+		else
+			return (T)iMax + qfit.maxPos();
 	}
 }
 

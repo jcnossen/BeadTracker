@@ -57,7 +57,7 @@ void TestLocalization()
 	cudaEventCreate(&xcor_end);
 
 	// Create some space for images
-	cudaImageList images = cudaImageList::alloc(170,150, 2048);
+	cudaImageListf images = cudaImageListf::alloc(170,150, 2048);
 	dbgprintf("Image memory used: %d bytes\n", images.totalsize());
 	float3* d_pos;
 	cudaMalloc(&d_pos, sizeof(float3)*images.count);
@@ -128,8 +128,11 @@ void TestLocalization()
 	cudaEventDestroy(com_start); cudaEventDestroy(com_end); 
 }
 
+
+
 __global__ void runCudaFFT(cudafft<float>::cpx_type *src, cudafft<float>::cpx_type *dst, cudafft<float>::KernelParams kparams)
 {
+	kparams.makeShared();
 	cudafft<float>::transform(src,dst, kparams);
 }
 
@@ -140,7 +143,7 @@ void TestKernelFFT()
 
 	std::vector< cudafft<float>::cpx_type > data(N), result(N);
 	for (int x=0;x<N;x++)
-		data[x].x = 10*cos(x*0.1f);
+		data[x].x = 10*cos(x*0.1f-5);
 
 	fft.host_transform(&data[0], &result[0]);
 	for (int x=0;x<N;x++)
@@ -148,14 +151,16 @@ void TestKernelFFT()
 
 	// now put data in video mem
 	cudafft<float>::cpx_type *src,*d_result;
-	cudaMalloc(&src, sizeof(cudafft<float>::cpx_type)*N);
-	cudaMemcpy(src, &data[0], sizeof(cudafft<float>::cpx_type)*N, cudaMemcpyHostToDevice);
-	cudaMalloc(&d_result, sizeof(cudafft<float>::cpx_type)*N);
+	int memSize = sizeof(cudafft<float>::cpx_type)*N;
+	cudaMalloc(&src, memSize);
+	cudaMemcpy(src, &data[0], memSize, cudaMemcpyHostToDevice);
+	cudaMalloc(&d_result, memSize);
 
-	runCudaFFT<<<dim3(1),dim3(1)>>>(src,d_result, fft.kparams);
+	int sharedMemSize = fft.kparams_size;
+	runCudaFFT<<<dim3(1),dim3(1),sharedMemSize>>>(src,d_result, fft.kparams);
 
 	std::vector< cudafft<float>::cpx_type > result2(N);
-	cudaMemcpy(&result2[0], d_result, sizeof(cudafft<float>::cpx_type)*N, cudaMemcpyDeviceToHost);
+	cudaMemcpy(&result2[0], d_result, memSize, cudaMemcpyDeviceToHost);
 
 	for (int i=0;i<N;i++) {
 		cudafft<float>::cpx_type d=result2[i]-result[i];
@@ -176,9 +181,8 @@ int main(int argc, char *argv[])
 	cudaDeviceProp prop;
 	cudaGetDeviceProperties(&prop, 0);
 
-//	TestLocalization();
-
-	TestKernelFFT();
+	TestLocalization();
+//	TestKernelFFT();
 
 	
 	return 0;

@@ -3,7 +3,9 @@
 #include <cuda_runtime_api.h>
 #include "cudafft/cudafft.h"
 
+template<typename T>
 struct cudaImageList;
+typedef cudaImageList<float> cudaImageListf;
 
 class QueuedCUDATracker : public QueuedTracker {
 public:
@@ -27,9 +29,9 @@ public:
 	int GetResultCount();
 
 	// Direct kernel wrappers
-	void GenerateImages(cudaImageList& imgList, float3 *d_positions);
-	void ComputeBgCorrectedCOM(cudaImageList& imgList, float2* d_com);
-	void Compute1DXCor(cudaImageList& images, float2* d_initial, float2* d_result);
+	void GenerateImages(cudaImageListf& imgList, float3 *d_positions);
+	void ComputeBgCorrectedCOM(cudaImageListf& imgList, float2* d_com);
+	void Compute1DXCor(cudaImageListf& images, float2* d_initial, float2* d_result);
 
 protected:
 	QTrkSettings cfg;

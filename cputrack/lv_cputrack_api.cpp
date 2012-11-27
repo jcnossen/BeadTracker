@@ -107,13 +107,10 @@ CDLL_EXPORT void DLL_CALLCONV compute_com(CPUTracker* tracker, float* out)
 	out[1] = com.y;
 }
 
-CDLL_EXPORT int DLL_CALLCONV compute_xcor(CPUTracker* tracker, vector2f* position, int iterations, int profileWidth, int useInterpolation)
+CDLL_EXPORT int DLL_CALLCONV compute_xcor(CPUTracker* tracker, vector2f* position, int iterations, int profileWidth)
 {
 	bool boundaryHit;
-	if (useInterpolation)
-		*position = tracker->ComputeXCorInterpolated(*position, iterations, profileWidth, boundaryHit);
-	else
-		*position = tracker->ComputeXCor(*position, profileWidth, boundaryHit);
+	*position = tracker->ComputeXCorInterpolated(*position, iterations, profileWidth, boundaryHit);
 
 	return boundaryHit ? 1 : 0;
 }
@@ -182,9 +179,15 @@ CDLL_EXPORT void DLL_CALLCONV set_image_float(CPUTracker* tracker, LVArray2D<flo
 
 
 
-CDLL_EXPORT float DLL_CALLCONV compute_z(CPUTracker* tracker, float* center, int angularSteps, int zlut_index)
+CDLL_EXPORT float DLL_CALLCONV compute_z(CPUTracker* tracker, float* center, int angularSteps, int zlut_index, uint *error, LVArray<float>** profile)
 {
-	return tracker->ComputeZ(*(vector2f*)center, angularSteps, zlut_index);
+	bool boundaryHit=false;
+	if (profile) 
+		ResizeLVArray(profile, tracker->zlut_res);
+	float z =  tracker->ComputeZ(*(vector2f*)center, angularSteps, zlut_index, &boundaryHit, profile ? (*profile)->elem : 0);
+	if (error)
+		*error = boundaryHit?1:0;
+	return z;
 }
 
 CDLL_EXPORT void DLL_CALLCONV get_debug_image(CPUTracker* tracker, Image* dbgImg)
@@ -216,16 +219,18 @@ CDLL_EXPORT void DLL_CALLCONV get_debug_img_as_array(CPUTracker* tracker, LVArra
 
 
 
-CDLL_EXPORT void DLL_CALLCONV compute_radial_profile(CPUTracker* tracker, LVArray<float>** result, int angularSteps, float range, float* center)
+CDLL_EXPORT void DLL_CALLCONV compute_radial_profile(CPUTracker* tracker, LVArray<float>** result, int angularSteps, float range, float* center, uint* boundaryHit)
 {
 	LVArray<float>* dst = *result;
-	tracker->ComputeRadialProfile(&dst->elem[0], dst->dimSize, angularSteps, 1.0f, range, *(vector2f*)center);
+	bool bhit = false;
+	tracker->ComputeRadialProfile(&dst->elem[0], dst->dimSize, angularSteps, 1.0f, range, *(vector2f*)center, bhit);
+	if (boundaryHit) *boundaryHit = bhit ? 1 : 0;
 }
 
 
 
 
-CDLL_EXPORT void DLL_CALLCONV set_ZLUT(CPUTracker* tracker, LVArray3D<float>** pZlut, float profile_radius, int angular_steps)
+CDLL_EXPORT void DLL_CALLCONV set_ZLUT(CPUTracker* tracker, LVArray3D<float>** pZlut, float *radii, int angular_steps, bool compareFourier, LVArray<float>** radialweights)
 {
 	LVArray3D<float>* zlut = *pZlut;
 
@@ -233,7 +238,7 @@ CDLL_EXPORT void DLL_CALLCONV set_ZLUT(CPUTracker* tracker, LVArray3D<float>** p
 	int planes = zlut->dimSizes[1];
 	int res = zlut->dimSizes[2];
 	
-	tracker->SetZLUT(zlut->elem, planes, res, numLUTs, 1.0f,  profile_radius, angular_steps, true);
+	tracker->SetZLUT(zlut->elem, planes, res, numLUTs, radii[0], radii[1], angular_steps, true, compareFourier);
 }
 
 

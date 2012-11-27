@@ -155,7 +155,9 @@ __device__ float XCor1D_ComputeOffset(float2* profile, float2* reverseProfile, f
 	return maxPos;
 }
 
-__global__ void compute1DXcorKernel(cudaImageList images, float2* d_initial, float2* d_xcor, float2* d_workspace,  
+//__global__ void Compute1DXCorOffsets(float
+
+__global__ void Compute1DXcorKernel(cudaImageListf images, float2* d_initial, float2* d_xcor, float2* d_workspace,  
 					cudafft<float>::KernelParams fwkp, cudafft<float>::KernelParams bwkp, int profileLength, int profileWidth)
 {
 	char* fft_fw_shared = cudaSharedMemory;
@@ -218,23 +220,44 @@ __global__ void compute1DXcorKernel(cudaImageList images, float2* d_initial, flo
 			reverseProf[profileLength-y-1] = profile[y];
 		}
 
-		float offsetY = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
-		pos.x += (offsetX - 1) * 0.5f;
-		pos.y += (offsetY - 1) * 0.5f;
+		//float offsetY = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
+		//pos.x += (offsetX - 1) * 0.5f;
+	//	pos.y += (offsetY - 1) * 0.5f;
 	}
 
 }
 
-void QueuedCUDATracker::Compute1DXCor(cudaImageList& images, float2* d_initial, float2* d_result)
+template<typename T>
+__global__ void XCor1D_BuildProfiles_Kernel(cudaImageList<T> list, float2* centers, T* profiles, int profileLen, texture<float, cudaTextureType2D, cudaReadModeElementType> tex)
 {
-	int sharedMemSize = forward_fft->kparams_size+backward_fft->kparams_size;
-	compute1DXcorKernel<<<blocks(images.count), threads(), sharedMemSize >>>
-		(images, d_initial, d_result, xcor_workspace, forward_fft->kparams, backward_fft->kparams, cfg.xc1_profileLength, cfg.xc1_profileWidth);
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	T* hprof = &profiles[idx*profileLen*2];
+	T* vprof = &profiles[idx*profileLen*2+profileLen];
+
+	
 }
 
 
+void QueuedCUDATracker::Compute1DXCor(cudaImageListf& images, float2* d_initial, float2* d_result)
+{
+	int sharedMemSize = forward_fft->kparams_size+backward_fft->kparams_size;
+/*	Compute1DXcorKernel<<<blocks(images.count), threads(), sharedMemSize >>>
+		(images, d_initial, d_result, xcor_workspace, forward_fft->kparams, backward_fft->kparams, cfg.xc1_profileLength, cfg.xc1_profileWidth);
+		*/
 
-__global__ void computeBgCorrectedCOM(cudaImageList images, float2* d_com)
+	texture<T, cudaTextureType2D, cudaReadModeElementType> tex;
+	cudaChannelFormatDesc desc = cudaCreateChannelDesc<T>();
+	cudaBindTexture2D(NULL, &tex, list->data, &desc, list->w, list->h, list->pitch);
+
+	XCor1D_BuildProfiles_Kernel<T> <<< blocks(images.count), threads(), sharedMemSize >>> (images, 
+
+	cudaUnbindTexture(&tex);
+
+}
+
+
+template<typename T>
+__global__ void computeBgCorrectedCOM(cudaImageList<T> images, float2* d_com)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	int imgsize = images.w*images.h;
@@ -272,13 +295,13 @@ __global__ void computeBgCorrectedCOM(cudaImageList images, float2* d_com)
 	}
 }
 
-void QueuedCUDATracker::ComputeBgCorrectedCOM(cudaImageList& images, float2* d_com)
+void QueuedCUDATracker::ComputeBgCorrectedCOM(cudaImageListf& images, float2* d_com)
 {
 	computeBgCorrectedCOM<<<blocks(images.count), threads()>>>(images, d_com);
 }
 
 
-__global__ void generateTestImages(cudaImageList images, float3 *d_positions)
+__global__ void generateTestImages(cudaImageListf images, float3 *d_positions)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	float3 pos = d_positions[idx];
@@ -298,7 +321,7 @@ __global__ void generateTestImages(cudaImageList images, float3 *d_positions)
 }	
 
 
-void QueuedCUDATracker::GenerateImages(cudaImageList& imgList, float3* d_pos)
+void QueuedCUDATracker::GenerateImages(cudaImageListf& imgList, float3* d_pos)
 {
 	generateTestImages<<<blocks(imgList.count), threads()>>>(imgList, d_pos); 
 }
