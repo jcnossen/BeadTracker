@@ -32,7 +32,6 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 	zluts = 0;
 	zlut_planes = zlut_res = zlut_count = zlut_angularSteps = 0;
 	zlut_minradius = zlut_maxradius = 0.0f;
-	zlut_compareFourier = true;
 	xcorw = xcorwindow;
 
 	qi_radialsteps = 0;
@@ -412,13 +411,10 @@ void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSt
 	::ComputeRadialProfile(dst, radialSteps, angularSteps, minradius, maxradius, center, &imgData);
 }
 
-void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float minradius, float maxradius, int angularSteps, bool copyMemory, bool compareFourier)
+void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float minradius, float maxradius, int angularSteps, bool copyMemory, bool useCorrelation)
 {
 	if (zluts && zlut_memoryOwner)
 		delete[] zluts;
-
-	if (compareFourier)
-		copyMemory = true;
 	
 	if (copyMemory) {
 		zluts = new float[planes*res*numLUTs];
@@ -432,22 +428,7 @@ void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float mi
 	zlut_minradius = minradius;
 	zlut_maxradius = maxradius;
 	zlut_angularSteps = angularSteps;
-	zlut_compareFourier = compareFourier;
-	/*
-	if (compareFourier) {
-		kissfft<float> fw(zlut_res, false);
-		std::complex<float>* srcbuf = (std::complex<float>*)ALLOCA(sizeof(std::complex<float>)*zlut_res);
-		// convert ZLUT to FD
-		for (int i=0;i<zlut_count;i++) {
-			float* zlut = &zluts[planes*res*i];
-			for (int y = 0; y < zlut_planes; y++) {
-				float* rprof = &zlut[res*y];
-				std::copy(rprof,rprof+res,srcbuf);
-				fw.transform(srcbuf, dstbuf);
-			}
-		}
-	}*/ 
-
+	zlut_useCorrelation = useCorrelation;
 }
 
 
@@ -467,32 +448,17 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, boo
 
 	float* zlut_sel = &zluts[zlut_planes*zlut_res*zlutIndex];
 
-	if (zlut_compareFourier) {
-		kissfft<float> fw(zlut_res, false);
-		std::complex<float>* srcbuf = ALLOCA_ARRAY(std::complex<float>, zlut_res);
-		std::complex<float>* smpbuf = ALLOCA_ARRAY(std::complex<float>, zlut_res); // holding sample in FD
-		std::complex<float>* lutcmp = ALLOCA_ARRAY(std::complex<float>, zlut_res);// holding LUT row in FD
-		std::copy(rprof, rprof+zlut_res, srcbuf);
-		fw.transform(srcbuf, smpbuf);
-		for (int k=0;k<zlut_planes;k++) {
-			std::copy(zlut_sel,zlut_sel+zlut_res,srcbuf);
-			fw.transform(srcbuf, lutcmp);
-			float diffsum = 0.0f;
-			for (int r = 0; r<zlut_res;r++) {
-				std::complex<float> diff = lutcmp[r]-smpbuf[r];
-				diffsum += fabs(diff.real());//(diff*conjugate(diff)).real();
-			}
-			rprof_diff[k] = -diffsum;
-		}
-	} else {
-		for (int k=0;k<zlut_planes;k++) {
-			float diffsum = 0.0f;
-			for (int r = 0; r<zlut_res;r++) {
+	for (int k=0;k<zlut_planes;k++) {
+		float diffsum = 0.0f;
+		for (int r = 0; r<zlut_res;r++) {
+			if (zlut_useCorrelation) 
+				diffsum += rprof[r]*zlut_sel[k*zlut_res+r];
+			else {
 				float diff = rprof[r]-zlut_sel[k*zlut_res+r];
 				diffsum += diff*diff;
 			}
-			rprof_diff[k] = -diffsum;
 		}
+		rprof_diff[k] = diffsum;
 	}
 
 	if (cmpProf) {

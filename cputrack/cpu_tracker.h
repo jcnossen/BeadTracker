@@ -43,7 +43,7 @@ public:
 	bool zlut_memoryOwner; // is this instance the owner of the zluts memory, or is it external?
 	int zlut_planes, zlut_res, zlut_count, zlut_angularSteps; 
 	float zlut_minradius, zlut_maxradius;
-	bool zlut_compareFourier; // Do ZLUT LSQ fitting in the fourier domain
+	bool zlut_useCorrelation;
 
 	XCor1DBuffer* xcorBuffer;
 	
@@ -75,7 +75,7 @@ public:
 	void ComputeQuadrantProfile(qi_t* dst, int radialSteps, int angularSteps, int quadrant, float minRadius, float maxRadius, vector2f center);
 
 	void Normalize(float *image=0);
-	void SetZLUT(float* data, int planes, int res, int num_zluts, float minradius, float maxradius, int angularSteps, bool copyMemory, bool compareFourier);
+	void SetZLUT(float* data, int planes, int res, int num_zluts, float minradius, float maxradius, int angularSteps, bool copyMemory, bool useCorrelation);
 	float ComputeZ(vector2f center, int angularSteps, int zlutIndex, bool* boundaryHit=0, float* profile=0, std::vector<float>* cmpprof=0 ); // radialSteps is given by zlut_res
 
 	bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
