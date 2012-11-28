@@ -129,7 +129,7 @@ void QueuedCPUTracker::Start()
 	quitWork = false;
 	threads.resize(cfg.numThreads);
 	for (int k=0;k<cfg.numThreads;k++) {
-		threads[k].tracker = new CPUTracker(cfg.width, cfg.height, cfg.xc1.profileLength);
+		threads[k].tracker = new CPUTracker(cfg.width, cfg.height, cfg.xc1_profileLength);
 		threads[k].manager = this;
 	}
 
@@ -185,19 +185,19 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 	switch(locType) {
 	case LocalizeXCor1D:
 		result.firstGuess = com;
-		result.pos = th->tracker->ComputeXCorInterpolated(com, cfg.xc1.iterations, cfg.xc1.profileWidth, boundaryHit);
+		result.pos = th->tracker->ComputeXCorInterpolated(com, cfg.xc1_iterations, cfg.xc1_profileWidth, boundaryHit);
 		break;
 	case LocalizeOnlyCOM:
 		result.firstGuess = result.pos = com;
 		break;
 	case LocalizeQI:
 		result.firstGuess = com;
-		result.pos = th->tracker->ComputeQI(com, cfg.qi.iterations, cfg.qi.radialsteps, cfg.qi.angularsteps, cfg.qi.minradius, cfg.qi.maxradius, boundaryHit);
+		result.pos = th->tracker->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
 		break;
 	}
 
 	if(j->locType & LocalizeZ) {
-		result.z = th->tracker->ComputeZ(result.pos, cfg.zlut.angularsteps, j->zlut, &boundaryHit);
+		result.z = th->tracker->ComputeZ(result.pos, cfg.zlut_angularsteps, j->zlut, &boundaryHit);
 	}
 	result.error = boundaryHit ? 1 : 0;
 
@@ -220,7 +220,7 @@ void QueuedCPUTracker::ComputeRadialProfile(float *image, int width, int height,
 {
 	ImageData imgData (image,  width,height);
 
-	::ComputeRadialProfile(dst, profileLen, cfg.zlut.angularsteps, cfg.zlut.minradius, cfg.zlut.maxradius, center, &imgData);
+	::ComputeRadialProfile(dst, profileLen, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, center, &imgData);
 }
 
 

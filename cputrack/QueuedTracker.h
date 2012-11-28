@@ -36,51 +36,35 @@ struct LocalizationResult {
 	vector2f firstGuess;
 	uint error;
 };
-struct QISettings {
-	QISettings() {
-		iterations = 2;
-		radialsteps = angularsteps = 64;
-		minradius = 5; maxradius = 60;
-	}
-	int iterations;
-	int radialsteps, angularsteps;
-	float minradius, maxradius;
-};
-struct XCor1DSettings {
-	XCor1DSettings() {
-		profileLength = 128; 
-		profileWidth = 32;
-		iterations = 2;
-	}
-	int profileLength;
-	int profileWidth;
-	int iterations;
-};
-struct ZLUTSettings {
-	ZLUTSettings() {
-		minradius = 5.0f; maxradius = 60;
-		angularsteps = 64;
-	}
-	float minradius;
-	float maxradius;
-	int angularsteps;
-};
-
-struct QTrkMainSettings {
-	QTrkMainSettings() {
+// DONT CHANGE, Mapped to labview clusters (QTrkSettings.ctl)!
+struct QTrkSettings {
+	QTrkSettings() {
 		width = height = 150;
 		numThreads = -1;
 		maxQueueSize = 200;
+		xc1_profileLength = 128; 
+		xc1_profileWidth = 32;
+		xc1_iterations = 2;
+		zlut_minradius = 5.0f; zlut_maxradius = 60;
+		zlut_angularsteps = 64;
+		qi_iterations = 2;
+		qi_radialsteps = qi_angularsteps = 64;
+		qi_minradius = 5; qi_maxradius = 60;
 	}
 	int width, height;
 	int numThreads, maxQueueSize;
-};
 
-// DONT CHANGE, Mapped to labview clusters (QTrkSettings.ctl)!
-struct QTrkSettings : public QTrkMainSettings {
-	QISettings qi;
-	XCor1DSettings xc1;
-	ZLUTSettings zlut;
+	int xc1_profileLength;
+	int xc1_profileWidth;
+	int xc1_iterations;
+
+	float zlut_minradius;
+	float zlut_maxradius;
+	int zlut_angularsteps;
+
+	int qi_iterations;
+	int qi_radialsteps, qi_angularsteps;
+	float qi_minradius, qi_maxradius;
 };
 #pragma pack(pop)
 
