@@ -223,7 +223,7 @@ CDLL_EXPORT void DLL_CALLCONV compute_radial_profile(CPUTracker* tracker, LVArra
 {
 	LVArray<float>* dst = *result;
 	bool bhit = false;
-	tracker->ComputeRadialProfile(&dst->elem[0], dst->dimSize, angularSteps, 1.0f, range, *(vector2f*)center, bhit);
+	tracker->ComputeRadialProfile(&dst->elem[0], dst->dimSize, angularSteps, 1.0f, range, *(vector2f*)center, &bhit);
 	if (boundaryHit) *boundaryHit = bhit ? 1 : 0;
 }
 

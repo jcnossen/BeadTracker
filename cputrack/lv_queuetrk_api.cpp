@@ -26,10 +26,27 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 	tracker->SetZLUT(zlut->elem, planes, res, numLUTs);
 }
 
-
-CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings, int startNow)
+CDLL_EXPORT QueuedTracker* qtrk_create_(QTrkSettings* settings, int startNow)
 {
+	return 0;
 	QueuedTracker* tracker = CreateQueuedTracker(settings);
+	if (startNow)
+		tracker->Start();
+	return tracker;
+}
+
+
+CDLL_EXPORT QueuedTracker* qtrk_create(QTrkMainSettings* ms, XCor1DSettings*xc1, QISettings* qi, 
+	ZLUTSettings* zlut, int startNow)
+{
+	return 0;
+	QTrkSettings cfg;
+	*((QTrkMainSettings*)&cfg) = *ms;
+	cfg.qi = *qi;
+	cfg.xc1 = *xc1;
+	cfg.zlut = *zlut;
+
+	QueuedTracker* tracker = CreateQueuedTracker(&cfg);
 	if (startNow)
 		tracker->Start();
 	return tracker;
@@ -43,7 +60,7 @@ CDLL_EXPORT void qtrk_start(QueuedTracker* qtrk)
 
 CDLL_EXPORT void qtrk_destroy(QueuedTracker* qtrk)
 {
-	delete qtrk;
+//	delete qtrk;
 }
 
 CDLL_EXPORT void qtrk_queue_u16(QueuedTracker* qtrk, LVArray2D<ushort>** data, uint locType, uint computeZ, uint id, uint zlutIndex)

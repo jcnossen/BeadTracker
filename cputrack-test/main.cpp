@@ -59,7 +59,7 @@ void SpeedTest()
 		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, s, 0.0f);
 		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1, zradius, center);	
 	}
-	tracker->SetZLUT(zlut, zplanes, radialSteps, 1,1, zradius, 64, true, false);
+	tracker->SetZLUT(zlut, zplanes, radialSteps, 1,1, zradius, 64, true, true);
 	delete[] zlut;
 
 	// Speed test
@@ -413,6 +413,7 @@ void QTrkTest()
 
 int main()
 {
+	dbgprintf("sizeof(QTrkSettings):%d\n", sizeof(QTrkSettings));
 	SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();

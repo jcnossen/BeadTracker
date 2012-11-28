@@ -29,7 +29,7 @@ QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 	zluts = 0;
 	zlut_count = zlut_planes = zlut_res = 0;
 
-	tracker = new CPUTracker(cfg.width, cfg.height, cfg.xc1_profileLength);
+	tracker = new CPUTracker(cfg.width, cfg.height, cfg.xc1.profileLength);
 }
 
 QueuedCPUTracker::~QueuedCPUTracker()
@@ -65,21 +65,21 @@ void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDa
 	switch((LocalizeType)(locType&Localize2DMask)) {
 	case LocalizeXCor1D:
 		result.firstGuess = com;
-		result.pos = tracker->ComputeXCorInterpolated(com, cfg.xc1_iterations, cfg.xc1_profileWidth, boundaryHit);
+		result.pos = tracker->ComputeXCorInterpolated(com, cfg.xc1.iterations, cfg.xc1.profileWidth, boundaryHit);
 		break;
 	case LocalizeOnlyCOM:
 		result.firstGuess = result.pos = com;
 		break;
 	case LocalizeQI:
 		result.firstGuess = com;
-		result.pos = tracker->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
+		result.pos = tracker->ComputeQI(com, cfg.qi.iterations, cfg.qi.radialsteps, cfg.qi.angularsteps, cfg.qi.minradius, cfg.qi.maxradius, boundaryHit);
 		break;
 	}
 
 	result.error = boundaryHit ? 1 : 0;
 
 	if(locType & LocalizeZ) {
-		result.z = tracker->ComputeZ(result.pos, cfg.zlut_angularsteps, zlutIndex);
+		result.z = tracker->ComputeZ(result.pos, cfg.zlut.angularsteps, zlutIndex);
 	}
 
 	results.push_back(result);
@@ -99,7 +99,7 @@ void QueuedCPUTracker::ComputeRadialProfile(float *image, int width, int height,
 {
 	ImageData imgData (image,  width,height);
 
-	::ComputeRadialProfile(dst, profileLen, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, center, &imgData);
+	::ComputeRadialProfile(dst, profileLen, cfg.zlut.angularsteps, cfg.zlut.minradius, cfg.zlut.maxradius, center, &imgData);
 }
 
 

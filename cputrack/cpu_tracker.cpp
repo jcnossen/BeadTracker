@@ -480,7 +480,7 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, boo
 			float diffsum = 0.0f;
 			for (int r = 0; r<zlut_res;r++) {
 				std::complex<float> diff = lutcmp[r]-smpbuf[r];
-				diffsum += (diff*conjugate(diff)).real();
+				diffsum += fabs(diff.real());//(diff*conjugate(diff)).real();
 			}
 			rprof_diff[k] = -diffsum;
 		}
