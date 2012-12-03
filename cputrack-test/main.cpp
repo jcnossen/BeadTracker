@@ -2,7 +2,7 @@
 #include <Windows.h>
 #include <stdint.h>
 #include "../cputrack/random_distr.h"
-#include "../cputrack/queued_cpu_tracker_win.h"
+#include "../cputrack/queued_cpu_tracker.h"
 
 template<typename T> T sq(T x) { return x*x; }
 template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }
@@ -20,22 +20,6 @@ double getPreciseTime()
 	return (double)time / (double)freq;
 }
 
-
-void writeImageAsCSV(const char* file, float* d, int w,int h)
-{
-	FILE* f = fopen(file, "w");
-
-	for (int y=0;y<h;y++) {
-		for (int x=0;x<w;x++)
-		{
-			fprintf(f, "%f", d[y*w+x]);
-			if(x<w-1) fputs("\t", f); 
-		}
-		fprintf(f, "\n");
-	}
-
-	fclose(f);
-}
 
 void SpeedTest()
 {
@@ -241,7 +225,7 @@ float EstimateZError(int zplanes)
 	}
 
 	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, 1.0f, zradius, 64, true, true);
-	writeImageAsCSV("zlut.csv", zlut, radialSteps, zplanes);
+	WriteImageAsCSV("zlut.csv", zlut, radialSteps, zplanes);
 	delete[] zlut;
 
 	int N=100;
@@ -256,7 +240,7 @@ float EstimateZError(int zplanes)
 		//dbgout(SPrintf("Z: %f, EstZ: %f\n", z, est_z));
 
 		if(k==50) {
-			writeImageAsCSV("rprofdiff.csv", &cmpProf[0], cmpProf.size(),1);
+			WriteImageAsCSV("rprofdiff.csv", &cmpProf[0], cmpProf.size(),1);
 		}
 	}
 	return zdist/N;

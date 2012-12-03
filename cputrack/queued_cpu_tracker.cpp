@@ -1,12 +1,5 @@
 
-#include "queued_cpu_tracker_win.h"
-
-void MutexLock(HANDLE mutex) {
-	WaitForSingleObject(mutex, INFINITE);
-}
-void MutexUnlock(HANDLE mutex) {
-	ReleaseMutex(mutex);
-}
+#include "queued_cpu_tracker.h"
 
 QueuedTracker* CreateQueuedTracker(QTrkSettings* s) {
 	return new QueuedCPUTracker(s);
@@ -19,60 +12,60 @@ static int PDT_BytesPerPixel(QTRK_PixelDataType pdt) {
 
 int QueuedCPUTracker::GetResultCount()
 {
-	MutexLock(results_mutex);
+	results_mutex.lock();
 	int rc = resultCount;
-	MutexUnlock(results_mutex);
+	results_mutex.unlock();
 	return rc;
 }
 
 
 void QueuedCPUTracker::JobFinished(QueuedCPUTracker::Job* j)
 {
-	MutexLock(jobs_buffer_mutex);
+	jobs_buffer_mutex.lock();
 	jobs_buffer.push_back(j);
-	MutexUnlock(jobs_buffer_mutex);
+	jobs_buffer_mutex.unlock();
 }
 
 QueuedCPUTracker::Job* QueuedCPUTracker::GetNextJob()
 {
 	QueuedCPUTracker::Job *j = 0;
-	MutexLock(&jobs_mutex);
+	jobs_mutex.lock();
 	if (!jobs.empty()) {
 		j = jobs.front();
 		jobs.pop_front();
 		jobCount --;
 	}
-	MutexUnlock(jobs_mutex);
+	jobs_mutex.unlock();
 	return j;
 }
 
 QueuedCPUTracker::Job* QueuedCPUTracker::AllocateJob()
 {
 	QueuedCPUTracker::Job *j;
-	MutexLock(jobs_buffer_mutex);
+	jobs_buffer_mutex.lock();
 	if (!jobs_buffer.empty()) {
 		j = jobs_buffer.back();
 		jobs_buffer.pop_back();
 	} else 
 		j = new Job;
-	MutexUnlock(jobs_buffer_mutex);
+	jobs_buffer_mutex.unlock();
 	return j;
 }
 
 void QueuedCPUTracker::AddJob(Job* j)
 {
-	MutexLock(jobs_mutex);
+	jobs_mutex.lock();
 	jobs.push_back(j);
 	jobCount++;
-	MutexUnlock(jobs_mutex);
+	jobs_mutex.unlock();
 }
 
 int QueuedCPUTracker::GetJobCount()
 {
 	int jc;
-	MutexLock(jobs_mutex);
+	jobs_mutex.lock();
 	jc = jobCount;
-	MutexUnlock(jobs_mutex);
+	jobs_mutex.unlock();
 	return jc;
 }
 
@@ -93,9 +86,6 @@ QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 		dbgprintf("Using %d threads\n", cfg.numThreads);
 	}
 
-	jobs_mutex = CreateMutex(0, FALSE, 0);
-	results_mutex = CreateMutex(0, FALSE, 0);
-	jobs_buffer_mutex = CreateMutex(0, FALSE, 0);
 	jobCount = 0;
 	resultCount = 0;
 
@@ -109,14 +99,9 @@ QueuedCPUTracker::~QueuedCPUTracker()
 	quitWork = true;
 
 	for (int k=0;k<threads.size();k++) {
-		WaitForSingleObject(threads[k].thread, INFINITE);
-		CloseHandle(threads[k].thread);
+		Threads::WaitAndClose(threads[k].thread);
 		delete threads[k].tracker;
 	}
-
-	CloseHandle(jobs_mutex);
-	CloseHandle(jobs_buffer_mutex);
-	CloseHandle(results_mutex);
 
 	// free job memory
 	DeleteAllElems(jobs);
@@ -134,11 +119,7 @@ void QueuedCPUTracker::Start()
 	}
 
 	for (int k=0;k<threads.size();k++) {
-		DWORD threadID;
-		threads[k].thread = CreateThread(0, 0, WorkerThreadMain, &threads[k], 0, &threadID);
-		if (!threads[k].thread) {
-			throw std::runtime_error("Failed to create processing thread.");
-		}
+		threads[k].thread = Threads::Create(WorkerThreadMain, &threads[k]);
 	}
 }
 
@@ -201,10 +182,10 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 	}
 	result.error = boundaryHit ? 1 : 0;
 
-	MutexLock(results_mutex);
+	results_mutex.lock();
 	results.push_back(result);
 	resultCount++;
-	MutexUnlock(results_mutex);
+	results_mutex.unlock();
 }
 
 void QueuedCPUTracker::SetZLUT(float* data, int planes, int res, int num_zluts)
@@ -225,7 +206,7 @@ void QueuedCPUTracker::ComputeRadialProfile(float *image, int width, int height,
 
 
 void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, 
-				LocalizeType locType, uint id, uint zlutIndex)
+				LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex)
 {
 	Job* j = AllocateJob();
 	int dstPitch = PDT_BytesPerPixel(pdt) * cfg.width;
@@ -241,20 +222,22 @@ void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDa
 	j->id = id;
 	j->locType = locType;
 	j->zlut = zlutIndex;
-
+	if(initialPos) 
+		j->initialPos = *initialPos;
+	
 	AddJob(j);
 }
 
 int QueuedCPUTracker::PollFinished(LocalizationResult* dstResults, int maxResults)
 {
 	int numResults = 0;
-	MutexLock(results_mutex);
+	results_mutex.lock();
 	while (numResults < maxResults && !results.empty()) {
 		dstResults[numResults++] = results.front();
 		results.pop_front();
 		resultCount--;
 	}
-	MutexUnlock(results_mutex);
+	results_mutex.unlock();
 	return numResults;
 }
 

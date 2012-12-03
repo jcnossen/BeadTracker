@@ -340,10 +340,10 @@ void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, 
 	for (int i=0;i<radialSteps;i++)
 		dst[i]=0.0f;
 
-	float total = 0.0f;
+	double total = 0.0f;
 	float rstep = (maxRadius - minRadius) / radialSteps;
 	for (int i=0;i<radialSteps; i++) {
-		float sum = 0.0f;
+		double sum = 0.0f;
 		float r = minRadius + rstep * i;
 
 		for (int a=0;a<angularSteps;a++) {
@@ -455,7 +455,7 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, boo
 				diffsum += rprof[r]*zlut_sel[k*zlut_res+r];
 			else {
 				float diff = rprof[r]-zlut_sel[k*zlut_res+r];
-				diffsum += diff*diff;
+				diffsum -= diff*diff;
 			}
 		}
 		rprof_diff[k] = diffsum;

@@ -1,6 +1,7 @@
 #pragma once
 
-// #include "nivision.h" WOW, including this causes a labview crash on DLL unloading!!
+// WOW, including this causes a labview crash on DLL unloading!!
+// #include "nivision.h"
 #include "extcode.h"
 #include "niimaq.h"
 #include <complex>

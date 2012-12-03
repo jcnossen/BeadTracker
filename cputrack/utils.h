@@ -70,4 +70,4 @@ void GenerateTestImage(ImageData& img, float xp, float yp, float size, float Max
 void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, ImageData* src);
 void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float zlut_radius, vector2f pos, float z, float M);
 void ApplyPoissonNoise(ImageData& img, float factor);
-
+void WriteImageAsCSV(const char* file, float* d, int w,int h);

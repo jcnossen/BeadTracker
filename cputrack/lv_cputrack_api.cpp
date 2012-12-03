@@ -147,7 +147,6 @@ CDLL_EXPORT void DLL_CALLCONV set_image_float(CPUTracker* tracker, LVArray2D<flo
 }
 
 
-
 CDLL_EXPORT float DLL_CALLCONV compute_z(CPUTracker* tracker, float* center, int angularSteps, int zlut_index, uint *error, LVArray<float>** profile)
 {
 	bool boundaryHit=false;

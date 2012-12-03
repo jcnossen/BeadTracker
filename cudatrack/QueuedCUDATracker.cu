@@ -43,6 +43,10 @@ QueuedCUDATracker::~QueuedCUDATracker()
 {
 	delete forward_fft;
 	delete backward_fft;
+
+	DeleteAllElems(freeBatches);
+	DeleteAllElems(active);
+	DeleteAllElems(jobs);
 }
 
 void QueuedCUDATracker::Start() 
@@ -52,8 +56,27 @@ void QueuedCUDATracker::Start()
 
 
 
-void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, uint zlutIndex)
+
+void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex)
 {
+	Batch* batch;
+
+	if (freeBatches.empty()) { // allocate more batches?
+		batch = new Batch();
+	} else {
+		batch = freeBatches.back();
+		freeBatches.pop_back();
+	}
+
+	Job job;
+	if (initialPos) job.initialPos = *initialPos;
+	job.id = id;
+	job.zlut = zlutIndex;
+	job.locType = locType;
+	batch->jobs.push_back (job);
+
+	// Copy the image to video memory
+
 }
 
 
@@ -119,15 +142,24 @@ __device__ T ComputeMaxInterp(T* data, int len)
 	int endPos = min_(iMax+(numPts-numPts/2), len);
 	int numpoints = endPos - startPos;
 
+
 	if (numpoints<3) 
 		return iMax;
 	else {
 		for(int i=startPos;i<endPos;i++)
 			xs[i-startPos] = i-iMax;
+
 		LsqSqQuadFit<T> qfit(numpoints, xs, &data[startPos]);
+		//printf("iMax: %d. qfit: data[%d]=%f\n", iMax, startPos, data[startPos]);
+		//for (int k=0;k<numpoints;k++) {
+	//		printf("data[%d]=%f\n", startPos+k, data[startPos]);
+		//}
 		T interpMax = qfit.maxPos();
 
-		return (T)iMax + interpMax;
+		if (fabs(qfit.a)<1e-9f)
+			return (T)iMax;
+		else
+			return (T)iMax + interpMax;
 	}
 }
 
@@ -147,8 +179,10 @@ __device__ float XCor1D_ComputeOffset(float2* profile, float2* reverseProfile, f
 
 	// shift by len/2, so the maximum will be somewhere in the middle of the array
 	float* shifted = (float*)profile; // use as temp space
-	for (int k=0;k<len;k++)
+	for (int k=0;k<len;k++) {
 		shifted[(k+len/2)%len] = result[k].x;
+		printf("result[%d]=%f\n", k,result[k].x);
+	}
 	
 	// find the interpolated maximum peak
 	float maxPos = ComputeMaxInterp<float, 5>(shifted, len) - len/2;
@@ -160,20 +194,12 @@ __device__ float XCor1D_ComputeOffset(float2* profile, float2* reverseProfile, f
 __global__ void Compute1DXcorKernel(cudaImageListf images, float2* d_initial, float2* d_xcor, float2* d_workspace,  
 					cudafft<float>::KernelParams fwkp, cudafft<float>::KernelParams bwkp, int profileLength, int profileWidth)
 {
-	char* fft_fw_shared = cudaSharedMemory;
-	char* fft_bw_shared = cudaSharedMemory + fwkp.memsize;
-	char* fftdata[] = { fwkp.data, bwkp.data };
-	if (threadIdx.x < 2) { // thread 0 copies forward FFT data, thread 1 copies backward FFT data. Thread 2-31 can relax
-		memcpy(cudaSharedMemory + threadIdx.x * fwkp.memsize, fftdata[threadIdx.x], fwkp.memsize);
-	}
-
-	// Now we can forget about the global memory ptrs, as the FFT parameter data is now stored in shared memory
-	fwkp.data = fft_fw_shared;
-	bwkp.data = fft_bw_shared;
-
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	float2* profile, *reverseProf, *result;
 
+	if (idx >= images.count)
+		return;
+
+	float2* profile, *reverseProf, *result;
 	profile = &d_workspace[ idx * profileLength* 3 ];
 	reverseProf = profile + profileLength;
 	result = profile + profileLength;
@@ -203,9 +229,11 @@ __global__ void Compute1DXcorKernel(cudaImageListf images, float2* d_initial, fl
 			profile [x].x = s;
 			profile [x].y = 0.0f;
 			reverseProf[profileLength-x-1] = profile[x];
+
+			printf("x profile[%d] = %f\n", x, s);
 		}
 
-		float offsetX = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
+	//	float offsetX = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
 
 		// generate Y position xcor array (summing over x range)
 		for (int y=0;y<profileLength;y++) {
@@ -220,41 +248,39 @@ __global__ void Compute1DXcorKernel(cudaImageListf images, float2* d_initial, fl
 			reverseProf[profileLength-y-1] = profile[y];
 		}
 
-		//float offsetY = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
-		//pos.x += (offsetX - 1) * 0.5f;
+	//	float offsetY = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
+	//	pos.x += (offsetX - 1) * 0.5f;
 	//	pos.y += (offsetY - 1) * 0.5f;
 	}
 
+	d_xcor[idx].x = 1.0f;
+	d_xcor[idx].y = 2.0f;
 }
 
-template<typename T>
-__global__ void XCor1D_BuildProfiles_Kernel(cudaImageList<T> list, float2* centers, T* profiles, int profileLen, texture<float, cudaTextureType2D, cudaReadModeElementType> tex)
-{
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	T* hprof = &profiles[idx*profileLen*2];
-	T* vprof = &profiles[idx*profileLen*2+profileLen];
 
-	
-}
 
 
 void QueuedCUDATracker::Compute1DXCor(cudaImageListf& images, float2* d_initial, float2* d_result)
 {
 	int sharedMemSize = forward_fft->kparams_size+backward_fft->kparams_size;
-/*	Compute1DXcorKernel<<<blocks(images.count), threads(), sharedMemSize >>>
+	Compute1DXcorKernel<<<blocks(images.count), threads(), sharedMemSize >>>
 		(images, d_initial, d_result, xcor_workspace, forward_fft->kparams, backward_fft->kparams, cfg.xc1_profileLength, cfg.xc1_profileWidth);
-		*/
 
-	texture<T, cudaTextureType2D, cudaReadModeElementType> tex;
-	cudaChannelFormatDesc desc = cudaCreateChannelDesc<T>();
+/*	texture<float, cudaTextureType2D, cudaReadModeElementType> tex;
+	cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
 	cudaBindTexture2D(NULL, &tex, list->data, &desc, list->w, list->h, list->pitch);
 
-	XCor1D_BuildProfiles_Kernel<T> <<< blocks(images.count), threads(), sharedMemSize >>> (images, 
+	XCor1D_BuildProfiles_Kernel<float> <<< blocks(images.count), threads(), sharedMemSize >>> (images, 
 
 	cudaUnbindTexture(&tex);
-
+	*/
 }
 
+
+void QueuedCUDATracker::Compute1DXCorProfiles(cudaImageListf&  images, float* d_profiles)
+{
+	
+}
 
 template<typename T>
 __global__ void computeBgCorrectedCOM(cudaImageList<T> images, float2* d_com)
@@ -304,9 +330,9 @@ void QueuedCUDATracker::ComputeBgCorrectedCOM(cudaImageListf& images, float2* d_
 __global__ void generateTestImages(cudaImageListf images, float3 *d_positions)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	float3 pos = d_positions[idx];
-	
 	if (idx < images.count) {
+		float3 pos = d_positions[idx];
+	
 		float S = 1.0f/pos.z;
 		for (int y=0;y<images.h;y++) {
 			for (int x=0;x<images.w;x++) {
@@ -324,5 +350,22 @@ __global__ void generateTestImages(cudaImageListf images, float3 *d_positions)
 void QueuedCUDATracker::GenerateImages(cudaImageListf& imgList, float3* d_pos)
 {
 	generateTestImages<<<blocks(imgList.count), threads()>>>(imgList, d_pos); 
+}
+
+QueuedCUDATracker::Batch::~Batch() 
+{
+	if(imageBuf.data) imageBuf.free();
+	cudaFree(d_profiles);
+	delete[] hostImageBuf;
+}
+
+QueuedCUDATracker::Batch* QueuedCUDATracker::AllocBatch()
+{
+	Batch* b = new Batch();
+
+	cudaMalloc(&b->d_profiles, sizeof(float)*cfg.xc1_profileLength*2*batchSize);
+	b->hostImageBuf = new float[cfg.width*cfg.height*batchSize];
+	b->imageBuf = cudaImageListf::alloc(cfg.width,cfg.height,batchSize);
+	return b;
 }
 

@@ -104,7 +104,7 @@ void CPUTracker::SetImage(TPixel* data, uint pitchInBytes)
 
 
 template<typename T>
-T ComputeMaxInterp(T* data, int len, int numpoints=5)
+T ComputeMaxInterp(T* data, int len, int numpoints=7)
 {
 	int iMax=0;
 	T vMax=data[0];
@@ -121,14 +121,17 @@ T ComputeMaxInterp(T* data, int len, int numpoints=5)
 	if (numpoints<3) 
 		return iMax;
 	else {
-		T *xs = (T*)ALLOCA(sizeof(T)*numpoints);
-		for(int i=startPos;i<endPos;i++)
+		double *xs = (double*)ALLOCA(sizeof(double)*numpoints);
+		double *ys = (double*)ALLOCA(sizeof(double)*numpoints);
+		for(int i=startPos;i<endPos;i++) {
 			xs[i-startPos] = i-iMax;
-		LsqSqQuadFit<T> qfit(numpoints, xs, &data[startPos]);
-		if (fabs(qfit.a)<1e-9f)
+			ys[i-startPos] = data[i];
+		}
+		LsqSqQuadFit<double> qfit(numpoints, xs, ys);
+		if (fabs(qfit.a)<1e-9)
 			return (T)iMax;
 		else
-			return (T)iMax + qfit.maxPos();
+			return (T)(iMax + qfit.maxPos());
 	}
 }
 

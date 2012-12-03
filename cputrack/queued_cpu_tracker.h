@@ -1,8 +1,6 @@
 #pragma once
-#include <Windows.h>
-#undef AddJob
-#undef max
-#undef min
+
+#include "threads.h"
 
 #include "QueuedTracker.h"
 #include "cpu_tracker.h"
@@ -18,7 +16,7 @@ public:
 	void SetZLUT(float* data, int planes, int res, int num_zluts);
 	void ComputeRadialProfile(float *image, int width, int height, float* dst, int profileLen, vector2f center);
 
-	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, uint zlutIndex=0);
+	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos=0, uint zlutIndex=0);
 	int PollFinished(LocalizationResult* results, int maxResults);
 
 	void GenerateTestImage(float* dst, float xp,float yp, float z, float photoncount);
@@ -31,12 +29,12 @@ private:
 	struct Thread {
 		Thread() { tracker=0; manager=0; thread=0;}
 		CPUTracker *tracker;
-		HANDLE thread;
+		Threads::Handle* thread;
 		QueuedCPUTracker* manager;
 	};
 
 	struct Job {
-		Job() { data=0; dataType=QTrkU8; locType=LocalizeXCor1D; id=0; zlut=0;  }
+		Job() { data=0; dataType=QTrkU8; locType=LocalizeXCor1D; id=0; zlut=0; initialPos.x=initialPos.y=initialPos.z=0.0f; }
 		~Job() { delete[] data; }
 
 		uchar* data;
@@ -44,9 +42,10 @@ private:
 		LocalizeType locType;
 		uint id;
 		uint zlut;
+		vector3f initialPos;
 	};
 
-	HANDLE jobs_mutex, jobs_buffer_mutex, results_mutex;
+	Threads::Mutex jobs_mutex, jobs_buffer_mutex, results_mutex;
 	std::list<Job*> jobs;
 	int jobCount;
 	std::vector<Job*> jobs_buffer; // stores memory

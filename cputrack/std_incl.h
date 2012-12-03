@@ -5,6 +5,10 @@
 struct vector2f {
 	float x,y;
 };
+
+struct vector3f {
+	float x,y,z;
+};
 #pragma pack(pop)
 
 
