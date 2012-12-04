@@ -433,7 +433,7 @@ void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float mi
 
 
 
-float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, bool* boundaryHit, float* profile, std::vector<float>* cmpProf)
+float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, bool* boundaryHit, float* profile, float* cmpProf)
 {
 	if (!zluts)
 		return 0.0f;
@@ -446,7 +446,7 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, boo
 
 	// Now compare the radial profile to the profiles stored in Z
 
-	float* zlut_sel = &zluts[zlut_planes*zlut_res*zlutIndex];
+	float* zlut_sel = getZLUT(zlutIndex);
 
 	for (int k=0;k<zlut_planes;k++) {
 		float diffsum = 0.0f;
@@ -462,8 +462,8 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, boo
 	}
 
 	if (cmpProf) {
-		cmpProf->resize(zlut_planes);
-		std::copy(rprof_diff, rprof_diff+zlut_planes, cmpProf->begin());
+		//cmpProf->resize(zlut_planes);
+		std::copy(rprof_diff, rprof_diff+zlut_planes, cmpProf);
 	}
 
 	float z = ComputeMaxInterp(rprof_diff, zlut_planes);

@@ -45,6 +45,8 @@ public:
 	float zlut_minradius, zlut_maxradius;
 	bool zlut_useCorrelation;
 
+	float* getZLUT(int index)  { return &zluts[zlut_res*zlut_planes*index]; }
+
 	XCor1DBuffer* xcorBuffer;
 	
 	std::vector<vector2f> quadrantDirs; // single quadrant
@@ -76,7 +78,7 @@ public:
 
 	void Normalize(float *image=0);
 	void SetZLUT(float* data, int planes, int res, int num_zluts, float minradius, float maxradius, int angularSteps, bool copyMemory, bool useCorrelation);
-	float ComputeZ(vector2f center, int angularSteps, int zlutIndex, bool* boundaryHit=0, float* profile=0, std::vector<float>* cmpprof=0 ); // radialSteps is given by zlut_res
+	float ComputeZ(vector2f center, int angularSteps, int zlutIndex, bool* boundaryHit=0, float* profile=0, float* cmpprof=0 ); // radialSteps is given by zlut_res
 
 	bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
 		std::vector<xcor_t>& xconv, std::vector<xcor_t>& yconv);
