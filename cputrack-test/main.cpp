@@ -151,6 +151,34 @@ void SmallImageTest()
 }
 
 
+ 
+void OutputProfileImg()
+{
+	CPUTracker *tracker = new CPUTracker(128,128, 16);
+	bool boundaryHit;
+
+	for (int i=0;i<10;i++) {
+		float xp = tracker->GetWidth()/2+(rand_uniform<float>() - 0.5) * 20;
+		float yp = tracker->GetHeight()/2+(rand_uniform<float>() - 0.5) * 20;
+		
+		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), xp, yp, 1, 0.0f);
+
+		vector2f com = tracker->ComputeBgCorrectedCOM();
+		dbgout(SPrintf("COM: %f,%f\n", com.x-xp, com.y-yp));
+	
+		vector2f initial = com;
+		boundaryHit=false;
+		vector2f xcor = tracker->ComputeXCorInterpolated(initial, 3, 16, boundaryHit);
+		dbgprintf("XCor: %f,%f. Err: %d\n", xcor.x-xp, xcor.y-yp, boundaryHit);
+
+		boundaryHit=false;
+		vector2f qi = tracker->ComputeQI(initial, 3, 64, 32, 1, 10, boundaryHit);
+		dbgprintf("QI: %f,%f. Err: %d\n", qi.x-xp, qi.y-yp, boundaryHit);
+	}
+
+	delete tracker;
+}
+
 
  
 void TestBoundCheck()

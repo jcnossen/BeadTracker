@@ -222,7 +222,7 @@ __global__ void Compute1DXcorKernel(cudaImageListf images, float2* d_initial, fl
 		for (int x=0;x<profileLength;x++) {
 			float s = 0.0f;
 			for (int y=0;y<profileWidth;y++) {
-				float xp = x * xmin;
+				float xp = x + xmin;
 				float yp = pos.y + (y - profileWidth/2);
 				s += images.interpolate(xp, yp, idx);
 			}
@@ -233,7 +233,7 @@ __global__ void Compute1DXcorKernel(cudaImageListf images, float2* d_initial, fl
 			printf("x profile[%d] = %f\n", x, s);
 		}
 
-	//	float offsetX = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
+		float offsetX = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
 
 		// generate Y position xcor array (summing over x range)
 		for (int y=0;y<profileLength;y++) {
@@ -248,13 +248,15 @@ __global__ void Compute1DXcorKernel(cudaImageListf images, float2* d_initial, fl
 			reverseProf[profileLength-y-1] = profile[y];
 		}
 
-	//	float offsetY = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
-	//	pos.x += (offsetX - 1) * 0.5f;
-	//	pos.y += (offsetY - 1) * 0.5f;
+		float offsetY = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
+		pos.x += (offsetX - 1) * 0.5f;
+		pos.y += (offsetY - 1) * 0.5f;
 	}
 
-	d_xcor[idx].x = 1.0f;
-	d_xcor[idx].y = 2.0f;
+	d_xcor[idx] = pos;
+
+	//d_xcor[idx].x = 1.0f;
+	//d_xcor[idx].y = 2.0f;
 }
 
 

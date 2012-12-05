@@ -61,5 +61,13 @@ struct cudaImageList {
 
 		return interp (v0, v1, y-ry);
 	}
+
+	void bind(texture<float, cudaTextureType2D, cudaReadModeElementType>& texref) {
+		cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
+		cudaBindTexture2D(NULL, &texref, data, &desc, w, h*count, pitch);
+	}
+	void unbind(texture<float, cudaTextureType2D, cudaReadModeElementType>& texref) {
+		cudaUnbindTexture(&texref);
+	}
 };
 
