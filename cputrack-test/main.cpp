@@ -263,7 +263,7 @@ float EstimateZError(int zplanes)
 		float z = zmin + k/float(N-1) * (zmax-zmin);
 		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, z, 0.0f);
 		
-		float est_z = zmin + tracker->ComputeZ(center, 64, 0, 0, 0, &cmpProf);
+		float est_z = zmin + tracker->ComputeZ(center, 64, 0, 0, 0, 0);
 		zdist += fabsf(est_z-z);
 		//dbgout(SPrintf("Z: %f, EstZ: %f\n", z, est_z));
 
@@ -425,14 +425,13 @@ void QTrkTest()
 
 int main()
 {
-	dbgprintf("sizeof(QTrkSettings):%d\n", sizeof(QTrkSettings));
 	SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
-	//QTrkTest();
+	QTrkTest();
 
 	return 0;
 }
