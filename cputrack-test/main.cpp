@@ -28,8 +28,8 @@ void SpeedTest()
 #else
 	int N = 1000;
 #endif
-	int qi_iterations = 4;
-	int xcor_iterations = 2;
+	int qi_iterations = 7;
+	int xcor_iterations = 7;
 	CPUTracker* tracker = new CPUTracker(150,150, 128);
 
 	int radialSteps = 64, zplanes = 120;
@@ -65,7 +65,7 @@ void SpeedTest()
 		vector2f initial = {com.x, com.y};
 		double t2 = getPreciseTime();
 		bool boundaryHit = false;
-		vector2f xcor = tracker->ComputeXCorInterpolated(initial, xcor_iterations, 32, boundaryHit);
+		vector2f xcor = tracker->ComputeXCorInterpolated(initial, xcor_iterations, 16, boundaryHit);
 /*		if (k == 1) {
 			tracker.OutputDebugInfo();
 			writeImageAsCSV("test.csv", tracker.srcImage, tracker.width, tracker.height);
@@ -74,16 +74,16 @@ void SpeedTest()
 		comdist.x += fabsf(com.x - xp);
 		comdist.y += fabsf(com.y - yp);
 
-		xcordist.x += fabsf(xcor.x - xp);
-		xcordist.y += fabsf(xcor.y - yp);
+		xcordist.x +=fabsf(xcor.x - xp);
+		xcordist.y +=fabsf(xcor.y - yp);
 		double t3 = getPreciseTime();
 		boundaryHit = false;
-		vector2f qi = tracker->ComputeQI(xcor, qi_iterations, 64, 16, 5,50, boundaryHit);
+		vector2f qi = tracker->ComputeQI(initial, qi_iterations, 64, 16, 5,50, boundaryHit);
 		qidist.x += fabsf(qi.x - xp);
 		qidist.y += fabsf(qi.y - yp);
 		double t4 = getPreciseTime();
 
-		float est_z = zmin + (zmax-zmin)*tracker->ComputeZ(xcor, 64, 0, &boundaryHit, 0) / (zplanes-1);
+		float est_z = zmin + (zmax-zmin)*tracker->ComputeZ(qi, 64, 0, &boundaryHit, 0) / (zplanes-1);
 		zdist += fabsf(est_z-z);
 		zerrsum += est_z-z;
 
@@ -394,7 +394,7 @@ void QTrkTest()
 	do {
 		jobc = qtrk.GetJobCount();
 		while (hjobc>jobc) {
-			if( hjobc%100==0) dbgprintf("TODO: %d\n", hjobc);
+			if( hjobc%JobsPerImg==0) dbgprintf("TODO: %d\n", hjobc);
 			hjobc--;
 		}
 		Sleep(10);
@@ -414,7 +414,7 @@ void QTrkTest()
 			errX += fabs(truepos[iid*3+0]-result.pos.x);
 			errY += fabs(truepos[iid*3+1]-result.pos.y);
 			errZ += fabs(truepos[iid*3+2]-result.z);
-			dbgprintf("ID: %d. Error:%d\n", result.id, result.error);
+		//	dbgprintf("ID: %d. Error:%d\n", result.id, result.error);
 			rc--;
 		}
 	}
@@ -426,8 +426,8 @@ void QTrkTest()
 int main()
 {
 	SpeedTest();
-	//SmallImageTest();
-	//PixelationErrorTest();
+	SmallImageTest();
+	PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
