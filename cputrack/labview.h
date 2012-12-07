@@ -1,6 +1,7 @@
 #pragma once
 
-#include "nivision.h"
+// WOW, including this causes a labview crash on DLL unloading!!
+// #include "nivision.h"
 #include "extcode.h"
 #include "niimaq.h"
 #include <complex>
@@ -9,9 +10,9 @@
 #include "lv_prolog.h"
 
 typedef struct {
-        LVBoolean status;
-        int32 code;
-        LStrHandle message;
+	LVBoolean status;
+	int32 code;
+	LStrHandle message;
 } ErrorCluster;
 
 

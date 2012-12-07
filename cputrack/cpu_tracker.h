@@ -42,8 +42,10 @@ public:
 	float* zluts; // size: zlut_planes*zlut_count*zlut_res,		indexing: zlut[index * (zlut_planes * zlut_res) + plane * zlut_res + r]
 	bool zlut_memoryOwner; // is this instance the owner of the zluts memory, or is it external?
 	int zlut_planes, zlut_res, zlut_count, zlut_angularSteps; 
-	std::vector<float> rprof, rprof_diff;
 	float zlut_minradius, zlut_maxradius;
+	bool zlut_useCorrelation;
+
+	float* getZLUT(int index)  { return &zluts[zlut_res*zlut_planes*index]; }
 
 	XCor1DBuffer* xcorBuffer;
 	
@@ -58,8 +60,7 @@ public:
 	int GetHeight() { return height; }
 	CPUTracker(int w, int h, int xcorwindow=128);
 	~CPUTracker();
-	bool IsCrossingImageBoundaries(vector2f center, float radius);
-	vector2f ComputeXCor(vector2f initial, int profileWidth, bool& boundaryHit);
+	bool KeepInsideBoundaries(vector2f *center, float radius);
 	vector2f ComputeXCor2D();
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth, bool& boundaryHit);
 	vector2f ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQuadrant, float minRadius, float maxRadius, bool& boundaryHit);
@@ -72,12 +73,12 @@ public:
 	void SetImageFloat(float* srcImage);
 
 	vector2f ComputeBgCorrectedCOM();
-	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center);
+	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, bool* boundaryHit=0);
 	void ComputeQuadrantProfile(qi_t* dst, int radialSteps, int angularSteps, int quadrant, float minRadius, float maxRadius, vector2f center);
 
 	void Normalize(float *image=0);
-	void SetZLUT(float* data, int planes, int res, int num_zluts, float minradius, float maxradius, int angularSteps, bool copyMemory);
-	float ComputeZ(vector2f center, int angularSteps, int zlutIndex); // radialSteps is given by zlut_res
+	void SetZLUT(float* data, int planes, int res, int num_zluts, float minradius, float maxradius, int angularSteps, bool copyMemory, bool useCorrelation);
+	float ComputeZ(vector2f center, int angularSteps, int zlutIndex, bool* boundaryHit=0, float* profile=0, float* cmpprof=0 ); // radialSteps is given by zlut_res
 
 	bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
 		std::vector<xcor_t>& xconv, std::vector<xcor_t>& yconv);
@@ -105,7 +106,7 @@ void CPUTracker::SetImage(TPixel* data, uint pitchInBytes)
 
 
 template<typename T>
-T ComputeMaxInterp(T* data, int len, int numpoints=5)
+T ComputeMaxInterp(T* data, int len, int numpoints=7)
 {
 	int iMax=0;
 	T vMax=data[0];
@@ -122,13 +123,17 @@ T ComputeMaxInterp(T* data, int len, int numpoints=5)
 	if (numpoints<3) 
 		return iMax;
 	else {
-		T *xs = (T*)ALLOCA(sizeof(T)*numpoints);
-		for(int i=startPos;i<endPos;i++)
+		double *xs = (double*)ALLOCA(sizeof(double)*numpoints);
+		double *ys = (double*)ALLOCA(sizeof(double)*numpoints);
+		for(int i=startPos;i<endPos;i++) {
 			xs[i-startPos] = i-iMax;
-		LsqSqQuadFit<T> qfit(numpoints, xs, &data[startPos]);
-		T interpMax = qfit.maxPos();
-
-		return (T)iMax + interpMax;
+			ys[i-startPos] = data[i];
+		}
+		LsqSqQuadFit<double> qfit(numpoints, xs, ys);
+		if (fabs(qfit.a)<1e-9)
+			return (T)iMax;
+		else
+			return (T)(iMax + qfit.maxPos());
 	}
 }
 

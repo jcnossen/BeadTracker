@@ -2,7 +2,7 @@
 #include <Windows.h>
 #include <stdint.h>
 #include "../cputrack/random_distr.h"
-#include "../cputrack/queued_cpu_tracker_win.h"
+#include "../cputrack/queued_cpu_tracker.h"
 
 template<typename T> T sq(T x) { return x*x; }
 template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }
@@ -21,31 +21,15 @@ double getPreciseTime()
 }
 
 
-void writeImageAsCSV(const char* file, float* d, int w,int h)
-{
-	FILE* f = fopen(file, "w");
-
-	for (int y=0;y<h;y++) {
-		for (int x=0;x<w;x++)
-		{
-			fprintf(f, "%f", d[y*w+x]);
-			if(x<w-1) fputs("\t", f); 
-		}
-		fprintf(f, "\n");
-	}
-
-	fclose(f);
-}
-
 void SpeedTest()
 {
 #ifdef _DEBUG
 	int N = 20;
 #else
-	int N = 2000;
+	int N = 1000;
 #endif
-	int qi_iterations = 4;
-	int xcor_iterations = 2;
+	int qi_iterations = 7;
+	int xcor_iterations = 7;
 	CPUTracker* tracker = new CPUTracker(150,150, 128);
 
 	int radialSteps = 64, zplanes = 120;
@@ -57,9 +41,9 @@ void SpeedTest()
 		vector2f center = { tracker->GetWidth()/2, tracker->GetHeight()/2 };
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, s, 0.0f);
-		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1, zradius, center);
+		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1, zradius, center);	
 	}
-	tracker->SetZLUT(zlut, zplanes, radialSteps, 1,1, zradius, 64, true);
+	tracker->SetZLUT(zlut, zplanes, radialSteps, 1,1, zradius, 64, true, true);
 	delete[] zlut;
 
 	// Speed test
@@ -81,7 +65,7 @@ void SpeedTest()
 		vector2f initial = {com.x, com.y};
 		double t2 = getPreciseTime();
 		bool boundaryHit = false;
-		vector2f xcor = tracker->ComputeXCorInterpolated(initial, xcor_iterations, 32, boundaryHit);
+		vector2f xcor = tracker->ComputeXCorInterpolated(initial, xcor_iterations, 16, boundaryHit);
 /*		if (k == 1) {
 			tracker.OutputDebugInfo();
 			writeImageAsCSV("test.csv", tracker.srcImage, tracker.width, tracker.height);
@@ -90,16 +74,16 @@ void SpeedTest()
 		comdist.x += fabsf(com.x - xp);
 		comdist.y += fabsf(com.y - yp);
 
-		xcordist.x += fabsf(xcor.x - xp);
-		xcordist.y += fabsf(xcor.y - yp);
+		xcordist.x +=fabsf(xcor.x - xp);
+		xcordist.y +=fabsf(xcor.y - yp);
 		double t3 = getPreciseTime();
 		boundaryHit = false;
-		vector2f qi = tracker->ComputeQI(xcor, qi_iterations, 64, 16, 5,50, boundaryHit);
+		vector2f qi = tracker->ComputeQI(initial, qi_iterations, 64, 16, 5,50, boundaryHit);
 		qidist.x += fabsf(qi.x - xp);
 		qidist.y += fabsf(qi.y - yp);
 		double t4 = getPreciseTime();
 
-		float est_z = zmin + tracker->ComputeZ(xcor, 64, 0) * (zmax - zmin);
+		float est_z = zmin + (zmax-zmin)*tracker->ComputeZ(qi, 64, 0, &boundaryHit, 0) / (zplanes-1);
 		zdist += fabsf(est_z-z);
 		zerrsum += est_z-z;
 
@@ -112,6 +96,8 @@ void SpeedTest()
 			tqi+=t4-t3;
 			tz+=t5-t4;
 		}
+		if (boundaryHit)
+			dbgprintf("boundaryhit!!\n");
 	}
 
 	int Nns = N-1;
@@ -139,7 +125,7 @@ void OnePixelTest()
 	
 	vector2f initial = {15,15};
 	bool boundaryHit = false;
-	vector2f xcor = tracker->ComputeXCor(initial, 16, boundaryHit);
+	vector2f xcor = tracker->ComputeXCorInterpolated(initial,2, 16, boundaryHit);
 	dbgout(SPrintf("XCor: %f,%f\n", xcor.x, xcor.y));
 
 	assert(xcor.x == 15.0f && xcor.y == 15.0f);
@@ -157,13 +143,41 @@ void SmallImageTest()
 	
 	vector2f initial = {15,15};
 	bool boundaryHit = false;
-	vector2f xcor = tracker->ComputeXCor(initial, 16, boundaryHit);
+	vector2f xcor = tracker->ComputeXCorInterpolated(initial, 2, 16, boundaryHit);
 	dbgout(SPrintf("XCor: %f,%f\n", xcor.x, xcor.y));
 
 	assert(fabsf(xcor.x-15.0f) < 1e-6 && fabsf(xcor.y-15.0f) < 1e-6);
 	delete tracker;
 }
 
+
+ 
+void OutputProfileImg()
+{
+	CPUTracker *tracker = new CPUTracker(128,128, 16);
+	bool boundaryHit;
+
+	for (int i=0;i<10;i++) {
+		float xp = tracker->GetWidth()/2+(rand_uniform<float>() - 0.5) * 20;
+		float yp = tracker->GetHeight()/2+(rand_uniform<float>() - 0.5) * 20;
+		
+		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), xp, yp, 1, 0.0f);
+
+		vector2f com = tracker->ComputeBgCorrectedCOM();
+		dbgout(SPrintf("COM: %f,%f\n", com.x-xp, com.y-yp));
+	
+		vector2f initial = com;
+		boundaryHit=false;
+		vector2f xcor = tracker->ComputeXCorInterpolated(initial, 3, 16, boundaryHit);
+		dbgprintf("XCor: %f,%f. Err: %d\n", xcor.x-xp, xcor.y-yp, boundaryHit);
+
+		boundaryHit=false;
+		vector2f qi = tracker->ComputeQI(initial, 3, 64, 32, 1, 10, boundaryHit);
+		dbgprintf("QI: %f,%f. Err: %d\n", qi.x-xp, qi.y-yp, boundaryHit);
+	}
+
+	delete tracker;
+}
 
 
  
@@ -211,9 +225,8 @@ void PixelationErrorTest()
 
 		vector2f initial = {X,Y};
 		bool boundaryHit = false;
-		vector2f xcor = tracker->ComputeXCor(initial, 16, boundaryHit);
 		vector2f xcorInterp = tracker->ComputeXCorInterpolated(initial, 3, 32, boundaryHit);
-		dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f, XCorInterp err: %f\n", xpos, com.x-xpos, xcor.x-xpos, xcorInterp.x-xpos));
+		dbgout(SPrintf("xpos:%f, COM err: %f, XCorInterp err: %f\n", xpos, com.x-xpos, xcorInterp.x-xpos));
 	}
 	delete tracker;
 }
@@ -239,22 +252,23 @@ float EstimateZError(int zplanes)
 		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1.0f, zradius, center);
 	}
 
-	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, 1.0f, zradius, 64, true);
-	writeImageAsCSV("zlut.csv", zlut, radialSteps, zplanes);
+	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, 1.0f, zradius, 64, true, true);
+	WriteImageAsCSV("zlut.csv", zlut, radialSteps, zplanes);
 	delete[] zlut;
 
 	int N=100;
 	float zdist=0.0f;
+	std::vector<float> cmpProf;
 	for (int k=0;k<N;k++) {
 		float z = zmin + k/float(N-1) * (zmax-zmin);
 		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, z, 0.0f);
 		
-		float est_z = zmin + tracker->ComputeZ(center, 64, 0) * (zmax - zmin);
+		float est_z = zmin + tracker->ComputeZ(center, 64, 0, 0, 0, 0);
 		zdist += fabsf(est_z-z);
 		//dbgout(SPrintf("Z: %f, EstZ: %f\n", z, est_z));
 
 		if(k==50) {
-			writeImageAsCSV("rprofdiff.csv", &tracker->rprof_diff[0], tracker->rprof_diff.size(),1);
+			WriteImageAsCSV("rprofdiff.csv", &cmpProf[0], cmpProf.size(),1);
 		}
 	}
 	return zdist/N;
@@ -263,7 +277,7 @@ float EstimateZError(int zplanes)
 
 void ZTrackingTest()
 {
-	for (int k=20;k<100;k+=10)
+	for (int k=20;k<100;k+=20)
 	{
 		float err = EstimateZError(k);
 		dbgout(SPrintf("average Z difference: %f. zplanes=%d\n", err, k));
@@ -380,7 +394,7 @@ void QTrkTest()
 	do {
 		jobc = qtrk.GetJobCount();
 		while (hjobc>jobc) {
-			if( hjobc%100==0) dbgprintf("TODO: %d\n", hjobc);
+			if( hjobc%JobsPerImg==0) dbgprintf("TODO: %d\n", hjobc);
 			hjobc--;
 		}
 		Sleep(10);
@@ -400,7 +414,7 @@ void QTrkTest()
 			errX += fabs(truepos[iid*3+0]-result.pos.x);
 			errY += fabs(truepos[iid*3+1]-result.pos.y);
 			errZ += fabs(truepos[iid*3+2]-result.z);
-			dbgprintf("ID: %d. Error:%d\n", result.id, result.error);
+		//	dbgprintf("ID: %d. Error:%d\n", result.id, result.error);
 			rc--;
 		}
 	}
@@ -411,9 +425,9 @@ void QTrkTest()
 
 int main()
 {
-	//SpeedTest();
-	//SmallImageTest();
-	//PixelationErrorTest();
+	SpeedTest();
+	SmallImageTest();
+	PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();

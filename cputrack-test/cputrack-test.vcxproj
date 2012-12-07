@@ -133,7 +133,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\cputrack\cpu_tracker.cpp" />
-    <ClCompile Include="..\cputrack\queued_cpu_tracker_win.cpp" />
+    <ClCompile Include="..\cputrack\queued_cpu_tracker.cpp" />
     <ClCompile Include="..\cputrack\utils.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>

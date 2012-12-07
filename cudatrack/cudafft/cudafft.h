@@ -22,7 +22,7 @@ struct cpx
 	CFFT_BOTH cpx() : x(0.0f), y(0.0f) {}
 	CFFT_BOTH cpx(T a, T b) : x(a), y(b) {}
 
-	CFFT_BOTH cpx operator*(const T& b) const { return cpx(x*b,y*b); }
+	CFFT_BOTH cpx operator*(const T& b) const { return cpx(__fmul_rn(x,b),y*b); }
 	CFFT_BOTH cpx& operator*=(const T& b) { x*=b; y*=b; return *this; }
 	CFFT_BOTH cpx operator*(const cpx& b) const { return cpx(x*b.x - y*b.y, x*b.y + y*b.x); }
 	CFFT_BOTH cpx operator-(const cpx& b) const { return cpx(x-b.x, y-b.y); }
@@ -95,6 +95,12 @@ public:
 		bool inverse;
 		int memsize;
 		int nfft;
+
+		static __shared__ char cudaSharedMemory[];
+		__device__ void makeShared(int offset=0) {
+			memcpy(cudaSharedMemory+offset, data, memsize);
+			data=cudaSharedMemory+offset;
+		}
 
 		CFFT_BOTH cpx_type& twiddles(int i) { return ((cpx_type*) (data + twiddles_offset))[i]; }
 		CFFT_BOTH int& radix(int i) { return ((int*)data) [i]; }

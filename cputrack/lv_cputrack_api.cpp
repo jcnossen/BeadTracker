@@ -30,26 +30,6 @@ void ArgumentErrorMsg(ErrorCluster* e, const std::string& msg) {
 	FillErrorCluster(mgArgErr, msg.c_str(), e);
 }
 
-void saveImage(float* data, uint w, uint h, const char* filename)
-{
-	ushort* d = floatToNormalizedUShort(data,w,h);
-	Image* dst = imaqCreateImage(IMAQ_IMAGE_U16, 0);
-	imaqSetImageSize(dst, w, h);
-	imaqArrayToImage(dst, d, w, h);
-	delete[] d;
-
-	ImageInfo info;
-	imaqGetImageInfo(dst, &info);
-	int success = imaqWriteFile(dst, filename, 0);
-	if (!success) {
-		char *errStr = imaqGetErrorText(imaqGetLastError());
-		std::string msg = SPrintf("IMAQ WriteFile error: %s\n", errStr);
-		imaqDispose(errStr);
-		dbgout(msg);
-	}
-	imaqDispose(dst);
-}
-
 
 CDLL_EXPORT CPUTracker* DLL_CALLCONV create_tracker(uint w, uint h, uint xcorw)
 {
@@ -107,13 +87,10 @@ CDLL_EXPORT void DLL_CALLCONV compute_com(CPUTracker* tracker, float* out)
 	out[1] = com.y;
 }
 
-CDLL_EXPORT int DLL_CALLCONV compute_xcor(CPUTracker* tracker, vector2f* position, int iterations, int profileWidth, int useInterpolation)
+CDLL_EXPORT int DLL_CALLCONV compute_xcor(CPUTracker* tracker, vector2f* position, int iterations, int profileWidth)
 {
 	bool boundaryHit;
-	if (useInterpolation)
-		*position = tracker->ComputeXCorInterpolated(*position, iterations, profileWidth, boundaryHit);
-	else
-		*position = tracker->ComputeXCor(*position, profileWidth, boundaryHit);
+	*position = tracker->ComputeXCorInterpolated(*position, iterations, profileWidth, boundaryHit);
 
 	return boundaryHit ? 1 : 0;
 }
@@ -127,28 +104,17 @@ CDLL_EXPORT int DLL_CALLCONV compute_qi(CPUTracker* tracker, vector2f* position,
 }
 
 
-CDLL_EXPORT void DLL_CALLCONV set_image(CPUTracker* tracker, Image* img, int offsetX, int offsetY, ErrorCluster* error)
+CDLL_EXPORT void DLL_CALLCONV set_image_from_memory(CPUTracker* tracker, LVArray2D<uchar>** pData, ErrorCluster* error)
 {
-	try {
-		ImageInfo info;
-		imaqGetImageInfo(img, &info);
-
-		if (offsetX < 0 || offsetY < 0 || offsetX + tracker->GetWidth() > info.xRes || offsetY + tracker->GetHeight() > info.yRes || info.xRes != tracker->GetWidth() || info.yRes != tracker->GetHeight()) {
-			ArgumentErrorMsg(error, "Invalid image dimension or offset given");
-			return;
-		}
-		if (info.imageType == IMAQ_IMAGE_U8)
-			tracker->SetImage8Bit((uchar*)info.imageStart + offsetX + info.pixelsPerLine * offsetY, info.pixelsPerLine);
-		else if(info.imageType == IMAQ_IMAGE_U16)
-			tracker->SetImage16Bit((ushort*)info.imageStart + offsetX + info.pixelsPerLine * offsetY, info.pixelsPerLine*2);
-		else
-			return;
+	LVArray2D<uchar>* data = *pData;
+	if (data->dimSizes[0] != tracker->GetWidth() || data->dimSizes[1] != tracker->GetHeight()) {
+		ArgumentErrorMsg(error, "Given image has invalid dimensions");
+		return;
 	}
-	catch(const std::exception& e)
-	{
-		ArgumentErrorMsg(error, "Exception: " + std::string(e.what()) + "\n");
-	}
+	tracker->SetImage8Bit( data->elem, tracker->GetWidth() );
 }
+
+
 
 CDLL_EXPORT void DLL_CALLCONV set_image_u8(CPUTracker* tracker, LVArray2D<uchar>** pData, ErrorCluster* error)
 {
@@ -181,25 +147,22 @@ CDLL_EXPORT void DLL_CALLCONV set_image_float(CPUTracker* tracker, LVArray2D<flo
 }
 
 
-
-CDLL_EXPORT float DLL_CALLCONV compute_z(CPUTracker* tracker, float* center, int angularSteps, int zlut_index)
+CDLL_EXPORT float DLL_CALLCONV compute_z(CPUTracker* tracker, float* center, int angularSteps, int zlut_index, uint *error, LVArray<float>** profile, LVArray<float>** errorCurve)
 {
-	return tracker->ComputeZ(*(vector2f*)center, angularSteps, zlut_index);
-}
+	bool boundaryHit=false;
+	if (profile) 
+		ResizeLVArray(profile, tracker->zlut_res);
 
-CDLL_EXPORT void DLL_CALLCONV get_debug_image(CPUTracker* tracker, Image* dbgImg)
-{
-	ImageInfo di;
-	imaqGetImageInfo(dbgImg, &di);
-	if (di.imageType == IMAQ_IMAGE_U16) {
-		float* dbg = tracker->GetDebugImage();
-		if (dbg) {
-			ushort* d = floatToNormalizedUShort(dbg, tracker->GetWidth(), tracker->GetHeight());
-			imaqArrayToImage(dbgImg, d, tracker->GetWidth(), tracker->GetHeight());
-			delete[] d;
-		}
+	if (errorCurve) {
+		ResizeLVArray(errorCurve, tracker->zlut_planes);
 	}
+
+	float z =  tracker->ComputeZ(*(vector2f*)center, angularSteps, zlut_index, &boundaryHit, profile ? (*profile)->elem : 0, (*errorCurve)->elem);
+	if (error)
+		*error = boundaryHit?1:0;
+	return z;
 }
+
 
 CDLL_EXPORT void DLL_CALLCONV get_debug_img_as_array(CPUTracker* tracker, LVArray2D<float>** pdbgImg)
 {
@@ -216,16 +179,17 @@ CDLL_EXPORT void DLL_CALLCONV get_debug_img_as_array(CPUTracker* tracker, LVArra
 
 
 
-CDLL_EXPORT void DLL_CALLCONV compute_radial_profile(CPUTracker* tracker, LVArray<float>** result, int angularSteps, float range, float* center)
+CDLL_EXPORT void DLL_CALLCONV compute_radial_profile(CPUTracker* tracker, LVArray<float>** result, int angularSteps, float *radii, float* center, uint* boundaryHit)
 {
 	LVArray<float>* dst = *result;
-	tracker->ComputeRadialProfile(&dst->elem[0], dst->dimSize, angularSteps, 1.0f, range, *(vector2f*)center);
+	bool bhit = false;
+	tracker->ComputeRadialProfile(&dst->elem[0], dst->dimSize, angularSteps, radii[0], radii[1], *(vector2f*)center, &bhit);
+	if (boundaryHit) *boundaryHit = bhit ? 1 : 0;
 }
 
 
 
-
-CDLL_EXPORT void DLL_CALLCONV set_ZLUT(CPUTracker* tracker, LVArray3D<float>** pZlut, float profile_radius, int angular_steps)
+CDLL_EXPORT void DLL_CALLCONV set_ZLUT(CPUTracker* tracker, LVArray3D<float>** pZlut, float *radii, int angular_steps, bool useCorrelation, LVArray<float>** radialweights)
 {
 	LVArray3D<float>* zlut = *pZlut;
 
@@ -233,22 +197,22 @@ CDLL_EXPORT void DLL_CALLCONV set_ZLUT(CPUTracker* tracker, LVArray3D<float>** p
 	int planes = zlut->dimSizes[1];
 	int res = zlut->dimSizes[2];
 	
-	tracker->SetZLUT(zlut->elem, planes, res, numLUTs, 1.0f,  profile_radius, angular_steps, true);
+	tracker->SetZLUT(zlut->elem, planes, res, numLUTs, radii[0], radii[1], angular_steps, true, useCorrelation);
+}
+
+CDLL_EXPORT void DLL_CALLCONV get_ZLUT(CPUTracker* tracker, int zlutIndex, LVArray2D<float>** dst)
+{
+	 float* zlut = tracker->getZLUT(zlutIndex);
+	 ResizeLVArray2D(dst, tracker->zlut_planes, tracker->zlut_res);
+	 std::copy(zlut, zlut+(tracker->zlut_planes*tracker->zlut_res), (*dst)->elem);
 }
 
 
-
-CDLL_EXPORT void DLL_CALLCONV generate_test_image(Image *img, int w, int h, float xp, float yp, float size, float photoncount)
+CDLL_EXPORT void DLL_CALLCONV generate_test_image(LVArray2D<float> **img, float xp, float yp, float size, float photoncount)
 {
 	try {
-		float *d = new float[w*h];
-		ImageData data(d, w,h);
+		ImageData data((*img)->elem, (*img)->dimSizes[1],(*img)->dimSizes[0]);
 		GenerateTestImage(data, xp, yp, size, photoncount);
-		ushort* intd = floatToNormalizedUShort(d, w,h);
-
-		imaqArrayToImage(img, intd, w,h);
-		delete[] d;
-		delete[] intd;
 	}
 	catch(const std::exception& e)
 	{

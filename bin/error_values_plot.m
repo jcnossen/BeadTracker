@@ -29,25 +29,25 @@ function scatter_bias_plot(dirname)
     r.lvqi = sb(xbinsize, lvtrkqi(:,2)-truepos(:,2));
     r.cppqi = sb(xbinsize, jtrkqi(:,2)-truepos(:,2));
     
-%    plot(r.y(:,1), [ r.cppcom r.cppxcor r.cppqi ]);
-%    legend('COM (bias)', 'COM (scatter)', 'Cross-Cor (bias)','Cross-Cor(scatter)', 'QI (bias)', 'QI (scatter)');
-%    plot(r.y(:,1), [ r.lvcom r.lvxcor r.lvqi ]);
-%    legend('COM (bias)', 'COM (scatter)', 'Cross-Cor (bias)','Cross-Cor(scatter)', 'QI (bias)', 'QI (scatter)');
+    semilogy(r.y(:,1), [ r.cppcom r.cppxcor r.cppqi ]);
+    legend('COM (bias)', 'COM (scatter)', 'Cross-Cor (bias)','Cross-Cor(scatter)', 'QI (bias)', 'QI (scatter)');
+    semilogy(r.y(:,1), [ r.lvcom r.lvxcor r.lvqi ]);
+    legend('COM (bias)', 'COM (scatter)', 'Cross-Cor (bias)','Cross-Cor(scatter)', 'QI (bias)', 'QI (scatter)');
 
     plots = { r.lvxcor r.lvqi r.cppxcor r.cppqi };
 
     colors = {'r', 'g', 'b', 'x' };
     for u=1:length(plots)
-        data = plots{u};
-        h(u) = semilogy(r.y(:,1),data(:,1) , 'LineWidth', 2);
+ %       data = plots{u};
+   %     h(u) = semilogy(r.y(:,1),data(:,1) , 'LineWidth', 2);
     end
     for u=1:4
-        set(h(u), 'Color', colors{u});
-        set(h(u), 'LineStyle', ':');
+  %      set(h(u), 'Color', colors{u});
+ %       set(h(u), 'LineStyle', ':');
     end
     legend('XCor (bias)','XCor(scatter)', 'QI (bias)', 'QI (scatter)');%, 'C++ XCor (bias)','C++ XCor(scatter)', 'C++ QI (bias)', 'C++ QI (scatter)');
 %    plot(r.y(:,1), [ r.cppcom r.cppxcor r.cppqi ]);
-    xlim([-2 0]);
+ %   xlim([-2 0]);
     
     title('Scatter/Bias plot');
     

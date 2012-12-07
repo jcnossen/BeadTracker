@@ -14,7 +14,8 @@ CPU only tracker
 const float XCorScale = 1.0f; // keep this at 1, because linear oversampling was obviously a bad idea..
 
 static int round(xcor_t f) { return (int)(f+0.5f); }
-static complexc conjugate(const complexc &v) { return complexc(v.real(),-v.imag()); }
+template<typename T>
+T conjugate(const T &v) { return T(v.real(),-v.imag()); }
 
 CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 {
@@ -125,12 +126,25 @@ void XCor1DBuffer::XCorFFTHelper(complexc* xc, complexc *xcr, xcor_t* result)
 }
 
 // Returns true if bounds are crossed
-bool CPUTracker::IsCrossingImageBoundaries(vector2f center, float radius)
+bool CPUTracker::KeepInsideBoundaries(vector2f* center, float radius)
 {
-	return center.x + radius >= width ||
-		center.x - radius < 0 ||
-		center.y + radius >= height ||
-		center.y - radius < 0;
+	bool boundaryHit = center->x + radius >= width ||
+		center->x - radius < 0 ||
+		center->y + radius >= height ||
+		center->y - radius < 0;
+
+	if (center->x - radius < 0.0f)
+		center->x = radius;
+
+	if (center->y - radius < 0.0f)
+		center->y = radius;
+
+	if (center->x + radius >= width)
+		center->x = width-radius-1;
+
+	if (center->y + radius >= height)
+		center->y = height-radius-1;
+	return boundaryHit;
 }
 
 vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth, bool& boundaryHit)
@@ -149,15 +163,17 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 	maxImageValue = *std::max_element(srcImage,srcImage+width*height);
 #endif
 
+	if (xcorw > width || xcorw > height) {
+		boundaryHit = true;
+		return initial;
+	}
+
 	boundaryHit = false;
 	for (int k=0;k<iterations;k++) {
+		boundaryHit = KeepInsideBoundaries(&pos, XCorScale*xcorw/2);
+
 		float xmin = pos.x - XCorScale * xcorw/2;
 		float ymin = pos.y - XCorScale * xcorw/2;
-
-		if (IsCrossingImageBoundaries(pos, XCorScale*xcorw/2)) {
-			boundaryHit = true;
-			return pos;
-		}
 
 		complexc* xc = &xcorBuffer->X_xc[0];
 		complexc* xcr = &xcorBuffer->X_xcr[0];
@@ -204,74 +220,6 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 
 
 
-vector2f CPUTracker::ComputeXCor(vector2f initial, int profileWidth, bool& boundaryHit)
-{
-	// extract the image
-	vector2f pos = initial;
-
-	if (!xcorBuffer)
-		xcorBuffer = new XCor1DBuffer(xcorw);
-
-	if (xcorw < profileWidth)
-		profileWidth = xcorw;
-
-#ifdef _DEBUG
-	std::copy(srcImage, srcImage+width*height, debugImage);
-	maxImageValue = *std::max_element(srcImage,srcImage+width*height);
-#endif
-
-	int rx = round(pos.x);
-	int ry = round(pos.y);
-
-	int xmin = rx - xcorw/2;
-	int ymin = ry - xcorw/2;
-
-	boundaryHit = false;
-	if (IsCrossingImageBoundaries(pos, xcorw/2)) {
-		boundaryHit=true;
-		return pos;
-	}
-
-	complexc* xc = &xcorBuffer->X_xc[0];
-	complexc* xcr = &xcorBuffer->X_xcr[0];
-	// generate X position xcor array (summing over y range)
-	for (int x=0;x<xcorw;x++) {
-		xcor_t s = 0.0f;
-		for (int y=0;y<profileWidth;y++) {
-			int xp = rx + x - xcorw/2;
-			int yp = ry + y - profileWidth/2;
-			s += getPixel(xp, yp);
-			MARKPIXEL(xp, yp);
-		}
-		xc [x] = s;
-		xcr [xcorw-x-1] = xc[x];
-	}
-
-	xcorBuffer->XCorFFTHelper(xc, xcr, &xcorBuffer->X_result[0]);
-	xcor_t offsetX = ComputeMaxInterp(&xcorBuffer->X_result[0],xcorBuffer->X_result.size()) - (xcor_t)xcorw/2;
-
-	// generate Y position xcor array (summing over x range)
-	for (int y=0;y<xcorw;y++) {
-		xcor_t s = 0.0f;
-		for (int x=0;x<profileWidth;x++) {
-			int xp = rx + x - profileWidth/2;
-			int yp = ry + y - xcorw/2;
-			s += getPixel(xp,yp);
-			MARKPIXEL(xp,yp);
-		}
-		xc[y] = s;
-		xcr [xcorw-y-1] = xc[y];
-	}
-
-	xcorBuffer->XCorFFTHelper(xc,xcr, &xcorBuffer->Y_result[0]);
-	xcor_t offsetY = ComputeMaxInterp(&xcorBuffer->Y_result[0], xcorBuffer->Y_result.size()) - (xcor_t)xcorw/2;
-
-	pos.x = rx + (offsetX - 1) * 0.5f;
-	pos.y = ry + (offsetY - 1) * 0.5f;
-
-	return pos;
-}
-
 
 vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQ, float minRadius, float maxRadius, bool& boundaryHit)
 {
@@ -309,12 +257,14 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 	float pixelsPerProfLen = (maxRadius-minRadius)/radialSteps;
 	boundaryHit = false;
 
+	if (width < maxRadius || height < maxRadius) {
+		boundaryHit = true;
+		return initial;
+	}
+
 	for (int k=0;k<iterations;k++){
 		// check bounds
-		if (IsCrossingImageBoundaries(center, maxRadius)) {
-			boundaryHit = true;
-			return center;
-		}
+		boundaryHit = KeepInsideBoundaries(&center, maxRadius);
 
 		for (int q=0;q<4;q++) {
 			ComputeQuadrantProfile(buf+q*nr, nr, angularStepsPerQ, q, minRadius, maxRadius, center);
@@ -352,9 +302,9 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 // Profile is complexc[nr*2]
 CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr)
 {
-	qic_t* reverse = (qic_t*)ALLOCA(sizeof(qic_t)*nr*2);
-	qic_t* fft_out = (qic_t*)ALLOCA(sizeof(qic_t)*nr*2);
-	qic_t* fft_out2 = (qic_t*)ALLOCA(sizeof(qic_t)*nr*2);
+	qic_t* reverse = ALLOCA_ARRAY(qic_t, nr*2);
+	qic_t* fft_out = ALLOCA_ARRAY(qic_t, nr*2);
+	qic_t* fft_out2 = ALLOCA_ARRAY(qic_t, nr*2);
 
 	for(int x=0;x<nr*2;x++)
 		reverse[x] = profile[nr*2-1-x];
@@ -369,7 +319,7 @@ CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr
 	qi_fft_backward->transform(fft_out, fft_out2);
 	// fft_out2 now contains the autoconvolution
 	// convert it to float
-	qi_t* autoconv = (qi_t*)ALLOCA(sizeof(qi_t)*nr*2);
+	qi_t* autoconv = ALLOCA_ARRAY(qi_t, nr*2);
 	for(int x=0;x<nr*2;x++)
 		autoconv[x] = fft_out2[(x+nr)%(nr*2)].real();
 	float maxPos = ComputeMaxInterp(autoconv, nr*2);
@@ -390,10 +340,10 @@ void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, 
 	for (int i=0;i<radialSteps;i++)
 		dst[i]=0.0f;
 
-	float total = 0.0f;
+	double total = 0.0f;
 	float rstep = (maxRadius - minRadius) / radialSteps;
 	for (int i=0;i<radialSteps; i++) {
-		float sum = 0.0f;
+		double sum = 0.0f;
 		float r = minRadius + rstep * i;
 
 		for (int a=0;a<angularSteps;a++) {
@@ -453,17 +403,19 @@ void CPUTracker::Normalize(float* d)
 }
 
 
-void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center)
+void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, bool* pBoundaryHit)
 {
+	bool boundaryHit = KeepInsideBoundaries(&center, maxradius);
+	if (pBoundaryHit) *pBoundaryHit = boundaryHit;
 	ImageData imgData (srcImage, width,height);
 	::ComputeRadialProfile(dst, radialSteps, angularSteps, minradius, maxradius, center, &imgData);
 }
 
-void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float minradius, float maxradius, int angularSteps, bool copyMemory)
+void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float minradius, float maxradius, int angularSteps, bool copyMemory, bool useCorrelation)
 {
 	if (zluts && zlut_memoryOwner)
 		delete[] zluts;
-
+	
 	if (copyMemory) {
 		zluts = new float[planes*res*numLUTs];
 		std::copy(data, data+(planes*res*numLUTs), zluts);
@@ -476,44 +428,52 @@ void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float mi
 	zlut_minradius = minradius;
 	zlut_maxradius = maxradius;
 	zlut_angularSteps = angularSteps;
+	zlut_useCorrelation = useCorrelation;
 }
 
 
 
-float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex)
+float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, bool* boundaryHit, float* profile, float* cmpProf)
 {
 	if (!zluts)
 		return 0.0f;
+	
+	float* rprof = ALLOCA_ARRAY(float, zlut_res);
+	float* rprof_diff = ALLOCA_ARRAY(float, zlut_planes);
 
-	// Compute the radial profile
-	if (rprof.size() != zlut_res)
-		rprof.resize(zlut_res);
-
-	ComputeRadialProfile(&rprof[0], zlut_res, angularSteps, zlut_minradius, zlut_maxradius, center);
+	ComputeRadialProfile(rprof, zlut_res, angularSteps, zlut_minradius, zlut_maxradius, center, boundaryHit);
+	if (profile) std::copy(rprof, rprof+zlut_res, profile);
 
 	// Now compare the radial profile to the profiles stored in Z
-	if (rprof_diff.size() != zlut_planes)
-		rprof_diff.resize(zlut_planes);
 
-	float* zlut_sel = &zluts[zlut_planes*zlut_res*zlutIndex];
+	float* zlut_sel = getZLUT(zlutIndex);
 
 	for (int k=0;k<zlut_planes;k++) {
 		float diffsum = 0.0f;
 		for (int r = 0; r<zlut_res;r++) {
-			float diff = rprof[r]-zlut_sel[k*zlut_res+r];
-			diffsum += diff*diff;
+			if (zlut_useCorrelation) 
+				diffsum += rprof[r]*zlut_sel[k*zlut_res+r];
+			else {
+				float diff = rprof[r]-zlut_sel[k*zlut_res+r];
+				diffsum -= diff*diff;
+			}
 		}
-		rprof_diff[k] = -diffsum;
+		rprof_diff[k] = diffsum;
 	}
 
-	float z = ComputeMaxInterp(&rprof_diff[0], rprof_diff.size());
+	if (cmpProf) {
+		//cmpProf->resize(zlut_planes);
+		std::copy(rprof_diff, rprof_diff+zlut_planes, cmpProf);
+	}
+
+	float z = ComputeMaxInterp(rprof_diff, zlut_planes);
 	return z;
 }
 
 static void CopyCpxVector(std::vector<xcor_t>& xprof, const std::vector<complexc>& src) {
 	xprof.resize(src.size());
 	for (int k=0;k<src.size();k++)
-		xprof[k]=src[k].imag();
+		xprof[k]=src[k].real();
 }
 
 bool CPUTracker::GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 

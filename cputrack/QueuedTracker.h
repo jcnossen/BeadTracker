@@ -75,7 +75,7 @@ public:
 	virtual ~QueuedTracker() {}
 
 	virtual void Start () = 0;
-	virtual void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, uint zlutIndex=0) = 0;
+	virtual void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex=0) = 0;
 	virtual int PollFinished(LocalizationResult* results, int maxResults) = 0;
 
 	virtual void SetZLUT(float* data, int planes, int res, int numLUTs) = 0;

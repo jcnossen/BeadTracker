@@ -2,27 +2,28 @@
 
 #define CUBOTH __device__ __host__
 
+template<typename T>
 struct cudaImageList {
 	// No constructor used to allow passing as CUDA kernel argument
-	float* data;
+	T* data;
 	size_t pitch;
 	int w,h;
 	int count;
 
-	static cudaImageList alloc(int w,int h, int amount) {
+	static cudaImageList<T> alloc(int w,int h, int amount) {
 		cudaImageList imgl;
 		imgl.w = w; imgl.h = h;
 		imgl.count = amount;
-		cudaMallocPitch(&imgl.data, &imgl.pitch, sizeof(float)*w, h*amount);
+		cudaMallocPitch(&imgl.data, &imgl.pitch, sizeof(T)*w, h*amount);
 		return imgl;
 	}
 
-	CUBOTH float* get(int i) {
-		return (float*)(((char*)data) + pitch*h*i);
+	CUBOTH T* get(int i) {
+		return (T*)(((char*)data) + pitch*h*i);
 	}
 
-	CUBOTH float& pixel(int x,int y, int imgIndex) {
-		float* row = (float*) ( (char*)data + (h*imgIndex+y)*pitch );
+	CUBOTH T& pixel(int x,int y, int imgIndex) {
+		T* row = (T*) ( (char*)data + (h*imgIndex+y)*pitch );
 		return row[x];
 	}
 
@@ -44,21 +45,29 @@ struct cudaImageList {
 
 	CUBOTH int totalsize() { return pitch*h*count; }
 	
-	CUBOTH static inline float interp(float a, float b, float x) { return a + (b-a)*x; }
+	CUBOTH static inline T interp(T a, T b, float x) { return a + (b-a)*x; }
 
-	CUBOTH float interpolate(float x,float y, int idx)
+	CUBOTH T interpolate(float x,float y, int idx)
 	{
 		int rx=x, ry=y;
 
-		float v00 = pixel(rx, ry, idx);
-		float v10 = pixel(rx+1, ry, idx);
-		float v01 = pixel(rx, ry+1, idx);
-		float v11 = pixel(rx+1, ry+1, idx);
+		T v00 = pixel(rx, ry, idx);
+		T v10 = pixel(rx+1, ry, idx);
+		T v01 = pixel(rx, ry+1, idx);
+		T v11 = pixel(rx+1, ry+1, idx);
 
-		float v0 = interp (v00, v10, x-rx);
-		float v1 = interp (v01, v11, x-rx);
+		T v0 = interp (v00, v10, x-rx);
+		T v1 = interp (v01, v11, x-rx);
 
 		return interp (v0, v1, y-ry);
+	}
+
+	void bind(texture<float, cudaTextureType2D, cudaReadModeElementType>& texref) {
+		cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
+		cudaBindTexture2D(NULL, &texref, data, &desc, w, h*count, pitch);
+	}
+	void unbind(texture<float, cudaTextureType2D, cudaReadModeElementType>& texref) {
+		cudaUnbindTexture(&texref);
 	}
 };
 

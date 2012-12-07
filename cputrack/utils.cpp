@@ -92,10 +92,10 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 	for (int i=0;i<radialSteps;i++)
 		dst[i]=0.0f;
 
-	float total = 0.0f;
+	double total = 0.0f;
 	float rstep = (maxradius-minradius) / radialSteps;
 	for (int i=0;i<radialSteps; i++) {
-		float sum = 0.0f;
+		double sum = 0.0f;
 
 		float r = minradius+rstep*i;
 		for (int a=0;a<angularSteps;a++) {
@@ -163,4 +163,21 @@ void ApplyPoissonNoise(ImageData& img, float factor)
 }
 
 
+
+
+void WriteImageAsCSV(const char* file, float* d, int w,int h)
+{
+	FILE* f = fopen(file, "w");
+
+	for (int y=0;y<h;y++) {
+		for (int x=0;x<w;x++)
+		{
+			fprintf(f, "%f", d[y*w+x]);
+			if(x<w-1) fputs("\t", f); 
+		}
+		fprintf(f, "\n");
+	}
+
+	fclose(f);
+}
 
