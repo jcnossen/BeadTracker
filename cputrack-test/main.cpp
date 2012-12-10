@@ -7,7 +7,7 @@
 template<typename T> T sq(T x) { return x*x; }
 template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }
 
-
+float distance(vector2f a,vector2f b) { return distance(a.x-b.x,a.y-b.y); }
 
 
 double getPreciseTime()
@@ -58,7 +58,7 @@ void SpeedTest()
 		float yp = tracker->GetHeight()/2+(rand_uniform<float>() - 0.5) * 5;
 		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
 
-		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), xp, yp, z, 10000);
+		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), xp, yp, z, 0);
 
 		double t1 = getPreciseTime();
 		vector2f com = tracker->ComputeBgCorrectedCOM();
@@ -422,17 +422,69 @@ void QTrkTest()
 	dbgprintf("ErrX: %f, ErrY: %f, ErrZ: %f\n", errX/jobc, errY/jobc,errZ/jobc);
 }
 
+void BuildConvergenceMap(int iterations)
+{
+	int W=80, H=80;
+	char* data=new char[W*H];
+	FILE* f=fopen("singlebead.bin", "rb");
+	fread(data,1,80*80,f);
+	fclose(f);
+
+	float testrange=20;
+	int steps=100;
+	float step=testrange/steps;
+	vector2f errXCor={}, errQI = {};
+	CPUTracker trk(W,H,40);
+
+	// Get a good starting estimate
+	trk.SetImage8Bit((uchar*)data,W);
+	vector2f com = trk.ComputeBgCorrectedCOM();
+	bool boundaryHit;
+	vector2f cmp = trk.ComputeQI(com,8,80,64,2,25,boundaryHit);
+
+	float *xcorErrMap = new float[steps*steps];
+	float *qiErrMap = new float[steps*steps];
+
+	for (int y=0;y<steps;y++){
+		for (int x=0;x<steps;x++)
+		{
+			vector2f initial = { cmp.x+step*(x-steps/2), cmp.y+step*(y-steps/2) };
+			vector2f xcor = trk.ComputeXCorInterpolated(initial, iterations, 64, boundaryHit);
+			vector2f qi = trk.ComputeQI(initial, iterations, 80, 64,2,30,boundaryHit);
+
+			errXCor.x += fabs(xcor.x-cmp.x);
+			errXCor.y += fabs(xcor.y-cmp.y);
+			xcorErrMap[y*steps+x] = distance(xcor,cmp);
+
+			errQI.x += fabs(qi.x-cmp.x);
+			errQI.y += fabs(qi.y-cmp.y);
+			qiErrMap[y*steps+x] = distance(qi,cmp);
+		}
+		dbgprintf("y=%d\n", y);
+	}
+
+
+	WriteImageAsCSV(SPrintf("xcor-err-i%d.csv", iterations).c_str(), xcorErrMap, steps,steps);
+	WriteImageAsCSV(SPrintf("qi-err-i%d.csv", iterations).c_str(), qiErrMap, steps,steps);
+
+	delete[] qiErrMap;
+	delete[] xcorErrMap;
+	delete[] data;
+}
+
+
 
 int main()
 {
-	SpeedTest();
+	//SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
-	//QTrkTest();
-	BuildConvergenceMap();
+	//QTrkTest();6
+	for (int i=1;i<8;i++)
+		BuildConvergenceMap(i);
 
 	return 0;
 }
