@@ -426,12 +426,13 @@ void QTrkTest()
 int main()
 {
 	SpeedTest();
-	SmallImageTest();
-	PixelationErrorTest();
+	//SmallImageTest();
+	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
-	QTrkTest();
+	//QTrkTest();
+	BuildConvergenceMap();
 
 	return 0;
 }
