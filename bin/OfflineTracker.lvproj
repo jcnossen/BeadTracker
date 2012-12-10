@@ -13,8 +13,62 @@
 		<Item Name="JTrkAPI.llb" Type="Folder" URL="../JTrkAPI.llb">
 			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
+		<Item Name="OfflineTrackerJTrk" Type="Folder">
+			<Item Name="1D CrossCorrelation.vi" Type="VI" URL="../OfflineTrackerJTrk/1D CrossCorrelation.vi"/>
+			<Item Name="boxoverlayimage.vi" Type="VI" URL="../OfflineTrackerJTrk/boxoverlayimage.vi"/>
+			<Item Name="Check Limits.vi" Type="VI" URL="../OfflineTrackerJTrk/Check Limits.vi"/>
+			<Item Name="CheckROIEdges (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/CheckROIEdges (SubVI).vi"/>
+			<Item Name="CleanIT (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/CleanIT (SubVI).vi"/>
+			<Item Name="CleanROIs (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/CleanROIs (SubVI).vi"/>
+			<Item Name="CompareZProfile2.vi" Type="VI" URL="../OfflineTrackerJTrk/CompareZProfile2.vi"/>
+			<Item Name="CP que.ctl" Type="VI" URL="../OfflineTrackerJTrk/CP que.ctl"/>
+			<Item Name="datahandleMVL.vi" Type="VI" URL="../OfflineTrackerJTrk/datahandleMVL.vi"/>
+			<Item Name="draw rectangles.vi" Type="VI" URL="../OfflineTrackerJTrk/draw rectangles.vi"/>
+			<Item Name="General Polynomial Fit with SD.vi" Type="VI" URL="../OfflineTrackerJTrk/General Polynomial Fit with SD.vi"/>
+			<Item Name="Get Max 1D 3p.vi" Type="VI" URL="../OfflineTrackerJTrk/Get Max 1D 3p.vi"/>
+			<Item Name="Global PhaseStandalone.vi" Type="VI" URL="../OfflineTrackerJTrk/Global PhaseStandalone.vi"/>
+			<Item Name="imagereque.vi" Type="VI" URL="../OfflineTrackerJTrk/imagereque.vi"/>
+			<Item Name="load images.vi" Type="VI" URL="../OfflineTrackerJTrk/load images.vi"/>
+			<Item Name="LoadOneImageviaPath.vi" Type="VI" URL="../OfflineTrackerJTrk/LoadOneImageviaPath.vi"/>
+			<Item Name="LoadZlut.vi" Type="VI" URL="../OfflineTrackerJTrk/LoadZlut.vi"/>
+			<Item Name="MainProgram.vi" Type="VI" URL="../OfflineTrackerJTrk/MainProgram.vi"/>
+			<Item Name="MakeAProfileJK.vi" Type="VI" URL="../OfflineTrackerJTrk/MakeAProfileJK.vi"/>
+			<Item Name="MakeBigTemplate (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/MakeBigTemplate (SubVI).vi"/>
+			<Item Name="MakeCustomWindow (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/MakeCustomWindow (SubVI).vi"/>
+			<Item Name="MakePhiAxis (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/MakePhiAxis (SubVI).vi"/>
+			<Item Name="MakeRadialAxis (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/MakeRadialAxis (SubVI).vi"/>
+			<Item Name="MakeZlut.vi" Type="VI" URL="../OfflineTrackerJTrk/MakeZlut.vi"/>
+			<Item Name="MinusMean2D (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/MinusMean2D (SubVI).vi"/>
+			<Item Name="OfflineTrackerHandleMVL2.vi" Type="VI" URL="../OfflineTrackerJTrk/OfflineTrackerHandleMVL2.vi"/>
+			<Item Name="OneQuadProfile (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/OneQuadProfile (SubVI).vi"/>
+			<Item Name="parabola fit2.vi" Type="VI" URL="../OfflineTrackerJTrk/parabola fit2.vi"/>
+			<Item Name="parabola fitZ.vi" Type="VI" URL="../OfflineTrackerJTrk/parabola fitZ.vi"/>
+			<Item Name="pix2um&amp;refsubstract.vi" Type="VI" URL="../OfflineTrackerJTrk/pix2um&amp;refsubstract.vi"/>
+			<Item Name="Plot_em.vi" Type="VI" URL="../OfflineTrackerJTrk/Plot_em.vi"/>
+			<Item Name="QuadCombine (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/QuadCombine (SubVI).vi"/>
+			<Item Name="QuadExtraPass (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/QuadExtraPass (SubVI).vi"/>
+			<Item Name="RECenterROI (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/RECenterROI (SubVI).vi"/>
+			<Item Name="RemovenearestROI.vi" Type="VI" URL="../OfflineTrackerJTrk/RemovenearestROI.vi"/>
+			<Item Name="roi2xy.vi" Type="VI" URL="../OfflineTrackerJTrk/roi2xy.vi"/>
+			<Item Name="ROIAutoSearch.vi" Type="VI" URL="../OfflineTrackerJTrk/ROIAutoSearch.vi"/>
+			<Item Name="ROICenter2LTRB.vi" Type="VI" URL="../OfflineTrackerJTrk/ROICenter2LTRB.vi"/>
+			<Item Name="ROIlistautofill.vi" Type="VI" URL="../OfflineTrackerJTrk/ROIlistautofill.vi"/>
+			<Item Name="SaveData.vi" Type="VI" URL="../OfflineTrackerJTrk/SaveData.vi"/>
+			<Item Name="Select Bests (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/Select Bests (SubVI).vi"/>
+			<Item Name="SetBeads.vi" Type="VI" URL="../OfflineTrackerJTrk/SetBeads.vi"/>
+			<Item Name="ShowBead.vi" Type="VI" URL="../OfflineTrackerJTrk/ShowBead.vi"/>
+			<Item Name="SortOnKey (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/SortOnKey (SubVI).vi"/>
+			<Item Name="Stack1LUT(SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/Stack1LUT(SubVI).vi"/>
+			<Item Name="Swapit2D (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/Swapit2D (SubVI).vi"/>
+			<Item Name="Tracker.vi" Type="VI" URL="../OfflineTrackerJTrk/Tracker.vi"/>
+			<Item Name="trackerhandle.vi" Type="VI" URL="../OfflineTrackerJTrk/trackerhandle.vi"/>
+			<Item Name="Trackit.vi" Type="VI" URL="../OfflineTrackerJTrk/Trackit.vi"/>
+			<Item Name="Xcor1D (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/Xcor1D (SubVI).vi"/>
+			<Item Name="Xcorimages (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/Xcorimages (SubVI).vi"/>
+			<Item Name="xy2roi.vi" Type="VI" URL="../OfflineTrackerJTrk/xy2roi.vi"/>
+			<Item Name="XY_GetCenterOfMass.vi" Type="VI" URL="../OfflineTrackerJTrk/XY_GetCenterOfMass.vi"/>
+		</Item>
 		<Item Name="jtrk-labview.dll" Type="Document" URL="../jtrk-labview.dll"/>
-		<Item Name="OfflineTracker.lvlib" Type="Library" URL="../OfflineTracker.lvlib"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
@@ -101,6 +155,7 @@
 			<Item Name="nivissvc.dll" Type="Document" URL="nivissvc.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
+			<Item Name="OfflineTracker.lvlib" Type="Library" URL="../OfflineTracker.lvlib"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build">
 			<Item Name="My Application" Type="EXE">
