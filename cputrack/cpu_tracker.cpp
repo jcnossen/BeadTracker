@@ -408,10 +408,10 @@ void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSt
 	bool boundaryHit = KeepInsideBoundaries(&center, maxradius);
 	if (pBoundaryHit) *pBoundaryHit = boundaryHit;
 	ImageData imgData (srcImage, width,height);
-	::ComputeRadialProfile(dst, radialSteps, angularSteps, minradius, maxradius, center, &imgData);
+	::ComputeRadialProfile(dst, radialSteps, angularSteps, minradius, maxradius, center, &imgData, !zlut_radialweights.empty() ? &zlut_radialweights[0] : 0);
 }
 
-void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float minradius, float maxradius, int angularSteps, bool copyMemory, bool useCorrelation)
+void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float minradius, float maxradius, int angularSteps, bool copyMemory, bool useCorrelation, float* radweights)
 {
 	if (zluts && zlut_memoryOwner)
 		delete[] zluts;
@@ -429,6 +429,12 @@ void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float mi
 	zlut_maxradius = maxradius;
 	zlut_angularSteps = angularSteps;
 	zlut_useCorrelation = useCorrelation;
+
+	if (radweights) {
+		zlut_radialweights.resize(zlut_res);
+		std::copy(radweights, radweights+zlut_res, zlut_radialweights.begin());
+	} else
+		zlut_radialweights.clear();
 }
 
 
