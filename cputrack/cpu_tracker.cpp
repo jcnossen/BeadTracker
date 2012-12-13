@@ -24,6 +24,7 @@ CPUTracker::CPUTracker(int w, int h, int xcorwindow)
 
 	xcorBuffer = 0;
 	
+	mean=0.0f;
 	srcImage = new float [w*h];
 	debugImage = new float [w*h];
 	std::fill(srcImage, srcImage+w*h, 0.0f);
@@ -218,6 +219,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 		}
 
 		xcorBuffer->XCorFFTHelper(xc,xcr, &xcorBuffer->Y_result[0]);
+		//WriteImageAsCSV("xcorautoconv.txt",&xcorBuffer->Y_result[0],xcorBuffer->Y_result.size(),1);
 		xcor_t offsetY = ComputeMaxInterp(&xcorBuffer->Y_result[0], xcorBuffer->Y_result.size()) - (xcor_t)xcorw/2;
 
 		pos.x += (offsetX - 1) * XCorScale * 0.5f;
@@ -329,8 +331,14 @@ CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr
 	// fft_out2 now contains the autoconvolution
 	// convert it to float
 	qi_t* autoconv = ALLOCA_ARRAY(qi_t, nr*2);
-	for(int x=0;x<nr*2;x++)
+	//float* tmp=ALLOCA_ARRAY(float,nr*2);
+	for(int x=0;x<nr*2;x++)  {
 		autoconv[x] = fft_out2[(x+nr)%(nr*2)].real();
+//		tmp[x]=autoconv[x];
+	}
+
+//	WriteImageAsCSV("autoconv.txt",tmp,nr*2,1);
+
 	float maxPos = ComputeMaxInterp(autoconv, nr*2);
 	return (maxPos - nr) / (3.141593 * 0.5);
 }
@@ -362,11 +370,9 @@ void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, 
 			MARKPIXELI(x,y);
 		}
 
-		dst[i] = sum;
+		dst[i] = sum/angularSteps-mean ;
 		total += dst[i];
 	}
-	for (int i=0;i<radialSteps;i++)
-		dst[i] /= total;
 }
 
 
@@ -414,7 +420,7 @@ void CPUTracker::Normalize(float* d)
 
 void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, bool* pBoundaryHit)
 {
-	bool boundaryHit = KeepInsideBoundaries(&center, maxradius);
+	bool boundaryHit = CheckBoundaries(center, maxradius);
 	if (pBoundaryHit) *pBoundaryHit = boundaryHit;
 	ImageData imgData (srcImage, width,height);
 	::ComputeRadialProfile(dst, radialSteps, angularSteps, minradius, maxradius, center, &imgData, 0, mean);

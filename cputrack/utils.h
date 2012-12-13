@@ -44,7 +44,7 @@ const inline float interp(float a, float b, float x) { return a + (b-a)*x; }
 inline float Interpolate(float* image, int width, int height, float x,float y, float paddingValue=0.0f)
 {
 	int rx=x, ry=y;
-	if (rx<0 || ry <0 || rx+1 >= width || ry>=height)
+	if (rx<0 || ry <0 || rx+1 >= width || ry+1>=height)
 		return paddingValue;
 
 	float v00 = image[width*ry+rx];

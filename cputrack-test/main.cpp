@@ -41,6 +41,7 @@ void SpeedTest()
 		vector2f center = { tracker->GetWidth()/2, tracker->GetHeight()/2 };
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, s, 0.0f);
+		tracker->mean = 0.0f;
 		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1, zradius, center);	
 	}
 	tracker->SetZLUT(zlut, zplanes, radialSteps, 1,1, zradius, 64, true, true);
@@ -70,6 +71,9 @@ void SpeedTest()
 			tracker.OutputDebugInfo();
 			writeImageAsCSV("test.csv", tracker.srcImage, tracker.width, tracker.height);
 		}*/
+		if (boundaryHit)
+			dbgprintf("xcor boundaryhit!!\n");
+
 
 		comdist.x += fabsf(com.x - xp);
 		comdist.y += fabsf(com.y - yp);
@@ -82,11 +86,16 @@ void SpeedTest()
 		qidist.x += fabsf(qi.x - xp);
 		qidist.y += fabsf(qi.y - yp);
 		double t4 = getPreciseTime();
+		if (boundaryHit)
+			dbgprintf("qi boundaryhit!!\n");
 
+		boundaryHit = false;
 		float est_z = zmin + (zmax-zmin)*tracker->ComputeZ(qi, 64, 0, &boundaryHit, 0) / (zplanes-1);
 		zdist += fabsf(est_z-z);
 		zerrsum += est_z-z;
 
+		if (boundaryHit)
+			dbgprintf("computeZ boundaryhit!!\n");
 		double t5 = getPreciseTime();
 	//	dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f\n", xp, com.x-xp, xcor.x-xp));
 		if (k>0) { // skip first initialization round
@@ -96,8 +105,6 @@ void SpeedTest()
 			tqi+=t4-t3;
 			tz+=t5-t4;
 		}
-		if (boundaryHit)
-			dbgprintf("boundaryhit!!\n");
 	}
 
 	int Nns = N-1;
@@ -476,15 +483,15 @@ void BuildConvergenceMap(int iterations)
 
 int main()
 {
-	//SpeedTest();
+	SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
 	//QTrkTest();6
-	for (int i=1;i<8;i++)
-		BuildConvergenceMap(i);
+	//for (int i=1;i<8;i++)
+//		BuildConvergenceMap(i);
 
 	return 0;
 }
