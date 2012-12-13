@@ -57,6 +57,7 @@ CPUTracker::~CPUTracker()
 void CPUTracker::SetImageFloat(float *src) {
 	for (int k=0;k<width*height;k++)
 		srcImage[k]=src[k];
+	mean=0.0f;
 }
 
 
@@ -147,6 +148,14 @@ bool CPUTracker::KeepInsideBoundaries(vector2f* center, float radius)
 	return boundaryHit;
 }
 
+bool CPUTracker::CheckBoundaries(vector2f center, float radius)
+{
+	return center.x + radius >= width ||
+		center.x - radius < 0 ||
+		center.y + radius >= height ||
+		center.y - radius < 0;
+}
+
 vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth, bool& boundaryHit)
 {
 	// extract the image
@@ -170,7 +179,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 
 	boundaryHit = false;
 	for (int k=0;k<iterations;k++) {
-		boundaryHit = KeepInsideBoundaries(&pos, XCorScale*xcorw/2);
+		boundaryHit = CheckBoundaries(pos, XCorScale*xcorw/2);
 
 		float xmin = pos.x - XCorScale * xcorw/2;
 		float ymin = pos.y - XCorScale * xcorw/2;
@@ -183,7 +192,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 			for (int y=0;y<profileWidth;y++) {
 				float xp = x * XCorScale + xmin;
 				float yp = pos.y + XCorScale * (y - profileWidth/2);
-				s += Interpolate(srcImage, width, height, xp, yp);
+				s += Interpolate(srcImage, width, height, xp, yp,mean);
 				MARKPIXELI(xp, yp);
 			}
 			xc [x] = s;
@@ -201,7 +210,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 			for (int x=0;x<profileWidth;x++) {
 				float xp = pos.x + XCorScale * (x - profileWidth/2);
 				float yp = y * XCorScale + ymin;
-				s += Interpolate(srcImage,width,height, xp, yp);
+				s += Interpolate(srcImage,width,height, xp, yp,mean);
 				MARKPIXELI(xp,yp);
 			}
 			xc[y] = s;
@@ -264,7 +273,7 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 
 	for (int k=0;k<iterations;k++){
 		// check bounds
-		boundaryHit = KeepInsideBoundaries(&center, maxRadius);
+		boundaryHit = CheckBoundaries(center, maxRadius);
 
 		for (int q=0;q<4;q++) {
 			ComputeQuadrantProfile(buf+q*nr, nr, angularStepsPerQ, q, minRadius, maxRadius, center);
@@ -349,7 +358,7 @@ void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, 
 		for (int a=0;a<angularSteps;a++) {
 			float x = center.x + mx*quadrantDirs[a].x * r;
 			float y = center.y + my*quadrantDirs[a].y * r;
-			sum += Interpolate(srcImage,width,height, x,y);
+			sum += Interpolate(srcImage,width,height, x,y,mean);
 			MARKPIXELI(x,y);
 		}
 
@@ -376,7 +385,7 @@ vector2f CPUTracker::ComputeBgCorrectedCOM()
 		}
 
 	float invN = 1.0f/(width*height);
-	float mean = sum * invN;
+	mean = sum * invN;
 	float stdev = sqrtf(sum2 * invN - mean * mean);
 	sum = 0.0f;
 
@@ -408,7 +417,7 @@ void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSt
 	bool boundaryHit = KeepInsideBoundaries(&center, maxradius);
 	if (pBoundaryHit) *pBoundaryHit = boundaryHit;
 	ImageData imgData (srcImage, width,height);
-	::ComputeRadialProfile(dst, radialSteps, angularSteps, minradius, maxradius, center, &imgData, !zlut_radialweights.empty() ? &zlut_radialweights[0] : 0);
+	::ComputeRadialProfile(dst, radialSteps, angularSteps, minradius, maxradius, center, &imgData, 0, mean);
 }
 
 void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float minradius, float maxradius, int angularSteps, bool copyMemory, bool useCorrelation, float* radweights)
@@ -457,12 +466,16 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, boo
 	for (int k=0;k<zlut_planes;k++) {
 		float diffsum = 0.0f;
 		for (int r = 0; r<zlut_res;r++) {
+			float d;
 			if (zlut_useCorrelation) 
-				diffsum += rprof[r]*zlut_sel[k*zlut_res+r];
+				d = rprof[r]*zlut_sel[k*zlut_res+r];
 			else {
 				float diff = rprof[r]-zlut_sel[k*zlut_res+r];
-				diffsum -= diff*diff;
+				d = -diff*diff;
 			}
+			if(!zlut_radialweights.empty())
+				d *= zlut_radialweights[r];
+			diffsum += d;
 		}
 		rprof_diff[k] = diffsum;
 	}

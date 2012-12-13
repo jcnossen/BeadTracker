@@ -200,8 +200,7 @@ void QueuedCPUTracker::SetZLUT(float* data, int planes, int res, int num_zluts)
 void QueuedCPUTracker::ComputeRadialProfile(float *image, int width, int height, float* dst, int profileLen, vector2f center)
 {
 	ImageData imgData (image,  width,height);
-
-	::ComputeRadialProfile(dst, profileLen, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, center, &imgData);
+	::ComputeRadialProfile(dst, profileLen, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, center, &imgData, 0, imgData.mean());
 }
 
 

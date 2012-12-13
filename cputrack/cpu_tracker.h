@@ -33,6 +33,7 @@ public:
 	int width, height, xcorw;
 
 	float *srcImage, *debugImage;
+	float mean; // Updated by ComputeBgCorrectedCOM()
 #ifdef _DEBUG
 	float maxImageValue;
 #endif
@@ -62,6 +63,7 @@ public:
 	CPUTracker(int w, int h, int xcorwindow=128);
 	~CPUTracker();
 	bool KeepInsideBoundaries(vector2f *center, float radius);
+	bool CheckBoundaries(vector2f center, float radius);
 	vector2f ComputeXCor2D();
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth, bool& boundaryHit);
 	vector2f ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQuadrant, float minRadius, float maxRadius, bool& boundaryHit);
@@ -102,6 +104,8 @@ void CPUTracker::SetImage(TPixel* data, uint pitchInBytes)
 		}
 		bp += pitchInBytes;
 	}
+
+	mean=0.0f;
 }
 
 

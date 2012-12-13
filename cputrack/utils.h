@@ -41,9 +41,12 @@ void normalize(TPixel* d, uint w,uint h)
 
 const inline float interp(float a, float b, float x) { return a + (b-a)*x; }
 
-inline float Interpolate(float* image, int width, int height, float x,float y)
+inline float Interpolate(float* image, int width, int height, float x,float y, float paddingValue=0.0f)
 {
 	int rx=x, ry=y;
+	if (rx<0 || ry <0 || rx+1 >= width || ry>=height)
+		return paddingValue;
+
 	float v00 = image[width*ry+rx];
 	float v10 = image[width*ry+rx+1];
 	float v01 = image[width*(ry+1)+rx];
@@ -61,13 +64,19 @@ struct ImageData {
 	int w,h;
 	ImageData(float *d, int w, int h) : data(d), w(w),h(h) {}
 	float& at(int x, int y) { return data[w*y+x]; }
-	float interpolate(float x, float y) { return Interpolate(data, w,h, x,y); }
+	float interpolate(float x, float y, float paddingValue) { return Interpolate(data, w,h, x,y,paddingValue); }
 	int numPixels() { return w*h; }
 	void normalize() { ::normalize(data,w,h); }
+	float mean() {
+		float s=0.0f;
+		for(int x=0;x<w*h;x++)
+			s+=data[x];
+		return s/(w*h);
+	}
 };
 
 void GenerateTestImage(ImageData& img, float xp, float yp, float size, float MaxPhotons);
-void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, ImageData* src, float* radialweights=0);
+void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, ImageData* src, float* radialweights,float mean);
 void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float zlut_radius, vector2f pos, float z, float M);
 void ApplyPoissonNoise(ImageData& img, float factor);
 void WriteImageAsCSV(const char* file, float* d, int w,int h);
