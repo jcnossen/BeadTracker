@@ -359,7 +359,7 @@ void QTrkTest()
 		GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
 		qtrk.ComputeRadialProfile(image, cfg.width, cfg.height, &zlut[x*radialSteps], radialSteps, center);
 	}
-	qtrk.SetZLUT(zlut, zplanes, radialSteps, 1);
+	qtrk.SetZLUT(zlut, 1, zplanes, radialSteps);
 	delete[] zlut;
 
 	// Schedule images to localize on
