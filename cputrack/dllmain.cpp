@@ -19,15 +19,4 @@ int __stdcall DllMain (void *hinstDLL, int fdwReason, void *lpvReserved)
 	return 1;
 }
 
-extern "C" __declspec(dllexport) void* do_stuff(int x)
-{
-	return 0;
-}
-
-
-extern "C" __declspec(dllexport) void free_stuff(void *d)
-{
-	
-}
-
 
