@@ -18,10 +18,15 @@
 		<Item Name="OfflineQTrk.vi" Type="VI" URL="../OfflineQTrk.llb/OfflineQTrk.vi"/>
 		<Item Name="QTrkGetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkGetZLUT.vi"/>
 		<Item Name="QTrkQueueImageU8.vi" Type="VI" URL="../QTrk.llb/QTrkQueueImageU8.vi"/>
+		<Item Name="QTrkReadJPEGFile.vi" Type="VI" URL="../QTrk.llb/QTrkReadJPEGFile.vi"/>
 		<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkSetZLUT.vi"/>
 		<Item Name="QueueSingleFrame.vi" Type="VI" URL="../OfflineQTrk.llb/QueueSingleFrame.vi"/>
 		<Item Name="ReadImageToArray.vi" Type="VI" URL="../OfflineQTrk.llb/ReadImageToArray.vi"/>
 		<Item Name="SaveOrLoadBeadlist.vi" Type="VI" URL="../OfflineQTrk.llb/SaveOrLoadBeadlist.vi"/>
+		<Item Name="SaveOrLoadQTrkSettings.vi" Type="VI" URL="../OfflineQTrk.llb/SaveOrLoadQTrkSettings.vi"/>
+		<Item Name="SimpleTest.vi" Type="VI" URL="../OfflineQTrk.llb/SimpleTest.vi"/>
+		<Item Name="TestJPEGReader.vi" Type="VI" URL="../OfflineQTrk.llb/TestJPEGReader.vi"/>
+		<Item Name="ViewTracesDlg.vi" Type="VI" URL="../OfflineQTrk.llb/ViewTracesDlg.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
@@ -122,9 +127,10 @@
 			<Item Name="QTrkDLL.vi" Type="VI" URL="../QTrk.llb/QTrkDLL.vi"/>
 			<Item Name="QTrkFree.vi" Type="VI" URL="../QTrk.llb/QTrkFree.vi"/>
 			<Item Name="QTrkGetResultCount.vi" Type="VI" URL="../QTrk.llb/QTrkGetResultCount.vi"/>
+			<Item Name="QTrkGetResults.vi" Type="VI" URL="../QTrk.llb/QTrkGetResults.vi"/>
 			<Item Name="QTrkInstance.ctl" Type="VI" URL="../QTrk.llb/QTrkInstance.ctl"/>
+			<Item Name="QTrkLocalizationResult.ctl" Type="VI" URL="../QTrk.llb/QTrkLocalizationResult.ctl"/>
 			<Item Name="QTrkSettings.ctl" Type="VI" URL="../QTrk.llb/QTrkSettings.ctl"/>
-			<Item Name="QTrkStart.vi" Type="VI" URL="../QTrk.llb/QTrkStart.vi"/>
 			<Item Name="RECenterROI (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/RECenterROI (SubVI).vi"/>
 			<Item Name="RemovenearestROI.vi" Type="VI" URL="../AutoBeadFinder.llb/RemovenearestROI.vi"/>
 			<Item Name="roi2xy.vi" Type="VI" URL="../AutoBeadFinder.llb/roi2xy.vi"/>

@@ -352,6 +352,7 @@ void QTrkTest()
 	// Generate ZLUT
 	int radialSteps=64, zplanes=100;
 	float zmin=2,zmax=6;
+	/*
 	float* zlut = new float[radialSteps*zplanes];
 	for (int x=0;x<zplanes;x++)  {
 		vector2f center = { cfg.width/2, cfg.height/2 };
@@ -360,7 +361,7 @@ void QTrkTest()
 		qtrk.ComputeRadialProfile(image, cfg.width, cfg.height, &zlut[x*radialSteps], radialSteps, center);
 	}
 	qtrk.SetZLUT(zlut, 1, zplanes, radialSteps);
-	delete[] zlut;
+	delete[] zlut;*/
 
 	// Schedule images to localize on
 #ifdef _DEBUG
@@ -383,7 +384,7 @@ void QTrkTest()
 		GenerateTestImage(ImageData(image, cfg.width, cfg.height), xp, yp, z, 10000);
 		double t2 = getPreciseTime();
 		for (int k=0;k<JobsPerImg;k++)
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeXCor1D), n*JobsPerImg+k, 0);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeXCor1D), n*JobsPerImg+k, 0, 0, 0);
 		double t3 = getPreciseTime();
 		tgen += t2-t1;
 		tschedule += t3-t2;
@@ -481,9 +482,15 @@ void BuildConvergenceMap(int iterations)
 
 
 
+
 int main()
 {
-	SpeedTest();
+	int w,h;
+	uchar* data;
+	if (ReadJPEGFile("SingleBead.jpg", &data, &w,&h)) {
+		delete[] data;
+	}
+	//SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();

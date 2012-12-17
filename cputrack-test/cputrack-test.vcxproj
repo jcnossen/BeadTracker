@@ -92,12 +92,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../libs/pthreads/include;../libs/fftw;../libs/math</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../libs/libjpeg-turbo/include;../libs/pthreads/include;../libs/fftw;../libs/math</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>../libs/pthreads/lib/x86/pthreadVSE2.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>../libs/libjpeg-turbo/lib/jpeg.lib;../libs/pthreads/lib/x86/pthreadVSE2.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -123,16 +123,17 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-Single|Win32'">
     <Link>
-      <AdditionalDependencies>../libs/pthreads/lib/x86/pthreadVSE2.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>../libs/libjpeg-turbo/lib/jpeg-static.lib;../libs/pthreads/lib/x86/pthreadVSE2.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
-      <AdditionalIncludeDirectories>../libs/pthreads/include;../libs/fftw;../libs/math</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../libs/libjpeg-turbo/include;../libs/pthreads/include;../libs/fftw;../libs/math</AdditionalIncludeDirectories>
       <Optimization>MaxSpeed</Optimization>
       <PreprocessorDefinitions>WIN32;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\cputrack\cpu_tracker.cpp" />
+    <ClCompile Include="..\cputrack\fastjpg.cpp" />
     <ClCompile Include="..\cputrack\queued_cpu_tracker.cpp" />
     <ClCompile Include="..\cputrack\utils.cpp" />
     <ClCompile Include="main.cpp" />

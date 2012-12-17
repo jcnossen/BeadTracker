@@ -63,15 +63,24 @@ void CPUTracker::SetImageFloat(float *src) {
 
 
 #ifdef _DEBUG
-	#define MARKPIXEL(x,y) (debugImage[ (int)(y)*width+ (int) (x)]+=maxImageValue*0.1f)
-	#define MARKPIXELI(x,y) _markPixels(x,y,debugImage, width, maxImageValue*0.1f);
-static void _markPixels(float x,float y, float* img, int w, float mv)
-{
-	img[ (int)floorf(y)*w+(int)floorf(x) ] += mv;
-	img[ (int)floorf(y)*w+(int)ceilf(x) ] += mv;
-	img[ (int)ceilf(y)*w+(int)floorf(x) ] += mv;
-	img[ (int)ceilf(y)*w+(int)ceilf(x) ] += mv;
+
+inline void markPixel(float* img, int x,int y, int w,int h, float maxv) {
+	if (x>=0 && y>=0 && x < w && y<h)
+		img[y*w+x]+=maxv*0.1f;
 }
+
+inline void _markPixels(float x,float y, float* img, int w, int h, float mv)
+{
+	int rx=(int)x, ry=(int)y;
+	if (rx >=0 && ry >= 0 && rx+1<w && ry+1<h) {
+		img[ry*w+rx] += mv;
+		img[ry*w+rx+1] += mv;
+		img[(ry+1)*w+rx] += mv;
+		img[(ry+1)*w+rx+1] += mv;
+	}
+}
+	#define MARKPIXEL(x,y) markPixel(debugImage, (x),(y),width,height,maxImageValue) 
+	#define MARKPIXELI(x,y) _markPixels(x,y,debugImage, width, height, maxImageValue*0.1f);
 #else
 	#define MARKPIXEL(x,y)
 	#define MARKPIXELI(x,y)

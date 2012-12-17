@@ -153,6 +153,8 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 		th->tracker->SetImageFloat((float*)j->data);
 	}
 
+	dbgprintf("Job: id %d, bead %d\n", j->zlutPlane, j->zlut);
+
 	LocalizationResult result={};
 	result.id = j->id;
 	result.locType = j->locType;
@@ -183,6 +185,11 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 		float* zlut = GetZLUTByIndex(j->zlut);
 		th->tracker->ComputeRadialProfile(&zlut[j->zlutPlane * zlut_res], zlut_res, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, result.pos, &boundaryHit);
 	}
+
+#ifdef _DEBUG
+	dbgprintf("pos[%d]: x=%f, y=%f\n", result.zlutIndex, result.pos.x, result.pos.y);
+#endif
+
 	result.error = boundaryHit ? 1 : 0;
 
 	results_mutex.lock();
@@ -233,6 +240,10 @@ void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDa
 	j->zlutPlane = zlutPlane;
 	if(initialPos) 
 		j->initialPos = *initialPos;
+
+#ifdef _DEBUG
+	dbgprintf("Scheduled job: frame %d, bead %d\n", j->zlutPlane, j->zlut);
+#endif
 	
 	AddJob(j);
 }

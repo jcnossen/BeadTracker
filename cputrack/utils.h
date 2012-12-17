@@ -80,3 +80,5 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float zlut_radius, vector2f pos, float z, float M);
 void ApplyPoissonNoise(ImageData& img, float factor);
 void WriteImageAsCSV(const char* file, float* d, int w,int h);
+
+int ReadJPEGFile(const char* filename, uchar** data, int* width, int*height);
