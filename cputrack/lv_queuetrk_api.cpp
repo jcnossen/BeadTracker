@@ -6,8 +6,6 @@ Labview API for the functionality in QueuedTracker.h
 #include "labview.h"
 #include "QueuedTracker.h"
 
-
-
 CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pZlut)
 {
 	LVArray3D<float>* zlut = *pZlut;
@@ -130,7 +128,7 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_generate_test_image(QueuedTracker* tracker, L
 	delete[] d;
 }
 
-CDLL_EXPORT void DLL_CALLCONV generate_image_from_lut(LVArray2D<float>** image, LVArray2D<float>** lut, float LUTradius, vector2f* position, float z, float M, float photonCountPP)
+CDLL_EXPORT void DLL_CALLCONV qtrk_generate_image_from_lut(LVArray2D<float>** image, LVArray2D<float>** lut, float LUTradius, vector2f* position, float z, float M, float photonCountPP)
 {
 	ImageData img((*image)->elem, (*image)->dimSizes[1], (*image)->dimSizes[0]);
 	ImageData zlut((*lut)->elem, (*lut)->dimSizes[1], (*lut)->dimSizes[0]);
@@ -140,4 +138,22 @@ CDLL_EXPORT void DLL_CALLCONV generate_image_from_lut(LVArray2D<float>** image, 
 	if(photonCountPP>0)
 		ApplyPoissonNoise(img, photonCountPP);
 }
+
+
+CDLL_EXPORT void DLL_CALLCONV qtrk_read_jpeg_from_file(const char* filename, LVArray2D<float>** dstImage)
+{
+	int w,h;
+	uchar* data;
+	
+	std::vector<uchar> buf = ReadToByteBuffer(filename);
+	ReadJPEGFile(&buf[0], buf.size(), &data,&w,&h);
+
+	if ( (*dstImage)->dimSizes[0] != h || (*dstImage)->dimSizes[1] != w )
+		ResizeLVArray2D(dstImage, h, w);
+
+	memcpy( (*dstImage)->elem, data, w*h );
+	delete[] data;
+}
+
+
 

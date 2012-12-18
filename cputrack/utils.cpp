@@ -184,3 +184,18 @@ void WriteImageAsCSV(const char* file, float* d, int w,int h)
 	fclose(f);
 }
 
+
+std::vector<uchar> ReadToByteBuffer(const char *filename)
+{
+	FILE *f = fopen(filename, "rb");
+
+	fseek(f, 0, SEEK_END);
+	int len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	std::vector<uchar> buf(len);
+	fread(&buf[0], 1,len, f);
+
+	fclose(f);
+	return buf;
+}

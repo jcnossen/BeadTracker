@@ -135,6 +135,7 @@
     <ClCompile Include="..\cputrack\cpu_tracker.cpp" />
     <ClCompile Include="..\cputrack\fastjpg.cpp" />
     <ClCompile Include="..\cputrack\queued_cpu_tracker.cpp" />
+    <ClCompile Include="..\cputrack\TeLibJpeg\jmemsrc.c" />
     <ClCompile Include="..\cputrack\utils.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -143,6 +144,7 @@
     <ClInclude Include="..\cputrack\kissfft.h" />
     <ClInclude Include="..\cputrack\QueuedTracker.h" />
     <ClInclude Include="..\cputrack\queued_cpu_tracker.h" />
+    <ClInclude Include="..\cputrack\TeLibJpeg\jmemdstsrc.h" />
     <ClInclude Include="..\cputrack\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

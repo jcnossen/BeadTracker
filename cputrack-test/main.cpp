@@ -487,7 +487,8 @@ int main()
 {
 	int w,h;
 	uchar* data;
-	if (ReadJPEGFile("SingleBead.jpg", &data, &w,&h)) {
+	std::vector<uchar> buf = ReadToByteBuffer("SingleBead.jpg");
+	if (ReadJPEGFile(&buf[0], buf.size(), &data, &w,&h)) {
 		delete[] data;
 	}
 	//SpeedTest();

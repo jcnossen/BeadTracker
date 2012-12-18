@@ -1,6 +1,8 @@
 #include <cstdio>
 #include "jpeglib.h"
 #include "utils.h"
+#include "TeLibJpeg\jmemdstsrc.h"
+
 
 struct my_error_mgr {
   struct jpeg_error_mgr pub;	/* "public" fields */
@@ -37,7 +39,7 @@ int ReadJPEGFile(uchar* srcbuf, int srclen, uchar** data, int* width, int*height
   /* Now we can initialize the JPEG decompression object. */
   jpeg_create_decompress(&cinfo);
 
-	jpeg_mem_src(&cinfo, srcbuf, srclen);
+  j_mem_src(&cinfo, srcbuf, srclen);
 
   /* Step 3: read file parameters with jpeg_read_header() */
   jpeg_read_header(&cinfo, TRUE);
@@ -84,7 +86,6 @@ int ReadJPEGFile(uchar* srcbuf, int srclen, uchar** data, int* width, int*height
    * loop counter, so that we don't have to keep track ourselves.
    */
   uchar* dst = *data;
-
   while (cinfo.output_scanline < cinfo.output_height) {
     /* jpeg_read_scanlines expects an array of pointers to scanlines.
      * Here the array is only one element long, but you could ask for
@@ -104,8 +105,7 @@ int ReadJPEGFile(uchar* srcbuf, int srclen, uchar** data, int* width, int*height
   }
 
   /* Step 7: Finish decompression */
-
-  (void) jpeg_finish_decompress(&cinfo);
+  jpeg_finish_decompress(&cinfo);
   /* We can ignore the return value since suspension is not possible
    * with the stdio data source.
    */
@@ -120,7 +120,7 @@ int ReadJPEGFile(uchar* srcbuf, int srclen, uchar** data, int* width, int*height
    * so as to simplify the setjmp error logic above.  (Actually, I don't
    * think that jpeg_destroy can do an error exit, but why assume anything...)
    */
-  fclose(infile);
+//  fclose(infile);
 
   /* At this point you may want to check to see whether any corrupt-data
    * warnings occurred (test whether jerr.pub.num_warnings is nonzero).

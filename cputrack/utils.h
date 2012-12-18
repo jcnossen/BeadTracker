@@ -81,4 +81,6 @@ void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float zlut_radius, 
 void ApplyPoissonNoise(ImageData& img, float factor);
 void WriteImageAsCSV(const char* file, float* d, int w,int h);
 
-int ReadJPEGFile(const char* filename, uchar** data, int* width, int*height);
+int ReadJPEGFile(uchar* srcbuf, int srclen, uchar** data, int* width, int*height);
+std::vector<uchar> ReadToByteBuffer(const char* filename);
+

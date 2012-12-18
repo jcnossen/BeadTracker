@@ -29,6 +29,10 @@ of this library and its documentation.
 
 #include "jpeglib.h"
  
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! Expanded data destination object for memory buffer output 
 	\note THIS IS FOR INTERNAL USE. DO NOT USE IT DIRECTLY.
 */
@@ -64,5 +68,10 @@ typedef my_source_mgr* my_src_ptr;
 //! Function to allows the reading of JPEG data from a memory buffer
 GLOBAL(void)
 j_mem_src (j_decompress_ptr cinfo, unsigned char* buffer, unsigned int bufsize);
+ 
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif   
