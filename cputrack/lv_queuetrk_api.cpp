@@ -6,6 +6,10 @@ Labview API for the functionality in QueuedTracker.h
 #include "labview.h"
 #include "QueuedTracker.h"
 
+#include "jpeglib.h"
+#include "TeLibJpeg\jmemdstsrc.h"
+
+
 CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pZlut)
 {
 	LVArray3D<float>* zlut = *pZlut;
@@ -140,19 +144,64 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_generate_image_from_lut(LVArray2D<float>** im
 }
 
 
-CDLL_EXPORT void DLL_CALLCONV qtrk_read_jpeg_from_file(const char* filename, LVArray2D<float>** dstImage)
+
+
+struct my_error_mgr {
+  struct jpeg_error_mgr pub;	/* "public" fields */
+};
+
+
+CDLL_EXPORT int DLL_CALLCONV qtrk_read_jpeg_from_file(const char* filename, LVArray2D<uchar>** dstImage)
 {
 	int w,h;
-	uchar* data;
-	
-	std::vector<uchar> buf = ReadToByteBuffer(filename);
-	ReadJPEGFile(&buf[0], buf.size(), &data,&w,&h);
 
+	FILE *f = fopen(filename, "rb");
+
+	fseek(f, 0, SEEK_END);
+	int len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	uchar* buf=new uchar[len];
+	fread(buf, 1,len, f);
+	fclose(f);
+
+  struct jpeg_decompress_struct cinfo;
+
+  JSAMPARRAY buffer;		/* Output row buffer */
+  int row_stride;		/* physical row width in output buffer */
+  my_error_mgr jerr;
+  cinfo.err = jpeg_std_error(&jerr.pub);
+  jpeg_create_decompress(&cinfo);
+
+  j_mem_src(&cinfo, buf, len);
+
+  /* Step 3: read file parameters with jpeg_read_header() */
+  jpeg_read_header(&cinfo, TRUE);
+  jpeg_start_decompress(&cinfo);
+  
+  if (cinfo.output_components != 1) {
+	  delete[] buf;
+	  return 0;
+  }
+
+  w = cinfo.output_width;
+  h = cinfo.output_height;
 	if ( (*dstImage)->dimSizes[0] != h || (*dstImage)->dimSizes[1] != w )
 		ResizeLVArray2D(dstImage, h, w);
 
-	memcpy( (*dstImage)->elem, data, w*h );
-	delete[] data;
+  row_stride = cinfo.output_width * cinfo.output_components;
+  /* Make a one-row-high sample array that will go away when done with image */
+ // buffer = (*cinfo.mem->alloc_sarray) ((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
+
+  while (cinfo.output_scanline < cinfo.output_height) {
+	uchar* jpeg_buf = & (*dstImage)->elem [cinfo.output_scanline * w];
+    jpeg_read_scanlines(&cinfo, &jpeg_buf, 1);
+  }
+  jpeg_finish_decompress(&cinfo);
+  jpeg_destroy_decompress(&cinfo);
+
+  delete[] buf;
+  return 1;
 }
 
 
