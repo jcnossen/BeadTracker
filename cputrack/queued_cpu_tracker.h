@@ -13,10 +13,9 @@ public:
 	~QueuedCPUTracker();
 
 	void Start();
-	void SetZLUT(float* data, int planes, int res, int num_zluts);
-	void ComputeRadialProfile(float *image, int width, int height, float* dst, int profileLen, vector2f center);
-
-	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos=0, uint zlutIndex=0);
+	void SetZLUT(float* data, int num_zluts, int planes, int res);
+	float* GetZLUT(int *num_zluts, int* planes, int* res);
+	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
 	int PollFinished(LocalizationResult* results, int maxResults);
 
 	void GenerateTestImage(float* dst, float xp,float yp, float z, float photoncount);
@@ -34,14 +33,14 @@ private:
 	};
 
 	struct Job {
-		Job() { data=0; dataType=QTrkU8; locType=LocalizeXCor1D; id=0; zlut=0; initialPos.x=initialPos.y=initialPos.z=0.0f; }
+		Job() { data=0; dataType=QTrkU8; locType=LocalizeXCor1D; id=0; zlut=0; initialPos.x=initialPos.y=initialPos.z=0.0f; zlutPlane=0; }
 		~Job() { delete[] data; }
 
 		uchar* data;
 		QTRK_PixelDataType dataType;
 		LocalizeType locType;
 		uint id;
-		uint zlut;
+		uint zlut, zlutPlane;
 		vector3f initialPos;
 	};
 
@@ -55,6 +54,7 @@ private:
 	std::vector<Thread> threads;
 	float* zluts;
 	int zlut_count, zlut_planes, zlut_res;
+	float* GetZLUTByIndex(int index) { return &zluts[ index * (zlut_planes*zlut_res) ]; }
 
 	// signal threads to stop their work
 	bool quitWork;

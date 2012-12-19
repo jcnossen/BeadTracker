@@ -13,11 +13,63 @@
 		<Item Name="JTrkAPI.llb" Type="Folder" URL="../JTrkAPI.llb">
 			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
+		<Item Name="OfflineTrackerJTrk" Type="Folder">
+			<Item Name="boxoverlayimage.vi" Type="VI" URL="../OfflineTrackerJTrk/boxoverlayimage.vi"/>
+			<Item Name="Check Limits.vi" Type="VI" URL="../OfflineTrackerJTrk/Check Limits.vi"/>
+			<Item Name="CheckROIEdges (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/CheckROIEdges (SubVI).vi"/>
+			<Item Name="CleanIT (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/CleanIT (SubVI).vi"/>
+			<Item Name="CleanROIs (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/CleanROIs (SubVI).vi"/>
+			<Item Name="CompareZProfile2.vi" Type="VI" URL="../OfflineTrackerJTrk/CompareZProfile2.vi"/>
+			<Item Name="CP que.ctl" Type="VI" URL="../OfflineTrackerJTrk/CP que.ctl"/>
+			<Item Name="datahandleMVL.vi" Type="VI" URL="../OfflineTrackerJTrk/datahandleMVL.vi"/>
+			<Item Name="draw rectangles.vi" Type="VI" URL="../OfflineTrackerJTrk/draw rectangles.vi"/>
+			<Item Name="General Polynomial Fit with SD.vi" Type="VI" URL="../OfflineTrackerJTrk/General Polynomial Fit with SD.vi"/>
+			<Item Name="Get Max 1D 3p.vi" Type="VI" URL="../OfflineTrackerJTrk/Get Max 1D 3p.vi"/>
+			<Item Name="Global PhaseStandalone.vi" Type="VI" URL="../OfflineTrackerJTrk/Global PhaseStandalone.vi"/>
+			<Item Name="imagereque.vi" Type="VI" URL="../OfflineTrackerJTrk/imagereque.vi"/>
+			<Item Name="load images.vi" Type="VI" URL="../OfflineTrackerJTrk/load images.vi"/>
+			<Item Name="LoadOneImageviaPath.vi" Type="VI" URL="../OfflineTrackerJTrk/LoadOneImageviaPath.vi"/>
+			<Item Name="LoadZlut.vi" Type="VI" URL="../OfflineTrackerJTrk/LoadZlut.vi"/>
+			<Item Name="MainProgram.vi" Type="VI" URL="../OfflineTrackerJTrk/MainProgram.vi"/>
+			<Item Name="MakeAProfileJK.vi" Type="VI" URL="../OfflineTrackerJTrk/MakeAProfileJK.vi"/>
+			<Item Name="MakeBigTemplate (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/MakeBigTemplate (SubVI).vi"/>
+			<Item Name="MakeCustomWindow (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/MakeCustomWindow (SubVI).vi"/>
+			<Item Name="MakePhiAxis (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/MakePhiAxis (SubVI).vi"/>
+			<Item Name="MakeRadialAxis (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/MakeRadialAxis (SubVI).vi"/>
+			<Item Name="MakeZlut.vi" Type="VI" URL="../OfflineTrackerJTrk/MakeZlut.vi"/>
+			<Item Name="MinusMean2D (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/MinusMean2D (SubVI).vi"/>
+			<Item Name="OfflineTrackerHandleMVL2.vi" Type="VI" URL="../OfflineTrackerJTrk/OfflineTrackerHandleMVL2.vi"/>
+			<Item Name="OneQuadProfile (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/OneQuadProfile (SubVI).vi"/>
+			<Item Name="parabola fit2.vi" Type="VI" URL="../OfflineTrackerJTrk/parabola fit2.vi"/>
+			<Item Name="parabola fitZ.vi" Type="VI" URL="../OfflineTrackerJTrk/parabola fitZ.vi"/>
+			<Item Name="pix2um&amp;refsubstract.vi" Type="VI" URL="../OfflineTrackerJTrk/pix2um&amp;refsubstract.vi"/>
+			<Item Name="Plot_em.vi" Type="VI" URL="../OfflineTrackerJTrk/Plot_em.vi"/>
+			<Item Name="QuadCombine (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/QuadCombine (SubVI).vi"/>
+			<Item Name="QuadExtraPass (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/QuadExtraPass (SubVI).vi"/>
+			<Item Name="RECenterROI (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/RECenterROI (SubVI).vi"/>
+			<Item Name="RemovenearestROI.vi" Type="VI" URL="../OfflineTrackerJTrk/RemovenearestROI.vi"/>
+			<Item Name="roi2xy.vi" Type="VI" URL="../OfflineTrackerJTrk/roi2xy.vi"/>
+			<Item Name="ROIAutoSearch.vi" Type="VI" URL="../OfflineTrackerJTrk/ROIAutoSearch.vi"/>
+			<Item Name="ROICenter2LTRB.vi" Type="VI" URL="../OfflineTrackerJTrk/ROICenter2LTRB.vi"/>
+			<Item Name="ROIlistautofill.vi" Type="VI" URL="../OfflineTrackerJTrk/ROIlistautofill.vi"/>
+			<Item Name="SaveData.vi" Type="VI" URL="../OfflineTrackerJTrk/SaveData.vi"/>
+			<Item Name="Select Bests (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/Select Bests (SubVI).vi"/>
+			<Item Name="SetBeads.vi" Type="VI" URL="../OfflineTrackerJTrk/SetBeads.vi"/>
+			<Item Name="ShowBead.vi" Type="VI" URL="../OfflineTrackerJTrk/ShowBead.vi"/>
+			<Item Name="SortOnKey (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/SortOnKey (SubVI).vi"/>
+			<Item Name="Stack1LUT(SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/Stack1LUT(SubVI).vi"/>
+			<Item Name="Swapit2D (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/Swapit2D (SubVI).vi"/>
+			<Item Name="Tracker.vi" Type="VI" URL="../OfflineTrackerJTrk/Tracker.vi"/>
+			<Item Name="trackerhandle.vi" Type="VI" URL="../OfflineTrackerJTrk/trackerhandle.vi"/>
+			<Item Name="Trackit.vi" Type="VI" URL="../OfflineTrackerJTrk/Trackit.vi"/>
+			<Item Name="Xcor1D (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/Xcor1D (SubVI).vi"/>
+			<Item Name="Xcorimages (SubVI).vi" Type="VI" URL="../OfflineTrackerJTrk/Xcorimages (SubVI).vi"/>
+			<Item Name="xy2roi.vi" Type="VI" URL="../OfflineTrackerJTrk/xy2roi.vi"/>
+			<Item Name="XY_GetCenterOfMass.vi" Type="VI" URL="../OfflineTrackerJTrk/XY_GetCenterOfMass.vi"/>
+		</Item>
 		<Item Name="jtrk-labview.dll" Type="Document" URL="../jtrk-labview.dll"/>
-		<Item Name="OfflineTracker.lvlib" Type="Library" URL="../OfflineTracker.lvlib"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
-				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
 				<Item Name="BuildHelpPath.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/BuildHelpPath.vi"/>
 				<Item Name="Check Special Tags.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Check Special Tags.vi"/>
 				<Item Name="Clear Errors.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Clear Errors.vi"/>
@@ -29,7 +81,6 @@
 				<Item Name="Details Display Dialog.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Details Display Dialog.vi"/>
 				<Item Name="DialogType.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/DialogType.ctl"/>
 				<Item Name="DialogTypeEnum.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/DialogTypeEnum.ctl"/>
-				<Item Name="Error Cluster From Error Code.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Error Cluster From Error Code.vi"/>
 				<Item Name="Error Code Database.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Error Code Database.vi"/>
 				<Item Name="ErrWarn.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/ErrWarn.ctl"/>
 				<Item Name="eventvkey.ctl" Type="VI" URL="/&lt;vilib&gt;/event_ctls.llb/eventvkey.ctl"/>
@@ -65,7 +116,6 @@
 				<Item Name="LVPointDoubleTypeDef.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/miscctls.llb/LVPointDoubleTypeDef.ctl"/>
 				<Item Name="NI_AALBase.lvlib" Type="Library" URL="/&lt;vilib&gt;/Analysis/NI_AALBase.lvlib"/>
 				<Item Name="NI_AALPro.lvlib" Type="Library" URL="/&lt;vilib&gt;/Analysis/NI_AALPro.lvlib"/>
-				<Item Name="NI_FileType.lvlib" Type="Library" URL="/&lt;vilib&gt;/Utility/lvfile.llb/NI_FileType.lvlib"/>
 				<Item Name="NI_Matrix.lvlib" Type="Library" URL="/&lt;vilib&gt;/Analysis/Matrix/NI_Matrix.lvlib"/>
 				<Item Name="NI_Vision_Development_Module.lvlib" Type="Library" URL="/&lt;vilib&gt;/vision/NI_Vision_Development_Module.lvlib"/>
 				<Item Name="Not Found Dialog.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Not Found Dialog.vi"/>
@@ -90,6 +140,7 @@
 				<Item Name="Write To Spreadsheet File (string).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Write To Spreadsheet File (string).vi"/>
 				<Item Name="Write To Spreadsheet File.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Write To Spreadsheet File.vi"/>
 			</Item>
+			<Item Name="1D CrossCorrelation.vi" Type="VI" URL="../OfflineTrackerJTrk/1D CrossCorrelation.vi"/>
 			<Item Name="AccurateTickCount.vi" Type="VI" URL="../AccurateTickCount.vi"/>
 			<Item Name="kernel32.dll" Type="Document" URL="kernel32.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
@@ -101,6 +152,7 @@
 			<Item Name="nivissvc.dll" Type="Document" URL="nivissvc.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
+			<Item Name="OfflineTracker.lvlib" Type="Library" URL="../OfflineTracker.lvlib"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build">
 			<Item Name="My Application" Type="EXE">
@@ -125,7 +177,7 @@
 				<Property Name="Source[0].itemID" Type="Str">{A5E1E16F-9CB5-4B28-ACB0-C13FC924E94B}</Property>
 				<Property Name="Source[0].type" Type="Str">Container</Property>
 				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[1].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/MainProgram.vi</Property>
+				<Property Name="Source[1].itemID" Type="Ref"></Property>
 				<Property Name="Source[1].sourceInclusion" Type="Str">TopLevel</Property>
 				<Property Name="Source[1].type" Type="Str">VI</Property>
 				<Property Name="Source[2].destinationIndex" Type="Int">0</Property>
@@ -174,157 +226,157 @@
 				<Property Name="Source[1].itemID" Type="Ref">/My Computer/jtrk-labview.dll</Property>
 				<Property Name="Source[1].sourceInclusion" Type="Str">Include</Property>
 				<Property Name="Source[10].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[10].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/CleanROIs (SubVI).vi</Property>
+				<Property Name="Source[10].itemID" Type="Ref"></Property>
 				<Property Name="Source[10].type" Type="Str">VI</Property>
 				<Property Name="Source[11].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[11].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/CompareZProfile2.vi</Property>
+				<Property Name="Source[11].itemID" Type="Ref"></Property>
 				<Property Name="Source[11].type" Type="Str">VI</Property>
 				<Property Name="Source[12].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[12].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/CP que.ctl</Property>
+				<Property Name="Source[12].itemID" Type="Ref"></Property>
 				<Property Name="Source[12].type" Type="Str">VI</Property>
 				<Property Name="Source[13].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[13].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/datahandleMVL.vi</Property>
+				<Property Name="Source[13].itemID" Type="Ref"></Property>
 				<Property Name="Source[13].type" Type="Str">VI</Property>
 				<Property Name="Source[14].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[14].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/draw rectangles.vi</Property>
+				<Property Name="Source[14].itemID" Type="Ref"></Property>
 				<Property Name="Source[14].type" Type="Str">VI</Property>
 				<Property Name="Source[15].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[15].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/General Polynomial Fit with SD.vi</Property>
+				<Property Name="Source[15].itemID" Type="Ref"></Property>
 				<Property Name="Source[15].type" Type="Str">VI</Property>
 				<Property Name="Source[16].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[16].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/Get Max 1D 3p.vi</Property>
+				<Property Name="Source[16].itemID" Type="Ref"></Property>
 				<Property Name="Source[16].type" Type="Str">VI</Property>
 				<Property Name="Source[17].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[17].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/Global PhaseStandalone.vi</Property>
+				<Property Name="Source[17].itemID" Type="Ref"></Property>
 				<Property Name="Source[17].type" Type="Str">VI</Property>
 				<Property Name="Source[18].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[18].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/imagereque.vi</Property>
+				<Property Name="Source[18].itemID" Type="Ref"></Property>
 				<Property Name="Source[18].type" Type="Str">VI</Property>
 				<Property Name="Source[19].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[19].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/load images.vi</Property>
+				<Property Name="Source[19].itemID" Type="Ref"></Property>
 				<Property Name="Source[19].type" Type="Str">VI</Property>
 				<Property Name="Source[2].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[2].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib</Property>
+				<Property Name="Source[2].itemID" Type="Ref"></Property>
 				<Property Name="Source[2].Library.allowMissingMembers" Type="Bool">true</Property>
 				<Property Name="Source[2].type" Type="Str">Library</Property>
 				<Property Name="Source[20].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[20].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/LoadOneImageviaPath.vi</Property>
+				<Property Name="Source[20].itemID" Type="Ref"></Property>
 				<Property Name="Source[20].type" Type="Str">VI</Property>
 				<Property Name="Source[21].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[21].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/LoadZlut.vi</Property>
+				<Property Name="Source[21].itemID" Type="Ref"></Property>
 				<Property Name="Source[21].type" Type="Str">VI</Property>
 				<Property Name="Source[22].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[22].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/MakeAProfileJK.vi</Property>
+				<Property Name="Source[22].itemID" Type="Ref"></Property>
 				<Property Name="Source[22].type" Type="Str">VI</Property>
 				<Property Name="Source[23].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[23].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/MakeBigTemplate (SubVI).vi</Property>
+				<Property Name="Source[23].itemID" Type="Ref"></Property>
 				<Property Name="Source[23].type" Type="Str">VI</Property>
 				<Property Name="Source[24].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[24].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/MakeCustomWindow (SubVI).vi</Property>
+				<Property Name="Source[24].itemID" Type="Ref"></Property>
 				<Property Name="Source[24].type" Type="Str">VI</Property>
 				<Property Name="Source[25].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[25].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/MakePhiAxis (SubVI).vi</Property>
+				<Property Name="Source[25].itemID" Type="Ref"></Property>
 				<Property Name="Source[25].type" Type="Str">VI</Property>
 				<Property Name="Source[26].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[26].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/MakeRadialAxis (SubVI).vi</Property>
+				<Property Name="Source[26].itemID" Type="Ref"></Property>
 				<Property Name="Source[26].type" Type="Str">VI</Property>
 				<Property Name="Source[27].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[27].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/MakeZlut.vi</Property>
+				<Property Name="Source[27].itemID" Type="Ref"></Property>
 				<Property Name="Source[27].type" Type="Str">VI</Property>
 				<Property Name="Source[28].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[28].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/MinusMean2D (SubVI).vi</Property>
+				<Property Name="Source[28].itemID" Type="Ref"></Property>
 				<Property Name="Source[28].type" Type="Str">VI</Property>
 				<Property Name="Source[29].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[29].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/OfflineTrackerHandleMVL2.vi</Property>
+				<Property Name="Source[29].itemID" Type="Ref"></Property>
 				<Property Name="Source[29].type" Type="Str">VI</Property>
 				<Property Name="Source[3].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[3].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/MainProgram.vi</Property>
+				<Property Name="Source[3].itemID" Type="Ref"></Property>
 				<Property Name="Source[3].sourceInclusion" Type="Str">Include</Property>
 				<Property Name="Source[3].type" Type="Str">VI</Property>
 				<Property Name="Source[3].VI.LLBtopLevel" Type="Bool">true</Property>
 				<Property Name="Source[30].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[30].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/OneQuadProfile (SubVI).vi</Property>
+				<Property Name="Source[30].itemID" Type="Ref"></Property>
 				<Property Name="Source[30].type" Type="Str">VI</Property>
 				<Property Name="Source[31].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[31].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/parabola fit2.vi</Property>
+				<Property Name="Source[31].itemID" Type="Ref"></Property>
 				<Property Name="Source[31].type" Type="Str">VI</Property>
 				<Property Name="Source[32].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[32].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/parabola fitZ.vi</Property>
+				<Property Name="Source[32].itemID" Type="Ref"></Property>
 				<Property Name="Source[32].type" Type="Str">VI</Property>
 				<Property Name="Source[33].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[33].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/pix2um&amp;refsubstract.vi</Property>
+				<Property Name="Source[33].itemID" Type="Ref"></Property>
 				<Property Name="Source[33].type" Type="Str">VI</Property>
 				<Property Name="Source[34].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[34].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/Plot_em.vi</Property>
+				<Property Name="Source[34].itemID" Type="Ref"></Property>
 				<Property Name="Source[34].type" Type="Str">VI</Property>
 				<Property Name="Source[35].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[35].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/QuadCombine (SubVI).vi</Property>
+				<Property Name="Source[35].itemID" Type="Ref"></Property>
 				<Property Name="Source[35].type" Type="Str">VI</Property>
 				<Property Name="Source[36].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[36].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/QuadExtraPass (SubVI).vi</Property>
+				<Property Name="Source[36].itemID" Type="Ref"></Property>
 				<Property Name="Source[36].type" Type="Str">VI</Property>
 				<Property Name="Source[37].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[37].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/RECenterROI (SubVI).vi</Property>
+				<Property Name="Source[37].itemID" Type="Ref"></Property>
 				<Property Name="Source[37].type" Type="Str">VI</Property>
 				<Property Name="Source[38].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[38].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/RemovenearestROI.vi</Property>
+				<Property Name="Source[38].itemID" Type="Ref"></Property>
 				<Property Name="Source[38].type" Type="Str">VI</Property>
 				<Property Name="Source[39].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[39].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/roi2xy.vi</Property>
+				<Property Name="Source[39].itemID" Type="Ref"></Property>
 				<Property Name="Source[39].type" Type="Str">VI</Property>
 				<Property Name="Source[4].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[4].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Tracker.vi</Property>
+				<Property Name="Source[4].itemID" Type="Ref"></Property>
 				<Property Name="Source[4].type" Type="Str">VI</Property>
 				<Property Name="Source[40].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[40].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/ROIAutoSearch.vi</Property>
+				<Property Name="Source[40].itemID" Type="Ref"></Property>
 				<Property Name="Source[40].type" Type="Str">VI</Property>
 				<Property Name="Source[41].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[41].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/ROICenter2LTRB.vi</Property>
+				<Property Name="Source[41].itemID" Type="Ref"></Property>
 				<Property Name="Source[41].type" Type="Str">VI</Property>
 				<Property Name="Source[42].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[42].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/ROIlistautofill.vi</Property>
+				<Property Name="Source[42].itemID" Type="Ref"></Property>
 				<Property Name="Source[42].type" Type="Str">VI</Property>
 				<Property Name="Source[43].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[43].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/SaveData.vi</Property>
+				<Property Name="Source[43].itemID" Type="Ref"></Property>
 				<Property Name="Source[43].type" Type="Str">VI</Property>
 				<Property Name="Source[44].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[44].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/Select Bests (SubVI).vi</Property>
+				<Property Name="Source[44].itemID" Type="Ref"></Property>
 				<Property Name="Source[44].type" Type="Str">VI</Property>
 				<Property Name="Source[45].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[45].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/SetBeads.vi</Property>
+				<Property Name="Source[45].itemID" Type="Ref"></Property>
 				<Property Name="Source[45].type" Type="Str">VI</Property>
 				<Property Name="Source[46].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[46].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/ShowBead.vi</Property>
+				<Property Name="Source[46].itemID" Type="Ref"></Property>
 				<Property Name="Source[46].type" Type="Str">VI</Property>
 				<Property Name="Source[47].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[47].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/SortOnKey (SubVI).vi</Property>
+				<Property Name="Source[47].itemID" Type="Ref"></Property>
 				<Property Name="Source[47].type" Type="Str">VI</Property>
 				<Property Name="Source[48].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[48].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/Stack1LUT(SubVI).vi</Property>
+				<Property Name="Source[48].itemID" Type="Ref"></Property>
 				<Property Name="Source[48].type" Type="Str">VI</Property>
 				<Property Name="Source[49].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[49].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/Swapit2D (SubVI).vi</Property>
+				<Property Name="Source[49].itemID" Type="Ref"></Property>
 				<Property Name="Source[49].type" Type="Str">VI</Property>
 				<Property Name="Source[5].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[5].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/1D CrossCorrelation.vi</Property>
+				<Property Name="Source[5].itemID" Type="Ref"></Property>
 				<Property Name="Source[5].type" Type="Str">VI</Property>
 				<Property Name="Source[50].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[50].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/trackerhandle.vi</Property>
+				<Property Name="Source[50].itemID" Type="Ref"></Property>
 				<Property Name="Source[50].type" Type="Str">VI</Property>
 				<Property Name="Source[51].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[51].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/Trackit.vi</Property>
+				<Property Name="Source[51].itemID" Type="Ref"></Property>
 				<Property Name="Source[51].type" Type="Str">VI</Property>
 				<Property Name="Source[52].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[52].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/Xcor1D (SubVI).vi</Property>
+				<Property Name="Source[52].itemID" Type="Ref"></Property>
 				<Property Name="Source[52].type" Type="Str">VI</Property>
 				<Property Name="Source[53].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[53].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/Xcorimages (SubVI).vi</Property>
+				<Property Name="Source[53].itemID" Type="Ref"></Property>
 				<Property Name="Source[53].type" Type="Str">VI</Property>
 				<Property Name="Source[54].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[54].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/xy2roi.vi</Property>
+				<Property Name="Source[54].itemID" Type="Ref"></Property>
 				<Property Name="Source[54].type" Type="Str">VI</Property>
 				<Property Name="Source[55].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[55].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/XY_GetCenterOfMass.vi</Property>
+				<Property Name="Source[55].itemID" Type="Ref"></Property>
 				<Property Name="Source[55].type" Type="Str">VI</Property>
 				<Property Name="Source[56].Container.applyInclusion" Type="Bool">true</Property>
 				<Property Name="Source[56].destinationIndex" Type="Int">0</Property>
@@ -332,16 +384,16 @@
 				<Property Name="Source[56].sourceInclusion" Type="Str">Exclude</Property>
 				<Property Name="Source[56].type" Type="Str">Container</Property>
 				<Property Name="Source[6].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[6].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/boxoverlayimage.vi</Property>
+				<Property Name="Source[6].itemID" Type="Ref"></Property>
 				<Property Name="Source[6].type" Type="Str">VI</Property>
 				<Property Name="Source[7].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[7].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/Check Limits.vi</Property>
+				<Property Name="Source[7].itemID" Type="Ref"></Property>
 				<Property Name="Source[7].type" Type="Str">VI</Property>
 				<Property Name="Source[8].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[8].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/CheckROIEdges (SubVI).vi</Property>
+				<Property Name="Source[8].itemID" Type="Ref"></Property>
 				<Property Name="Source[8].type" Type="Str">VI</Property>
 				<Property Name="Source[9].destinationIndex" Type="Int">0</Property>
-				<Property Name="Source[9].itemID" Type="Ref">/My Computer/OfflineTracker.lvlib/Utils/CleanIT (SubVI).vi</Property>
+				<Property Name="Source[9].itemID" Type="Ref"></Property>
 				<Property Name="Source[9].type" Type="Str">VI</Property>
 				<Property Name="SourceCount" Type="Int">57</Property>
 			</Item>

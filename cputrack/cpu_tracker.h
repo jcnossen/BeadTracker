@@ -33,6 +33,7 @@ public:
 	int width, height, xcorw;
 
 	float *srcImage, *debugImage;
+	float mean; // Updated by ComputeBgCorrectedCOM()
 #ifdef _DEBUG
 	float maxImageValue;
 #endif
@@ -44,6 +45,7 @@ public:
 	int zlut_planes, zlut_res, zlut_count, zlut_angularSteps; 
 	float zlut_minradius, zlut_maxradius;
 	bool zlut_useCorrelation;
+	std::vector<float> zlut_radialweights;
 
 	float* getZLUT(int index)  { return &zluts[zlut_res*zlut_planes*index]; }
 
@@ -61,6 +63,7 @@ public:
 	CPUTracker(int w, int h, int xcorwindow=128);
 	~CPUTracker();
 	bool KeepInsideBoundaries(vector2f *center, float radius);
+	bool CheckBoundaries(vector2f center, float radius);
 	vector2f ComputeXCor2D();
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth, bool& boundaryHit);
 	vector2f ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQuadrant, float minRadius, float maxRadius, bool& boundaryHit);
@@ -77,7 +80,7 @@ public:
 	void ComputeQuadrantProfile(qi_t* dst, int radialSteps, int angularSteps, int quadrant, float minRadius, float maxRadius, vector2f center);
 
 	void Normalize(float *image=0);
-	void SetZLUT(float* data, int planes, int res, int num_zluts, float minradius, float maxradius, int angularSteps, bool copyMemory, bool useCorrelation);
+	void SetZLUT(float* data, int planes, int res, int num_zluts, float minradius, float maxradius, int angularSteps, bool copyMemory, bool useCorrelation, float* radialweights=0);
 	float ComputeZ(vector2f center, int angularSteps, int zlutIndex, bool* boundaryHit=0, float* profile=0, float* cmpprof=0 ); // radialSteps is given by zlut_res
 
 	bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
@@ -101,6 +104,8 @@ void CPUTracker::SetImage(TPixel* data, uint pitchInBytes)
 		}
 		bp += pitchInBytes;
 	}
+
+	mean=0.0f;
 }
 
 

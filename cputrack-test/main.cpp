@@ -7,7 +7,7 @@
 template<typename T> T sq(T x) { return x*x; }
 template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }
 
-
+float distance(vector2f a,vector2f b) { return distance(a.x-b.x,a.y-b.y); }
 
 
 double getPreciseTime()
@@ -41,6 +41,7 @@ void SpeedTest()
 		vector2f center = { tracker->GetWidth()/2, tracker->GetHeight()/2 };
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, s, 0.0f);
+		tracker->mean = 0.0f;
 		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1, zradius, center);	
 	}
 	tracker->SetZLUT(zlut, zplanes, radialSteps, 1,1, zradius, 64, true, true);
@@ -58,7 +59,7 @@ void SpeedTest()
 		float yp = tracker->GetHeight()/2+(rand_uniform<float>() - 0.5) * 5;
 		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
 
-		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), xp, yp, z, 10000);
+		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), xp, yp, z, 0);
 
 		double t1 = getPreciseTime();
 		vector2f com = tracker->ComputeBgCorrectedCOM();
@@ -70,6 +71,9 @@ void SpeedTest()
 			tracker.OutputDebugInfo();
 			writeImageAsCSV("test.csv", tracker.srcImage, tracker.width, tracker.height);
 		}*/
+		if (boundaryHit)
+			dbgprintf("xcor boundaryhit!!\n");
+
 
 		comdist.x += fabsf(com.x - xp);
 		comdist.y += fabsf(com.y - yp);
@@ -82,11 +86,16 @@ void SpeedTest()
 		qidist.x += fabsf(qi.x - xp);
 		qidist.y += fabsf(qi.y - yp);
 		double t4 = getPreciseTime();
+		if (boundaryHit)
+			dbgprintf("qi boundaryhit!!\n");
 
+		boundaryHit = false;
 		float est_z = zmin + (zmax-zmin)*tracker->ComputeZ(qi, 64, 0, &boundaryHit, 0) / (zplanes-1);
 		zdist += fabsf(est_z-z);
 		zerrsum += est_z-z;
 
+		if (boundaryHit)
+			dbgprintf("computeZ boundaryhit!!\n");
 		double t5 = getPreciseTime();
 	//	dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f\n", xp, com.x-xp, xcor.x-xp));
 		if (k>0) { // skip first initialization round
@@ -96,8 +105,6 @@ void SpeedTest()
 			tqi+=t4-t3;
 			tz+=t5-t4;
 		}
-		if (boundaryHit)
-			dbgprintf("boundaryhit!!\n");
 	}
 
 	int Nns = N-1;
@@ -345,6 +352,7 @@ void QTrkTest()
 	// Generate ZLUT
 	int radialSteps=64, zplanes=100;
 	float zmin=2,zmax=6;
+	/*
 	float* zlut = new float[radialSteps*zplanes];
 	for (int x=0;x<zplanes;x++)  {
 		vector2f center = { cfg.width/2, cfg.height/2 };
@@ -352,8 +360,8 @@ void QTrkTest()
 		GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
 		qtrk.ComputeRadialProfile(image, cfg.width, cfg.height, &zlut[x*radialSteps], radialSteps, center);
 	}
-	qtrk.SetZLUT(zlut, zplanes, radialSteps, 1);
-	delete[] zlut;
+	qtrk.SetZLUT(zlut, 1, zplanes, radialSteps);
+	delete[] zlut;*/
 
 	// Schedule images to localize on
 #ifdef _DEBUG
@@ -376,7 +384,7 @@ void QTrkTest()
 		GenerateTestImage(ImageData(image, cfg.width, cfg.height), xp, yp, z, 10000);
 		double t2 = getPreciseTime();
 		for (int k=0;k<JobsPerImg;k++)
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeXCor1D), n*JobsPerImg+k, 0);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeXCor1D), n*JobsPerImg+k, 0, 0, 0);
 		double t3 = getPreciseTime();
 		tgen += t2-t1;
 		tschedule += t3-t2;
@@ -422,16 +430,76 @@ void QTrkTest()
 	dbgprintf("ErrX: %f, ErrY: %f, ErrZ: %f\n", errX/jobc, errY/jobc,errZ/jobc);
 }
 
+void BuildConvergenceMap(int iterations)
+{
+	int W=80, H=80;
+	char* data=new char[W*H];
+	FILE* f=fopen("singlebead.bin", "rb");
+	fread(data,1,80*80,f);
+	fclose(f);
+
+	float testrange=20;
+	int steps=100;
+	float step=testrange/steps;
+	vector2f errXCor={}, errQI = {};
+	CPUTracker trk(W,H,40);
+
+	// Get a good starting estimate
+	trk.SetImage8Bit((uchar*)data,W);
+	vector2f com = trk.ComputeBgCorrectedCOM();
+	bool boundaryHit;
+	vector2f cmp = trk.ComputeQI(com,8,80,64,2,25,boundaryHit);
+
+	float *xcorErrMap = new float[steps*steps];
+	float *qiErrMap = new float[steps*steps];
+
+	for (int y=0;y<steps;y++){
+		for (int x=0;x<steps;x++)
+		{
+			vector2f initial = { cmp.x+step*(x-steps/2), cmp.y+step*(y-steps/2) };
+			vector2f xcor = trk.ComputeXCorInterpolated(initial, iterations, 64, boundaryHit);
+			vector2f qi = trk.ComputeQI(initial, iterations, 80, 64,2,30,boundaryHit);
+
+			errXCor.x += fabs(xcor.x-cmp.x);
+			errXCor.y += fabs(xcor.y-cmp.y);
+			xcorErrMap[y*steps+x] = distance(xcor,cmp);
+
+			errQI.x += fabs(qi.x-cmp.x);
+			errQI.y += fabs(qi.y-cmp.y);
+			qiErrMap[y*steps+x] = distance(qi,cmp);
+		}
+		dbgprintf("y=%d\n", y);
+	}
+
+
+	WriteImageAsCSV(SPrintf("xcor-err-i%d.csv", iterations).c_str(), xcorErrMap, steps,steps);
+	WriteImageAsCSV(SPrintf("qi-err-i%d.csv", iterations).c_str(), qiErrMap, steps,steps);
+
+	delete[] qiErrMap;
+	delete[] xcorErrMap;
+	delete[] data;
+}
+
+
+
 
 int main()
 {
-	SpeedTest();
-	SmallImageTest();
-	PixelationErrorTest();
+	int w,h;
+	uchar* data;
+	std::vector<uchar> buf = ReadToByteBuffer("SingleBead.jpg");
+	if (ReadJPEGFile(&buf[0], buf.size(), &data, &w,&h)) {
+		delete[] data;
+	}
+	//SpeedTest();
+	//SmallImageTest();
+	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
-	QTrkTest();
+	//QTrkTest();6
+	//for (int i=1;i<8;i++)
+//		BuildConvergenceMap(i);
 
 	return 0;
 }

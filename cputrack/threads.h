@@ -1,4 +1,45 @@
 
+#ifdef USE_PTHREADS
+
+#include "pthread.h"
+
+struct Threads
+{
+	struct Handle;
+
+	pthread_attr_t joinable_attr;
+
+	struct Mutex {
+		pthread_mutex_t h;
+		Mutex() { pthread_mutex_init(&h, 0);  }
+		~Mutex() { pthread_mutex_destroy(&h);  }
+		void lock() { 
+			pthread_mutex_lock(&h); }
+		void unlock() { pthread_mutex_unlock(&h); }
+	};
+
+	static Handle* Create(DWORD (WINAPI *method)(void* param), void* param) {
+		pthread_t h;
+		pthread_attr_t joinable_attr;
+		pthread_attr_init(&joinable_attr);
+		pthread_attr_setdetachstate(&joinable_attr, PTHREAD_CREATE_JOINABLE);
+		pthread_create(&h, &joinable_attr, method, param);
+		if (!h) {
+			throw std::runtime_error("Failed to create processing thread.");
+		}
+
+		pthread_attr_destroy(&joinable_attr);
+		return (Handle*)h;
+	}
+
+	static void WaitAndClose(Handle* h) {
+		pthread_join((pthread_t)h, 0);
+	}
+};
+
+
+#else
+
 #include <stdexcept>
 #include <Windows.h>
 #undef AddJob
@@ -35,3 +76,4 @@ struct Threads
 typedef Threads::Handle ThreadHandle;
 
 
+#endif

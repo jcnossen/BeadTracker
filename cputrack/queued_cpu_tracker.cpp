@@ -153,6 +153,8 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 		th->tracker->SetImageFloat((float*)j->data);
 	}
 
+	dbgprintf("Job: id %d, bead %d\n", j->zlutPlane, j->zlut);
+
 	LocalizationResult result={};
 	result.id = j->id;
 	result.locType = j->locType;
@@ -179,7 +181,15 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 
 	if(j->locType & LocalizeZ) {
 		result.z = th->tracker->ComputeZ(result.pos, cfg.zlut_angularsteps, j->zlut, &boundaryHit);
+	} else if (j->locType & LocalizeBuildZLUT) {
+		float* zlut = GetZLUTByIndex(j->zlut);
+		th->tracker->ComputeRadialProfile(&zlut[j->zlutPlane * zlut_res], zlut_res, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, result.pos, &boundaryHit);
 	}
+
+#ifdef _DEBUG
+	dbgprintf("pos[%d]: x=%f, y=%f\n", result.zlutIndex, result.pos.x, result.pos.y);
+#endif
+
 	result.error = boundaryHit ? 1 : 0;
 
 	results_mutex.lock();
@@ -197,16 +207,21 @@ void QueuedCPUTracker::SetZLUT(float* data, int planes, int res, int num_zluts)
 	zlut_count = num_zluts;
 }
 
-void QueuedCPUTracker::ComputeRadialProfile(float *image, int width, int height, float* dst, int profileLen, vector2f center)
-{
-	ImageData imgData (image,  width,height);
 
-	::ComputeRadialProfile(dst, profileLen, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, center, &imgData);
+float* QueuedCPUTracker::GetZLUT(int *count, int* planes,int *res)
+{
+	float* cp = new float [zlut_planes*zlut_res*zlut_count];
+	std::copy(zluts, zluts+(zlut_planes*zlut_res*zlut_count), cp);
+
+	*count = zlut_count;
+	*planes = zlut_planes;
+	*res = zlut_res;
+
+	return cp;
 }
 
-
 void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, 
-				LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex)
+				LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane)
 {
 	Job* j = AllocateJob();
 	int dstPitch = PDT_BytesPerPixel(pdt) * cfg.width;
@@ -215,15 +230,20 @@ void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDa
 		if (j->data) delete[] j->data;
 		j->data = new uchar[dstPitch * cfg.height];
 	}
-	for (int y=0;y<cfg.height;y++)
+	for (int y=0; y<cfg.height; y++)
 		memcpy(&j->data[dstPitch*y], &data[pitch*y], dstPitch);
 
 	j->dataType = pdt;
 	j->id = id;
 	j->locType = locType;
 	j->zlut = zlutIndex;
+	j->zlutPlane = zlutPlane;
 	if(initialPos) 
 		j->initialPos = *initialPos;
+
+#ifdef _DEBUG
+	dbgprintf("Scheduled job: frame %d, bead %d\n", j->zlutPlane, j->zlut);
+#endif
 	
 	AddJob(j);
 }

@@ -80,7 +80,7 @@ void GenerateTestImage(ImageData& img, float xp, float yp, float size, float Max
 }
 
 void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius,
-	vector2f center, ImageData* img)
+	vector2f center, ImageData* img, float* radialweights,float mean)
 {
 	vector2f* radialDirs = (vector2f*)ALLOCA(sizeof(vector2f)*angularSteps);
 	for (int j=0;j<angularSteps;j++) {
@@ -92,7 +92,7 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 	for (int i=0;i<radialSteps;i++)
 		dst[i]=0.0f;
 
-	double total = 0.0f;
+	double totalrmssum2 = 0.0f;
 	float rstep = (maxradius-minradius) / radialSteps;
 	for (int i=0;i<radialSteps; i++) {
 		double sum = 0.0f;
@@ -101,14 +101,17 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 		for (int a=0;a<angularSteps;a++) {
 			float x = center.x + radialDirs[a].x * r;
 			float y = center.y + radialDirs[a].y * r;
-			sum += img->interpolate(x,y);
+			sum += img->interpolate(x,y, mean);
 		}
 
-		dst[i] = sum;
-		total += dst[i];
+		dst[i] = sum/angularSteps-mean;
+		totalrmssum2 += dst[i]*dst[i];
 	}
-	for (int i=0;i<radialSteps;i++)
-		dst[i] /= total;
+	double invTotalrms = 1.0f/sqrt(totalrmssum2/radialSteps);
+	for (int i=0;i<radialSteps;i++) {
+		dst[i] *= invTotalrms;
+		if (radialweights) dst[i] *= radialweights[i];
+	}
 }
 
 
@@ -181,3 +184,18 @@ void WriteImageAsCSV(const char* file, float* d, int w,int h)
 	fclose(f);
 }
 
+
+std::vector<uchar> ReadToByteBuffer(const char *filename)
+{
+	FILE *f = fopen(filename, "rb");
+
+	fseek(f, 0, SEEK_END);
+	int len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	std::vector<uchar> buf(len);
+	fread(&buf[0], 1,len, f);
+
+	fclose(f);
+	return buf;
+}
