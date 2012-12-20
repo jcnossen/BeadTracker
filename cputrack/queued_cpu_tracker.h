@@ -55,6 +55,7 @@ private:
 	float* zluts;
 	int zlut_count, zlut_planes, zlut_res;
 	float* GetZLUTByIndex(int index) { return &zluts[ index * (zlut_planes*zlut_res) ]; }
+	void UpdateZLUTs();
 
 	// signal threads to stop their work
 	bool quitWork;

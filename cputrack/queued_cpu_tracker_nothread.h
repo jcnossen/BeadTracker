@@ -15,10 +15,10 @@ public:
 	~QueuedCPUTracker();
 
 	void Start();
-	void SetZLUT(float* data, int planes, int res, int num_zluts);
-	void ComputeRadialProfile(float *image, int width, int height, float* dst, int profileLen, vector2f center);
+	void SetZLUT(float* data, int num_zluts, int planes, int res);
+	float* GetZLUT(int* num_zluts,int *planes, int* res);
 
-	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, uint zlutIndex=0);
+	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex=0, uint zlutPlane=0);
 	int PollFinished(LocalizationResult* results, int maxResults);
 
 	void GenerateTestImage(float* dst, float xp,float yp, float z, float photoncount);
@@ -28,6 +28,8 @@ public:
 	int NumThreads() { return 1; }
 
 private:
+	float* GetZLUTByIndex(int index) { return &zluts[ index * (zlut_planes*zlut_res) ]; }
+
 	std::list<LocalizationResult> results;
 	int resultCount;
 	CPUTracker *tracker;

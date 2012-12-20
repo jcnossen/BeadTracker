@@ -43,7 +43,7 @@ void QueuedCPUTracker::Start()
 }
 
 void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, 
-				LocalizeType locType, uint id, uint zlutIndex)
+				LocalizeType locType, uint id, vector3f* initial, uint zlutIndex, uint zlutPlane)
 {
 	if (pdt == QTrkU8) {
 		tracker->SetImage8Bit(data, cfg.width);
@@ -80,26 +80,40 @@ void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDa
 
 	if(locType & LocalizeZ) {
 		result.z = tracker->ComputeZ(result.pos, cfg.zlut_angularsteps, zlutIndex);
+	} else if (locType & LocalizeBuildZLUT) {
+		float* zlut = GetZLUTByIndex(zlutIndex);
+		tracker->ComputeRadialProfile(&zlut[zlutPlane * zlut_res], zlut_res, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, result.pos, &boundaryHit);
 	}
 
 	results.push_back(result);
 	resultCount++;
 }
 
-void QueuedCPUTracker::SetZLUT(float* data, int planes, int res, int num_zluts)
+void QueuedCPUTracker::SetZLUT(float* data, int num_zluts, int planes, int res)
 {
 	if (zluts) delete[] zluts;
 	zluts = new float[planes*res*num_zluts];
+	std::fill(zluts,zluts+(planes*res*num_zluts), 0.0f);
 	zlut_planes = planes;
 	zlut_res = res;
 	zlut_count = num_zluts;
+	if(data)
+		std::copy(data, data+(planes*res*num_zluts), zluts);
+
+	tracker->SetZLUT(zluts, zlut_planes, zlut_res, zlut_count, cfg.zlut_minradius, cfg.zlut_maxradius, cfg.zlut_angularsteps, false, false);
 }
 
-void QueuedCPUTracker::ComputeRadialProfile(float *image, int width, int height, float* dst, int profileLen, vector2f center)
-{
-	ImageData imgData (image,  width,height);
 
-	::ComputeRadialProfile(dst, profileLen, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, center, &imgData);
+float* QueuedCPUTracker::GetZLUT(int *count, int* planes,int *res)
+{
+	float* cp = new float [zlut_planes*zlut_res*zlut_count];
+	std::copy(zluts, zluts+(zlut_planes*zlut_res*zlut_count), cp);
+
+	*count = zlut_count;
+	*planes = zlut_planes;
+	*res = zlut_res;
+
+	return cp;
 }
 
 

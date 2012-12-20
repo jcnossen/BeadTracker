@@ -198,13 +198,25 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 	results_mutex.unlock();
 }
 
-void QueuedCPUTracker::SetZLUT(float* data, int planes, int res, int num_zluts)
+void QueuedCPUTracker::SetZLUT(float* data, int num_zluts, int planes, int res)
 {
 	if (zluts) delete[] zluts;
 	zluts = new float[planes*res*num_zluts];
+	std::fill(zluts,zluts+(planes*res*num_zluts), 0.0f);
 	zlut_planes = planes;
 	zlut_res = res;
 	zlut_count = num_zluts;
+	if(data)
+		std::copy(data, data+(planes*res*num_zluts), zluts);
+
+	UpdateZLUTs();
+}
+
+void QueuedCPUTracker::UpdateZLUTs()
+{
+	for (int i=0;i<threads.size();i++){
+		threads[i].tracker->SetZLUT(zluts, zlut_planes, zlut_res, zlut_count, cfg.zlut_minradius, cfg.zlut_maxradius, cfg.zlut_angularsteps, false, false);
+	}
 }
 
 
