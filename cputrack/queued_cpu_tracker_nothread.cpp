@@ -42,6 +42,11 @@ void QueuedCPUTracker::Start()
 {
 }
 
+void QueuedCPUTracker::ClearResults()
+{
+	results.clear();
+}
+
 void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, 
 				LocalizeType locType, uint id, vector3f* initial, uint zlutIndex, uint zlutPlane)
 {
@@ -109,9 +114,9 @@ float* QueuedCPUTracker::GetZLUT(int *count, int* planes,int *res)
 	float* cp = new float [zlut_planes*zlut_res*zlut_count];
 	std::copy(zluts, zluts+(zlut_planes*zlut_res*zlut_count), cp);
 
-	*count = zlut_count;
-	*planes = zlut_planes;
-	*res = zlut_res;
+	if (count) *count = zlut_count;
+	if (planes) *planes = zlut_planes;
+	if (res) *res = zlut_res;
 
 	return cp;
 }

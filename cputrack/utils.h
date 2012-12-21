@@ -23,8 +23,6 @@ void DeleteAllElems(T& c) {
 	c.clear();
 }
 
-void floatToNormalizedUShort(ushort* dst, float *src, uint w,uint h);
-ushort* floatToNormalizedUShort(float *data, uint w,uint h);
 
 template<typename TPixel>
 void normalize(TPixel* d, uint w,uint h)
@@ -82,5 +80,30 @@ void ApplyPoissonNoise(ImageData& img, float factor);
 void WriteImageAsCSV(const char* file, float* d, int w,int h);
 
 int ReadJPEGFile(uchar* srcbuf, int srclen, uchar** data, int* width, int*height);
+void WriteJPEGFile(uchar* data,int w,int h, char * filename, int quality);
+
 std::vector<uchar> ReadToByteBuffer(const char* filename);
+
+
+template<typename T>
+void floatToNormalizedInt(T* dst, float *src, uint w,uint h, T maxValue)
+{
+	float maxv = src[0];
+	float minv = src[0];
+	for (uint k=0;k<w*h;k++) {
+		maxv = std::max(maxv, src[k]);
+		minv = std::min(minv, src[k]);
+	}
+	for (uint k=0;k<w*h;k++)
+		dst[k] = maxValue * (src[k]-minv) / (maxv-minv);
+}
+
+
+template<typename T>
+T* floatToNormalizedInt(float *src, uint w,uint h, T maxValue)
+{ 
+	T* r = new T[w*h]; 
+	floatToNormalizedInt(r,src,w,h, maxValue);
+	return r; 
+}
 

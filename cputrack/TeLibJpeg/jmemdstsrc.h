@@ -51,7 +51,7 @@ typedef mem_destination_mgr * mem_dest_ptr;
 /*! try initial buffer size of 1M */
 #define OUTPUT_BUF_SIZE  ((unsigned int)1048576)
 
-//! Function to allows the writting of JPEG data to a memory buffer
+//! Function to allows the writing of JPEG data to a memory buffer
 GLOBAL(void)
 j_mem_dest(j_compress_ptr cinfo, void **pTargetData,	unsigned int *pNumBytes);
 

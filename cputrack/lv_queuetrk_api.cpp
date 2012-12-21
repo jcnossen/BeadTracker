@@ -91,6 +91,10 @@ CDLL_EXPORT void qtrk_queue_array(QueuedTracker* qtrk, LVArray2D<uchar>** data, 
 	qtrk_queue(qtrk, (*data)->elem, pitch, pdt, locType, id, initialPos, zlutIndex, zlutPlane);
 }
 
+CDLL_EXPORT void qtrk_clear_results(QueuedTracker* qtrk)
+{
+	qtrk->ClearResults();
+}
 
 
 CDLL_EXPORT int qtrk_jobcount(QueuedTracker* qtrk)
@@ -126,7 +130,7 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_generate_test_image(QueuedTracker* tracker, L
 	
 	float *d = new float[w*h];
 	tracker->GenerateTestImage(d, xp, yp, size, photoncount );
-	floatToNormalizedUShort((*image)->elem, d, w,h);
+	floatToNormalizedInt((*image)->elem, d, w,h, (ushort)((1<<16)-1));
 	delete[] d;
 }
 

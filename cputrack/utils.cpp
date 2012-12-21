@@ -36,27 +36,6 @@ void dbgprintf(const char *fmt,...) {
 	va_end(ap);
 }
 
-ushort* floatToNormalizedUShort(float *src, uint w,uint h)
-{ 
-	ushort* r = new ushort[w*h]; 
-	floatToNormalizedUShort(r,src,w,h); 
-	return r; 
-}
-
-void floatToNormalizedUShort(ushort* dst, float *src, uint w,uint h)
-{
-	float maxv = src[0];
-	float minv = src[0];
-	for (uint k=0;k<w*h;k++) {
-		maxv = std::max(maxv, src[k]);
-		minv = std::min(minv, src[k]);
-	}
-	for (uint k=0;k<w*h;k++)
-		dst[k] = ((1<<16)-1) * (src[k]-minv) / (maxv-minv);
-}
-
-
-
 void GenerateTestImage(ImageData& img, float xp, float yp, float size, float MaxPhotons)
 {
 	float S = 1.0f/size;
