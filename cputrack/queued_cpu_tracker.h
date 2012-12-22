@@ -17,7 +17,7 @@ public:
 	float* GetZLUT(int *num_zluts, int* planes, int* res);
 	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
 	int PollFinished(LocalizationResult* results, int maxResults);
-
+	void ClearResults();
 	void GenerateTestImage(float* dst, float xp,float yp, float z, float photoncount);
 
 	int GetJobCount();
@@ -55,6 +55,7 @@ private:
 	float* zluts;
 	int zlut_count, zlut_planes, zlut_res;
 	float* GetZLUTByIndex(int index) { return &zluts[ index * (zlut_planes*zlut_res) ]; }
+	void UpdateZLUTs();
 
 	// signal threads to stop their work
 	bool quitWork;

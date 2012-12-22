@@ -351,18 +351,28 @@ void QTrkTest()
 
 	// Generate ZLUT
 	int radialSteps=64, zplanes=100;
-	float zmin=2,zmax=6;
-	/*
-	float* zlut = new float[radialSteps*zplanes];
+	float zmin=4,zmax=10;
+	qtrk.SetZLUT(0, 1, zplanes, radialSteps);
+	qtrk.Start();
 	for (int x=0;x<zplanes;x++)  {
 		vector2f center = { cfg.width/2, cfg.height/2 };
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 		GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
-		qtrk.ComputeRadialProfile(image, cfg.width, cfg.height, &zlut[x*radialSteps], radialSteps, center);
+		qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, (LocalizeType)(LocalizeBuildZLUT|LocalizeQI), x, 0, 0, x);
 	}
-	qtrk.SetZLUT(zlut, 1, zplanes, radialSteps);
-	delete[] zlut;*/
-
+	// wait to finish ZLUT
+	while(true) {
+		int rc = qtrk.GetResultCount();
+		if (rc == zplanes) break;
+		Sleep(100);
+		dbgprintf(".");
+	}
+	float* zlut = qtrk.GetZLUT(0,0,0);
+	qtrk.ClearResults();
+	uchar* zlut_bytes = floatToNormalizedInt(zlut, radialSteps, zplanes, (uchar)255);
+	WriteJPEGFile(zlut_bytes, radialSteps, zplanes, "qtrkzlut.jpg", 99);
+	delete[] zlut; delete[] zlut_bytes;
+	
 	// Schedule images to localize on
 #ifdef _DEBUG
 	int NumImages=10, JobsPerImg=10;
@@ -371,7 +381,7 @@ void QTrkTest()
 #endif
 	dbgprintf("Generating %d images...\n", NumImages);
 	double tgen = 0.0, tschedule = 0.0;
-	std::vector<float> truepos(NumImages*JobsPerImg*3);
+	std::vector<float> truepos(NumImages*3);
 	for (int n=0;n<NumImages;n++) {
 		double t1 = getPreciseTime();
 		float xp = cfg.width/2+(rand_uniform<float>() - 0.5) * 5;
@@ -384,7 +394,7 @@ void QTrkTest()
 		GenerateTestImage(ImageData(image, cfg.width, cfg.height), xp, yp, z, 10000);
 		double t2 = getPreciseTime();
 		for (int k=0;k<JobsPerImg;k++)
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeXCor1D), n*JobsPerImg+k, 0, 0, 0);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI), n, 0, 0, 0);
 		double t3 = getPreciseTime();
 		tgen += t2-t1;
 		tschedule += t3-t2;
@@ -418,11 +428,13 @@ void QTrkTest()
 		LocalizationResult result;
 
 		if (qtrk.PollFinished(&result, 1)) {
-			int iid = result.id/JobsPerImg;
-			errX += fabs(truepos[iid*3+0]-result.pos.x);
-			errY += fabs(truepos[iid*3+1]-result.pos.y);
-			errZ += fabs(truepos[iid*3+2]-result.z);
-		//	dbgprintf("ID: %d. Error:%d\n", result.id, result.error);
+			int iid = result.id;
+			float x = fabs(truepos[iid*3+0]-result.pos.x);
+			float y = fabs(truepos[iid*3+1]-result.pos.y);
+			result.z = zmin + (zmax-zmin) * result.z / (float)(zplanes-1); // transform from index scale to coordinate scale
+			float z = fabs(truepos[iid*3+2]-result.z);
+		//	dbgprintf("ID: %d. Boundary Error:%d. ErrX=%f, ErrY=%f, ErrZ=%f\n", result.id, result.error, x,y,z);
+			errX += x; errY += y; errZ += z;
 			rc--;
 		}
 	}
@@ -485,19 +497,13 @@ void BuildConvergenceMap(int iterations)
 
 int main()
 {
-	int w,h;
-	uchar* data;
-	std::vector<uchar> buf = ReadToByteBuffer("SingleBead.jpg");
-	if (ReadJPEGFile(&buf[0], buf.size(), &data, &w,&h)) {
-		delete[] data;
-	}
 	//SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
-	//QTrkTest();6
+	QTrkTest();
 	//for (int i=1;i<8;i++)
 //		BuildConvergenceMap(i);
 

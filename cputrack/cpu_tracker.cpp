@@ -445,7 +445,7 @@ void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float mi
 		std::copy(data, data+(planes*res*numLUTs), zluts);
 	} else
 		zluts = data;
-	zlut_memoryOwner = !copyMemory;
+	zlut_memoryOwner = copyMemory;
 	zlut_planes = planes;
 	zlut_res = res;
 	zlut_count = numLUTs;

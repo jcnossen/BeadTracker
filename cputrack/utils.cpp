@@ -36,27 +36,6 @@ void dbgprintf(const char *fmt,...) {
 	va_end(ap);
 }
 
-ushort* floatToNormalizedUShort(float *src, uint w,uint h)
-{ 
-	ushort* r = new ushort[w*h]; 
-	floatToNormalizedUShort(r,src,w,h); 
-	return r; 
-}
-
-void floatToNormalizedUShort(ushort* dst, float *src, uint w,uint h)
-{
-	float maxv = src[0];
-	float minv = src[0];
-	for (uint k=0;k<w*h;k++) {
-		maxv = std::max(maxv, src[k]);
-		minv = std::min(minv, src[k]);
-	}
-	for (uint k=0;k<w*h;k++)
-		dst[k] = ((1<<16)-1) * (src[k]-minv) / (maxv-minv);
-}
-
-
-
 void GenerateTestImage(ImageData& img, float xp, float yp, float size, float MaxPhotons)
 {
 	float S = 1.0f/size;
@@ -80,7 +59,7 @@ void GenerateTestImage(ImageData& img, float xp, float yp, float size, float Max
 }
 
 void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius,
-	vector2f center, ImageData* img, float* radialweights,float mean)
+	vector2f center, ImageData* img, float* radialweights, float paddingValue)
 {
 	vector2f* radialDirs = (vector2f*)ALLOCA(sizeof(vector2f)*angularSteps);
 	for (int j=0;j<angularSteps;j++) {
@@ -101,10 +80,10 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 		for (int a=0;a<angularSteps;a++) {
 			float x = center.x + radialDirs[a].x * r;
 			float y = center.y + radialDirs[a].y * r;
-			sum += img->interpolate(x,y, mean);
+			sum += img->interpolate(x,y, paddingValue);
 		}
 
-		dst[i] = sum/angularSteps-mean;
+		dst[i] = sum/angularSteps-paddingValue;
 		totalrmssum2 += dst[i]*dst[i];
 	}
 	double invTotalrms = 1.0f/sqrt(totalrmssum2/radialSteps);
