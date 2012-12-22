@@ -78,9 +78,10 @@ public:
 	virtual void Start () = 0;
 	virtual void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane) = 0;
 	virtual int PollFinished(LocalizationResult* results, int maxResults) = 0;
+	virtual void ClearResults() = 0;
 
-	virtual void SetZLUT(float* data, int planes, int res, int numLUTs) = 0; // data can be zero to allocate ZLUT data
-	virtual float* GetZLUT(int* planes, int *res, int *count) = 0; // delete[] memory afterwards
+	virtual void SetZLUT(float* data,  int numLUTs, int planes, int res) = 0; // data can be zero to allocate ZLUT data
+	virtual float* GetZLUT(int* planes=0, int *res=0, int *count=0) = 0; // delete[] memory afterwards
 
 	// Debug stuff
 	virtual float* GetDebugImage() { return 0; }

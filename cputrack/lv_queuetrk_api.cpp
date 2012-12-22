@@ -17,6 +17,8 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 	int numLUTs = zlut->dimSizes[0];
 	int planes = zlut->dimSizes[1];
 	int res = zlut->dimSizes[2];
+
+	dbgprintf("Setting ZLUT size: %d beads, %d planes, %d radialsteps\n", numLUTs, planes, res);
 	
 	tracker->SetZLUT(zlut->elem, planes, res, numLUTs);
 }
@@ -93,6 +95,10 @@ CDLL_EXPORT void qtrk_queue_array(QueuedTracker* qtrk, LVArray2D<uchar>** data, 
 	qtrk_queue(qtrk, (*data)->elem, pitch, pdt, locType, id, initialPos, zlutIndex, zlutPlane);
 }
 
+CDLL_EXPORT void qtrk_clear_results(QueuedTracker* qtrk)
+{
+	qtrk->ClearResults();
+}
 
 
 CDLL_EXPORT int qtrk_jobcount(QueuedTracker* qtrk)
@@ -128,7 +134,7 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_generate_test_image(QueuedTracker* tracker, L
 	
 	float *d = new float[w*h];
 	tracker->GenerateTestImage(d, xp, yp, size, photoncount );
-	floatToNormalizedUShort((*image)->elem, d, w,h);
+	floatToNormalizedInt((*image)->elem, d, w,h, (ushort)((1<<16)-1));
 	delete[] d;
 }
 
