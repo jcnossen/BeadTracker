@@ -44,7 +44,7 @@ void GenerateTestImage(ImageData& img, float xp, float yp, float size, float Max
 			float X = x - xp;
 			float Y = y - yp;
 			float r = sqrtf(X*X+Y*Y)+1;
-			float v = sinf(r/(5*S)) * expf(-r*r*S*0.01f);
+			float v = sinf(r/(5*S)) * expf(-r*r*S*0.001f);
 			img.at(x,y)=v;
 		}
 	}

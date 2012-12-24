@@ -12,6 +12,10 @@
 #include <cstdlib>
 #include <cstddef>
 
+template<typename T> bool isNAN(const T& v) { 
+	return !(v == v); 
+}
+
 DLL_EXPORT void dbgout(std::string s);
 DLL_EXPORT std::string SPrintf(const char *fmt, ...);
 DLL_EXPORT void dbgprintf(const char *fmt,...);

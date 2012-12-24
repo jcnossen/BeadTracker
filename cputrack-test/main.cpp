@@ -345,13 +345,14 @@ void QTrkTest()
 	cfg.qi_maxradius = 50;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
+	cfg.numThreads = 0; // direct processing, dont use queue
 	//cfg.numThreads = 6;
 	QueuedCPUTracker qtrk(&cfg);
 	float *image = new float[cfg.width*cfg.height];
 
 	// Generate ZLUT
 	int radialSteps=64, zplanes=100;
-	float zmin=4,zmax=10;
+	float zmin=0.5,zmax=3;
 	qtrk.SetZLUT(0, 1, zplanes, radialSteps);
 	qtrk.Start();
 	for (int x=0;x<zplanes;x++)  {
@@ -394,7 +395,7 @@ void QTrkTest()
 		GenerateTestImage(ImageData(image, cfg.width, cfg.height), xp, yp, z, 10000);
 		double t2 = getPreciseTime();
 		for (int k=0;k<JobsPerImg;k++)
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI), n, 0, 0, 0);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI|LocalizeZ), n, 0, 0, 0);
 		double t3 = getPreciseTime();
 		tgen += t2-t1;
 		tschedule += t3-t2;
@@ -497,7 +498,7 @@ void BuildConvergenceMap(int iterations)
 
 int main()
 {
-	//SpeedTest();
+	SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();

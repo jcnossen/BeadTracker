@@ -44,6 +44,9 @@ private:
 		vector3f initialPos;
 	};
 
+	// Special no-threads mode for debugging
+	CPUTracker* noThreadTracker;
+
 	Threads::Mutex jobs_mutex, jobs_buffer_mutex, results_mutex;
 	std::list<Job*> jobs;
 	int jobCount;
@@ -64,7 +67,7 @@ private:
 	Job* GetNextJob();
 	Job* AllocateJob();
 	void AddJob(Job* j);
-	void ProcessJob(Thread* th, Job* j);
+	void ProcessJob(CPUTracker* trk, Job* j);
 
 	static DWORD WINAPI WorkerThreadMain(void* arg);
 };

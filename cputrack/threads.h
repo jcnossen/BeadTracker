@@ -43,6 +43,7 @@ struct Threads
 #include <stdexcept>
 #include <Windows.h>
 #undef AddJob
+#undef Sleep
 #undef max
 #undef min
 
@@ -70,6 +71,21 @@ struct Threads
 	static void WaitAndClose(Handle* h) {
 		WaitForSingleObject((HANDLE)h, INFINITE);
 		CloseHandle((HANDLE)h);
+	}
+
+	static void Sleep(int ms) {
+		::Sleep(ms);
+	}
+
+	static int GetCPUCount() {
+		// preferably 
+		#ifdef WIN32
+		SYSTEM_INFO sysInfo;
+		GetSystemInfo(&sysInfo);
+		return sysInfo.dwNumberOfProcessors;
+		#else
+		return 4;
+		#endif
 	}
 };
 
