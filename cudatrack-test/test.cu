@@ -152,7 +152,6 @@ int main(int argc, char *argv[])
 	cudaDeviceProp prop;
 	cudaGetDeviceProperties(&prop, 0);
 
-	TestLocalizationSpeed();
 //	TestKernelFFT();
 
 	return 0;

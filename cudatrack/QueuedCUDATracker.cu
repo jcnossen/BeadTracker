@@ -10,6 +10,7 @@
 #define LSQFIT_FUNC __device__ __host__
 #include "LsqQuadraticFit.h"
 
+
 QueuedTracker* CreateQueuedTracker(QTrkSettings* cfg)
 {
 	return new QueuedCUDATracker(cfg);
@@ -223,25 +224,36 @@ void QueuedCUDATracker::ComputeBgCorrectedCOM(cudaImageListf& images, float2* d_
 }
 
 
-__global__ void generateTestImages(cudaImageListf images, float3 *d_positions)
+CUBOTH void MakeTestImage(int idx, cudaImageListf& images, float3* d_positions)
 {
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	if (idx < images.count) {
-		float3 pos = d_positions[idx];
+	float3 pos = d_positions[idx];
 	
-		float S = 1.0f/pos.z;
-		for (int y=0;y<images.h;y++) {
-			for (int x=0;x<images.w;x++) {
-				float X = x - pos.x;
-				float Y = y - pos.y;
-				float r = sqrtf(X*X+Y*Y)+1;
-				float v = sinf(r/(5*S)) * expf(-r*r*S*0.01f);
-				images.pixel(x,y,idx) = v;
-			}
+	float S = 1.0f/pos.z;
+	for (int y=0;y<images.h;y++) {
+		for (int x=0;x<images.w;x++) {
+			float X = x - pos.x;
+			float Y = y - pos.y;
+			float r = sqrtf(X*X+Y*Y)+1;
+			float v = sinf(r/(5*S)) * expf(-r*r*S*0.01f);
+			images.pixel(x,y,idx) = v;
 		}
 	}
-}	
+}
 
+/*
+#define KERNEL_DISPATCH(Funcname, Paramdef, Args) \
+__global__ void Funcname##Kernel Paramdef { \
+	int idx = blockIdx.x * blockDim.x + threadIdx.x; \
+	if (idx < images.count) { \
+		Funcname Args; \
+	} \
+} \
+static void CallKernel##Funcname Paramdef { \
+
+}
+
+KERNEL_DISPATCH(MakeTestImage, (cudaImageListf images, float3 *d_positions), (idx, images, d_positions));
+*/
 
 void QueuedCUDATracker::GenerateImages(cudaImageListf& imgList, float3* d_pos)
 {
