@@ -74,7 +74,6 @@ void SpeedTest()
 		if (boundaryHit)
 			dbgprintf("xcor boundaryhit!!\n");
 
-
 		comdist.x += fabsf(com.x - xp);
 		comdist.y += fabsf(com.y - yp);
 

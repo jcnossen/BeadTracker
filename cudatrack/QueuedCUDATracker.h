@@ -16,13 +16,14 @@ public:
 	~QueuedCUDATracker();
 
 	void Start();
+	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
+	void ClearResults();
 
-	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex=0);
+	void SetZLUT(float* data,  int numLUTs, int planes, int res); // data can be zero to allocate ZLUT data
+	float* GetZLUT(int* planes=0, int *res=0, int *count=0); // delete[] memory afterwards
 	int PollFinished(LocalizationResult* results, int maxResults);
 
-	void SetZLUT(float* data, int planes, int res, int numLUTs);
 	void ComputeRadialProfile(float *image, int width, int height, float* dst, int profileLength, vector2f center);
-
 	void GenerateTestImage(float* dst, float xp,float yp, float z, float photoncount);
 
 	// Debug stuff
@@ -53,7 +54,6 @@ protected:
 		Batch() { d_profiles = 0; hostImageBuf = 0; imageBuf.data=0; }
 		~Batch();
 		
-		texture<float, cudaTextureType2D, cudaReadModeElementType> texref;
 		float* d_profiles;
 		std::vector<Job> jobs;
 		cudaImageListf imageBuf;
@@ -83,6 +83,8 @@ protected:
 
 	Threads::Mutex batchMutex;
 	std::vector<Batch*> active;
+
+	bool useCPU;
 };
 
 

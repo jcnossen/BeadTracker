@@ -37,6 +37,8 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg)
 	int xcorWorkspaceSize = (sizeof(float2)*cfg->xc1_profileLength*3) * batchSize;
 	cudaMalloc(&xcor_workspace, xcorWorkspaceSize);
 	dbgprintf("XCor total required global memory: %d\n", xcorWorkspaceSize);
+
+	useCPU = cfg->numThreads == 0;
 }
 
 QueuedCUDATracker::~QueuedCUDATracker()
@@ -55,9 +57,11 @@ void QueuedCUDATracker::Start()
 }
 
 
+void QueuedCUDATracker::ClearResults()
+{
+}
 
-
-void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex)
+void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane)
 {
 	Batch* batch;
 
@@ -85,9 +89,18 @@ int QueuedCUDATracker::PollFinished(LocalizationResult* results, int maxResult)
 	return 0;
 }
 
-void QueuedCUDATracker::SetZLUT(float* data, int planes, int res, int numLUTs)
+// data can be zero to allocate ZLUT data
+void QueuedCUDATracker::SetZLUT(float* data,  int numLUTs, int planes, int res) 
 {
 }
+
+// delete[] memory afterwards
+float* QueuedCUDATracker::GetZLUT(int* planes, int *res, int *count)
+{
+	
+}
+
+
 
 void QueuedCUDATracker::ComputeRadialProfile(float *image, int width, int height, float* dst, int profileLength, vector2f center)
 {
@@ -164,125 +177,6 @@ __device__ T ComputeMaxInterp(T* data, int len)
 }
 
 
-__device__ float XCor1D_ComputeOffset(float2* profile, float2* reverseProfile, float2* result, 
-			cudafft<float>::KernelParams fwkp, cudafft<float>::KernelParams bwkp, int len)
-{
-	cudafft<float>::transform((cudafft<float>::cpx_type*) profile, (cudafft<float>::cpx_type*)result, fwkp);
-	// data in 'profile' is no longer needed since we have the fourier domain version
-	cudafft<float>::transform((cudafft<float>::cpx_type*) reverseProfile, (cudafft<float>::cpx_type*)profile, fwkp);
-
-	// multiply with complex conjugate
-	for (int k=0;k<len;k++)
-		profile[k] = mul_conjugate(profile[k], result[k]);
-
-	cudafft<float>::transform((cudafft<float>::cpx_type*) profile, (cudafft<float>::cpx_type*) result, bwkp);
-
-	// shift by len/2, so the maximum will be somewhere in the middle of the array
-	float* shifted = (float*)profile; // use as temp space
-	for (int k=0;k<len;k++) {
-		shifted[(k+len/2)%len] = result[k].x;
-		printf("result[%d]=%f\n", k,result[k].x);
-	}
-	
-	// find the interpolated maximum peak
-	float maxPos = ComputeMaxInterp<float, 5>(shifted, len) - len/2;
-	return maxPos;
-}
-
-//__global__ void Compute1DXCorOffsets(float
-
-__global__ void Compute1DXcorKernel(cudaImageListf images, float2* d_initial, float2* d_xcor, float2* d_workspace,  
-					cudafft<float>::KernelParams fwkp, cudafft<float>::KernelParams bwkp, int profileLength, int profileWidth)
-{
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-	if (idx >= images.count)
-		return;
-
-	float2* profile, *reverseProf, *result;
-	profile = &d_workspace[ idx * profileLength* 3 ];
-	reverseProf = profile + profileLength;
-	result = profile + profileLength;
-
-	float2 pos = d_initial[idx];
-
-	int iterations=1;
-	bool boundaryHit = false;
-
-	for (int k=0;k<iterations;k++) {
-		float xmin = pos.x - profileLength/2;
-		float ymin = pos.y - profileLength/2;
-
-		if (images.boundaryHit(pos, profileLength/2)) {
-			boundaryHit = true;
-			break;
-		}
-
-		// generate X position xcor array (summing over y range)
-		for (int x=0;x<profileLength;x++) {
-			float s = 0.0f;
-			for (int y=0;y<profileWidth;y++) {
-				float xp = x + xmin;
-				float yp = pos.y + (y - profileWidth/2);
-				s += images.interpolate(xp, yp, idx);
-			}
-			profile [x].x = s;
-			profile [x].y = 0.0f;
-			reverseProf[profileLength-x-1] = profile[x];
-
-			printf("x profile[%d] = %f\n", x, s);
-		}
-
-		float offsetX = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
-
-		// generate Y position xcor array (summing over x range)
-		for (int y=0;y<profileLength;y++) {
-			float s = 0.0f; 
-			for (int x=0;x<profileWidth;x++) {
-				float xp = pos.x + (x - profileWidth/2);
-				float yp = y + ymin;
-				s += images.interpolate(xp, yp, idx);
-			}
-			profile[y].x = s;
-			profile[y].y = 0.0f;
-			reverseProf[profileLength-y-1] = profile[y];
-		}
-
-		float offsetY = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
-		pos.x += (offsetX - 1) * 0.5f;
-		pos.y += (offsetY - 1) * 0.5f;
-	}
-
-	d_xcor[idx] = pos;
-
-	//d_xcor[idx].x = 1.0f;
-	//d_xcor[idx].y = 2.0f;
-}
-
-
-
-
-void QueuedCUDATracker::Compute1DXCor(cudaImageListf& images, float2* d_initial, float2* d_result)
-{
-	int sharedMemSize = forward_fft->kparams_size+backward_fft->kparams_size;
-	Compute1DXcorKernel<<<blocks(images.count), threads(), sharedMemSize >>>
-		(images, d_initial, d_result, xcor_workspace, forward_fft->kparams, backward_fft->kparams, cfg.xc1_profileLength, cfg.xc1_profileWidth);
-
-/*	texture<float, cudaTextureType2D, cudaReadModeElementType> tex;
-	cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
-	cudaBindTexture2D(NULL, &tex, list->data, &desc, list->w, list->h, list->pitch);
-
-	XCor1D_BuildProfiles_Kernel<float> <<< blocks(images.count), threads(), sharedMemSize >>> (images, 
-
-	cudaUnbindTexture(&tex);
-	*/
-}
-
-
-void QueuedCUDATracker::Compute1DXCorProfiles(cudaImageListf&  images, float* d_profiles)
-{
-	
-}
 
 template<typename T>
 __global__ void computeBgCorrectedCOM(cudaImageList<T> images, float2* d_com)
@@ -351,7 +245,7 @@ __global__ void generateTestImages(cudaImageListf images, float3 *d_positions)
 
 void QueuedCUDATracker::GenerateImages(cudaImageListf& imgList, float3* d_pos)
 {
-	generateTestImages<<<blocks(imgList.count), threads()>>>(imgList, d_pos); 
+	generateTestImages<<<blocks(imgList.count), threads()>>>(imgList, d_pos);
 }
 
 QueuedCUDATracker::Batch::~Batch() 
