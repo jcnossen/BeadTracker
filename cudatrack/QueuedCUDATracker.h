@@ -98,7 +98,6 @@ protected:
 	}
 
 //	cudafft<float> *forward_fft, *backward_fft;
-	float2* xcorWorkspace;
 
 	std::vector<Batch*> freeBatches;
 	std::vector<Job*> jobs;

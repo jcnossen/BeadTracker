@@ -31,6 +31,7 @@ double getPreciseTime()
 	return (double)time / (double)freq;
 }
 
+
 std::string getPath(const char *file)
 {
 	std::string s = file;
@@ -82,12 +83,14 @@ void ShowCUDAError() {
 
 void TestLocalization()
 {
+	int N = 1;
 	QTrkSettings cfg;
-	cfg.numThreads = -1;
-	cfg.qi_iterations = 4;
+	cfg.numThreads = 0;
+	cfg.qi_iterations = 2;
 	QueuedCUDATracker trk(&cfg);
 
-	auto images = cudaImageListf::alloc(128,128,32, trk.UseHostEmulate());
+	auto images = cudaImageListf::alloc(128,128, 4, trk.UseHostEmulate());
+	ShowCUDAError();
 	std::vector<float3> positions(images.count);
 
 	for(int i=0;i<images.count;i++) {
@@ -95,18 +98,41 @@ void TestLocalization()
 		float yp = images.h/2+(rand_uniform<float>() - 0.5) * 5;
 		positions[i] = make_float3(xp, yp, 3);
 	}
-	trk.GenerateImages(images, trk.DeviceMem(positions).data);
+	device_vec<float3> d_pos = trk.DeviceMem(positions);
+
+	dbgprintf("Generating... %d images\n", N*images.count);
+
+	double t0 = getPreciseTime();
+	for (int i=0;i<N;i++) 
+		trk.GenerateImages(images, d_pos.data);
+	cudaDeviceSynchronize();
+	double tgen = getPreciseTime() - t0;
 
 	auto d_com = trk.DeviceMem<float2>(positions.size());
 	auto d_qi = trk.DeviceMem<float2>(positions.size());
-	trk.ComputeBgCorrectedCOM(images, d_com.data);
-	trk.ComputeQI(images, d_com.data, d_qi.data);
+	double t1 = getPreciseTime();
+	dbgprintf("COM\n");
+	for (int i=0;i<N;i++)
+		trk.ComputeBgCorrectedCOM(images, d_com.data);
+	cudaDeviceSynchronize();
+	double t2 = getPreciseTime();
+	double tcom = t2 - t1;
+
+	dbgprintf("QI");
+	for (int i=0;i<N;i++)
+		trk.ComputeQI(images, d_com.data, d_qi.data);
+	cudaDeviceSynchronize();
+	double tqi = getPreciseTime() - t2;
 
 	std::vector<float2> com(d_com), qi(d_qi);
+	/*
 	for (int i=0;i<images.count;i++) {
 		dbgprintf("[%d] true pos=( %.4f, %.4f ).  COM error=( %.4f, %.4f ).  QI error=( %.4f, %.4f ) \n", i, 
 			positions[i].x, positions[i].y, com[i].x - positions[i].x, com[i].y - positions[i].y, qi[i].x - positions[i].x, qi[i].y - positions[i].y );
-	}
+	}*/
+
+	N *= images.count;
+	dbgprintf("Image generating: %f img/s. COM: %f img/s. QI: %f img/s\n", N/tgen, N/tcom, N/tqi);
 
 	ShowCUDAError();
 	images.free();

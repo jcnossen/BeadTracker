@@ -60,10 +60,6 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg)
 	dbgprintf("# of CUDA processors:%d\n", prop.multiProcessorCount);
 	dbgprintf("warp size: %d\n", prop.warpSize);
 
-	int xcorWorkspaceSize = (sizeof(float2)*cfg->xc1_profileLength*3) * batchSize;
-	cudaMalloc(&xcorWorkspace, xcorWorkspaceSize);
-	dbgprintf("XCor total required global memory: %d\n", xcorWorkspaceSize);
-
 	useCPU = cfg->numThreads == 0;
 	qiProfileLen = 1;
 	while (qiProfileLen < cfg->qi_radialsteps) qiProfileLen *= 2;
@@ -73,8 +69,6 @@ QueuedCUDATracker::~QueuedCUDATracker()
 {
 //	delete forward_fft;
 //	delete backward_fft;
-
-	cudaFree(xcorWorkspace);
 
 	DeleteAllElems(freeBatches);
 	DeleteAllElems(active);
@@ -226,6 +220,8 @@ void QueuedCUDATracker::GenerateImages(cudaImageListf& imgList, float3* d_pos)
 }
 
 
+texture<float, cudaTextureType2D, cudaReadModeElementType> qi_image_texture(0, cudaFilterModeLinear);
+
 static CUBOTH qivalue_t QI_ComputeOffset(qicomplex_t* profile, int nr) {
 
 	qicomplex_t* reverse = (qicomplex_t*)malloc(sizeof(qicomplex_t)* (nr*2)); 
@@ -285,7 +281,6 @@ static CUBOTH void ComputeQuadrantProfile(cudaImageListf& images, int idx, float
 	}
 }
 
-
 template<bool cpuMode>
 static CUBOTH void ComputeQI(int idx, cudaImageListf& images, QIParams params)
 {
@@ -328,7 +323,7 @@ static CUBOTH void ComputeQI(int idx, cudaImageListf& images, QIParams params)
 		}
 		float offsetY = QI_ComputeOffset(concat0, nr);
 
-		printf("[%d] OffsetX: %f, OffsetY: %f\n", k, offsetX, offsetY);
+		//printf("[%d] OffsetX: %f, OffsetY: %f\n", k, offsetX, offsetY);
 		center.x += offsetX * pixelsPerProfLen;
 		center.y += offsetY * pixelsPerProfLen;
 	}
@@ -342,6 +337,7 @@ static CUBOTH void ComputeQI(int idx, cudaImageListf& images, QIParams params)
 
 KERNEL_DISPATCH(ComputeQI, QIParams);
 
+
 void QueuedCUDATracker::ComputeQI(cudaImageListf& images, float2* d_initial, float2* d_result)
 {
 	QIParams params;
@@ -353,7 +349,14 @@ void QueuedCUDATracker::ComputeQI(cudaImageListf& images, float2* d_initial, flo
 	params.maxRadius = cfg.qi_maxradius;
 	params.minRadius = cfg.qi_minradius;
 	params.radialSteps = cfg.qi_radialsteps;
+
+	if (!useCPU)
+		images.bind(qi_image_texture);
+
 	CallKernel_ComputeQI(images, params);
+
+	if (!useCPU)
+		images.unbind(qi_image_texture);
 }
 
 QueuedCUDATracker::Batch::~Batch() 
