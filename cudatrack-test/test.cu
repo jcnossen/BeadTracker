@@ -12,19 +12,14 @@
 #include <cstdarg>
 #include <valarray>
 
-#include "cudafft/cudafft.h"
 #include "random_distr.h"
 
 #include <stdint.h>
-#include "cudaImageList.h"
+#include "gpu_utils.h"
 #include "QueuedCUDATracker.h"
 
-#include <thrust/device_vector.h>
-
-#define LSQFIT_FUNC __device__ __host__
-#include "LsqQuadraticFit.h"
-
-using namespace thrust;
+#include "simplefft.h"
+#include "cudafft/cudafft.h"
 
 double getPreciseTime()
 {
@@ -57,96 +52,26 @@ inline __device__ float2 mul_conjugate(float2 a, float2 b)
 	return r;
 }
 
-template<typename T>
-__device__ T max_(T a, T b) { return a>b ? a : b; }
-template<typename T>
-__device__ T min_(T a, T b) { return a<b ? a : b; }
-
-template<typename T, int numPts>
-__device__ T ComputeMaxInterp(T* data, int len)
-{
-	int iMax=0;
-	T vMax=data[0];
-	for (int k=1;k<len;k++) {
-		if (data[k]>vMax) {
-			vMax = data[k];
-			iMax = k;
-		}
-	}
-	T xs[numPts]; 
-	int startPos = max_(iMax-numPts/2, 0);
-	int endPos = min_(iMax+(numPts-numPts/2), len);
-	int numpoints = endPos - startPos;
-
-
-	if (numpoints<3) 
-		return iMax;
-	else {
-		for(int i=startPos;i<endPos;i++)
-			xs[i-startPos] = i-iMax;
-
-		LsqSqQuadFit<T> qfit(numpoints, xs, &data[startPos]);
-		//printf("iMax: %d. qfit: data[%d]=%f\n", iMax, startPos, data[startPos]);
-		//for (int k=0;k<numpoints;k++) {
-	//		printf("data[%d]=%f\n", startPos+k, data[startPos]);
-		//}
-		T interpMax = qfit.maxPos();
-
-		if (fabs(qfit.a)<1e-9f)
-			return (T)iMax;
-		else
-			return (T)iMax + interpMax;
-	}
-}
-
 texture<float, cudaTextureType2D, cudaReadModeElementType> smpImgRef(0, cudaFilterModeLinear);
 
 
-__global__ void runCudaFFT(cudafft<float>::cpx_type *src, cudafft<float>::cpx_type *dst, cudafft<float>::KernelParams kparams)
+void TestSimpleFFT()
 {
-	kparams.makeShared();
-	cudafft<float>::transform(src,dst, kparams);
-}
+	int N=64;
+	cudafft<double> fft(N, false);
 
-
-
-void TestKernelFFT()
-{
-	int N=256;
-	cudafft<float> fft(N, false);
-
-	std::vector< cudafft<float>::cpx_type > data(N), result(N), cpu_result(N);
-	for (int x=0;x<N;x++)
+	std::vector< cudafft<double>::cpx_type > data(N), result(N), cpu_result(N);
+	for (int x=0;x<N;x++) {
 		data[x].x = 10*cos(x*0.1f-5);
+		data[x].y = 6*cos(x*0.2f-2)+3;
+	}
 
 	fft.host_transform(&data[0], &cpu_result[0]);
-
-	// now put data in video mem
-	cudafft<float>::cpx_type *src,*d_result;
-	int memSize = sizeof(cudafft<float>::cpx_type)*N;
-	cudaMalloc(&src, memSize);
-	cudaMemcpy(src, &data[0], memSize, cudaMemcpyHostToDevice);
-	cudaMalloc(&d_result, memSize);
-
-	int sharedMemSize = fft.kparams_size;
-	for (int k=0;k<100;k++) {
-		runCudaFFT<<<dim3(1),dim3(1),sharedMemSize>>>(src,d_result, fft.kparams);
+	sfft::fft_forward(N, (sfft::complex<double>*)&data[0]);
+	
+	for (int k=0;k<N;k++) {
+		dbgprintf("[%d] kissfft: %f+%fi, sfft: %f+%fi. diff=%f+%fi\n", k, cpu_result[k].x, cpu_result[k].y, data[k].x,data[k].y, cpu_result[k].x - data[k].x,cpu_result[k].y - data[k].y);
 	}
-
-	cudaMemcpy(&result[0], d_result, memSize, cudaMemcpyDeviceToHost);
-
-	for (int i=0;i<N;i++) {
-		cudafft<float>::cpx_type v=cpu_result[i];
-		cudafft<float>::cpx_type d=result[i];
-		dbgprintf("[%d] CPU: %.1f+%.1fi. GPU: %.1f,%.1f\n", i, v.x, v.y, d.x,d.y);
-	}
-
-	cudaFree(src);
-	cudaFree(d_result);
-}
-
-__global__ void test()
-{
 }
 
 
@@ -155,31 +80,36 @@ void ShowCUDAError() {
 	dbgprintf("Cuda error: %s\n", cudaGetErrorString(err));
 }
 
-void testCOM()
+void TestLocalization()
 {
 	QTrkSettings cfg;
 	cfg.numThreads = -1;
+	cfg.qi_iterations = 4;
 	QueuedCUDATracker trk(&cfg);
 
-	cudaImageListf images = cudaImageListf::alloc(128,128,32);
+	auto images = cudaImageListf::alloc(128,128,32, trk.UseHostEmulate());
 	std::vector<float3> positions(images.count);
 
 	for(int i=0;i<images.count;i++) {
 		float xp = images.w/2+(rand_uniform<float>() - 0.5) * 5;
 		float yp = images.h/2+(rand_uniform<float>() - 0.5) * 5;
 		positions[i] = make_float3(xp, yp, 3);
-		dbgprintf("Pos[%d]=( %f, %f )\n", i, xp, yp);
 	}
-//	device_vector<float3> d_pos(positions);
-	float3* d_pos;
-	cudaMalloc(&d_pos, sizeof(float3)*images.count);
-	cudaMemcpy(d_pos, &positions[0], sizeof(float3)*images.count, cudaMemcpyHostToDevice);
+	trk.GenerateImages(images, trk.DeviceMem(positions).data);
 
-	test<<<dim3(),dim3()>>>();
+	auto d_com = trk.DeviceMem<float2>(positions.size());
+	auto d_qi = trk.DeviceMem<float2>(positions.size());
+	trk.ComputeBgCorrectedCOM(images, d_com.data);
+	trk.ComputeQI(images, d_com.data, d_qi.data);
+
+	std::vector<float2> com(d_com), qi(d_qi);
+	for (int i=0;i<images.count;i++) {
+		dbgprintf("[%d] true pos=( %.4f, %.4f ).  COM error=( %.4f, %.4f ).  QI error=( %.4f, %.4f ) \n", i, 
+			positions[i].x, positions[i].y, com[i].x - positions[i].x, com[i].y - positions[i].y, qi[i].x - positions[i].x, qi[i].y - positions[i].y );
+	}
+
 	ShowCUDAError();
-	//trk.GenerateImages(images, d_pos);
 	images.free();
-	cudaFree(d_pos);
 }
 
 int main(int argc, char *argv[])
@@ -191,8 +121,9 @@ int main(int argc, char *argv[])
 
 	std::string path = getPath(argv[0]);
 
-	testCOM();
+	TestLocalization();
 
+	//TestSimpleFFT();
 	//TestKernelFFT();
 
 	return 0;

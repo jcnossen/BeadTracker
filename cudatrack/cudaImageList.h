@@ -1,7 +1,5 @@
 #pragma once
 
-#define CUBOTH __device__ __host__
-
 template<typename T>
 struct cudaImageList {
 	// No constructor used to allow passing as CUDA kernel argument
@@ -9,12 +7,20 @@ struct cudaImageList {
 	size_t pitch;
 	int w,h;
 	int count;
+	bool hostMem;
+	T borderValue; // value that pixel() returns outside of image
 
-	static cudaImageList<T> alloc(int w,int h, int amount) {
+	static cudaImageList<T> alloc(int w,int h, int amount, bool hostMem) {
 		cudaImageList imgl;
 		imgl.w = w; imgl.h = h;
 		imgl.count = amount;
-		cudaMallocPitch(&imgl.data, &imgl.pitch, sizeof(T)*w, h*amount);
+		if (hostMem) {
+			imgl.data = new T[w*h*amount];
+			imgl.pitch = w*sizeof(T);
+		} else
+			cudaMallocPitch(&imgl.data, &imgl.pitch, sizeof(T)*w, h*amount);
+		imgl.hostMem = hostMem;
+		imgl.borderValue = 0.0;
 		return imgl;
 	}
 
@@ -23,6 +29,9 @@ struct cudaImageList {
 	}
 
 	CUBOTH T& pixel(int x,int y, int imgIndex) {
+		if (x < 0 || x >= w || y < 0 || y >= h)
+			return borderValue;
+
 		T* row = (T*) ( (char*)data + (h*imgIndex+y)*pitch );
 		return row[x];
 	}
@@ -40,7 +49,10 @@ struct cudaImageList {
 
 	void free()
 	{
-		cudaFree(data);
+		if(hostMem)
+			delete[] data;
+		else
+			cudaFree(data);
 	}
 
 	CUBOTH int totalsize() { return pitch*h*count; }

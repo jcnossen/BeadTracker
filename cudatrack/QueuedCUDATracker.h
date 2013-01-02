@@ -2,13 +2,23 @@
 #include "threads.h"
 #include "QueuedTracker.h"
 #include <cuda_runtime_api.h>
-#include "cudafft/cudafft.h"
+//#include "cudafft/cudafft.h"
 #include <list>
-#include "cudaImageList.h"
+#include <vector>
+#include "gpu_utils.h"
 
 template<typename T>
 struct cudaImageList;
 typedef cudaImageList<float> cudaImageListf;
+
+struct QIParams {
+	float2* d_initial;
+	float2* d_output;
+	uchar* d_boundaryHits;
+	float minRadius, maxRadius;
+	int radialSteps, iterations, angularSteps;
+};
+
 
 class QueuedCUDATracker : public QueuedTracker {
 public:
@@ -36,7 +46,20 @@ public:
 	void GenerateImages(cudaImageListf& imgList, float3 *d_positions);
 	void ComputeBgCorrectedCOM(cudaImageListf& imgList, float2* d_com);
 	void Compute1DXCor(cudaImageListf& images, float2* d_initial, float2* d_result);
+	void ComputeQI(cudaImageListf& images, float2* d_initial, float2* d_result);
 	void Compute1DXCorProfiles(cudaImageListf& images, float* d_profiles);
+
+	template<typename T>
+	device_vec<T> DeviceMem(int size=0) { 
+		return device_vec<T>(useCPU, size);
+	}
+	template<typename T>
+	device_vec<T> DeviceMem(const std::vector<T>& src) {
+		device_vec<T> d(useCPU);
+		d = src;
+		return d;
+	}
+	bool UseHostEmulate() { return useCPU; } // true if we run all the kernels on the CPU side, for debugging
 
 protected:
 	QTrkSettings cfg;
@@ -74,10 +97,9 @@ protected:
 		return dim3(numThreads);
 	}
 
-	cudafft<float> *forward_fft, *backward_fft;
-	float2* xcor_workspace;
+//	cudafft<float> *forward_fft, *backward_fft;
+	float2* xcorWorkspace;
 
-	Threads::Mutex batch_mutex;
 	std::vector<Batch*> freeBatches;
 	std::vector<Job*> jobs;
 
@@ -85,13 +107,12 @@ protected:
 	std::vector<Batch*> active;
 
 	bool useCPU;
+	int qiProfileLen; // QI profiles need to have power-of-two dimensions. qiProfileLen stores the closest power-of-two value that is bigger than cfg.qi_radialsteps
 
 	void CallKernel_BgCorrectedCOM(cudaImageListf& images, float2* d_com);
 	void CallKernel_MakeTestImage(cudaImageListf& images, float3* d_positions);
+	void CallKernel_ComputeQI(cudaImageListf& images, QIParams d_params);
 };
-
-
-
 
 
 
