@@ -10,6 +10,23 @@
 #define LSQFIT_FUNC __device__ __host__
 #include "LsqQuadraticFit.h"
 
+// QueuedCUDATracker allows runtime choosing of GPU or CPU code. All GPU kernel calls are done through the following macro:
+#define KERNEL_DISPATCH(Funcname, TParam) \
+__global__ void Funcname##Kernel(cudaImageListf images, TParam param) { \
+	int idx = blockIdx.x * blockDim.x + threadIdx.x; \
+	if (idx < images.count) { \
+		Funcname(idx, images, param); \
+	} \
+} \
+void QueuedCUDATracker::CallKernel_##Funcname(cudaImageListf& images, TParam param)  { \
+	if (useCPU) { \
+		for (int idx=0;idx<images.count;idx++) { \
+			Funcname (idx, images, param); \
+		} \
+	} else { \
+		Funcname##Kernel <<<blocks(images.count), threads()>>> (images,param); \
+	} \
+}
 
 QueuedTracker* CreateQueuedTracker(QTrkSettings* cfg)
 {
@@ -98,7 +115,7 @@ void QueuedCUDATracker::SetZLUT(float* data,  int numLUTs, int planes, int res)
 // delete[] memory afterwards
 float* QueuedCUDATracker::GetZLUT(int* planes, int *res, int *count)
 {
-	
+	return 0;
 }
 
 
@@ -179,52 +196,49 @@ __device__ T ComputeMaxInterp(T* data, int len)
 
 
 
-template<typename T>
-__global__ void computeBgCorrectedCOM(cudaImageList<T> images, float2* d_com)
+static CUBOTH void BgCorrectedCOM(int idx, cudaImageListf images, float2* d_com)
 {
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	int imgsize = images.w*images.h;
 	float sum=0, sum2=0;
 	float momentX=0;
 	float momentY=0;
 
-	if (idx < images.count) {
+	for (int y=0;y<images.h;y++)
+		for (int x=0;x<images.w;x++) {
+			float v = images.pixel(x,y,idx);
+			sum += v;
+			sum2 += v*v;
+		}
 
-		for (int y=0;y<images.h;y++)
-			for (int x=0;x<images.w;x++) {
-				float v = images.pixel(x,y,idx);
-				sum += v;
-				sum2 += v*v;
-			}
+	float invN = 1.0f/imgsize;
+	float mean = sum * invN;
+	float stdev = sqrtf(sum2 * invN - mean * mean);
+	sum = 0.0f;
 
-		float invN = 1.0f/imgsize;
-		float mean = sum * invN;
-		float stdev = sqrtf(sum2 * invN - mean * mean);
-		sum = 0.0f;
+	for (int y=0;y<images.h;y++)
+		for(int x=0;x<images.w;x++)
+		{
+			float v = images.pixel(x,y,idx);
+			v = fabs(v-mean)-2.0f*stdev;
+			if(v<0.0f) v=0.0f;
+			sum += v;
+			momentX += x*v;
+			momentY += y*v;
+		}
 
-		for (int y=0;y<images.h;y++)
-			for(int x=0;x<images.w;x++)
-			{
-				float v = images.pixel(x,y,idx);
-				v = fabs(v-mean)-2.0f*stdev;
-				if(v<0.0f) v=0.0f;
-				sum += v;
-				momentX += x*v;
-				momentY += y*v;
-			}
-
-		d_com[idx].x = momentX / (float)sum;
-		d_com[idx].y = momentY / (float)sum;
-	}
+	d_com[idx].x = momentX / (float)sum;
+	d_com[idx].y = momentY / (float)sum;
 }
+
+KERNEL_DISPATCH(BgCorrectedCOM, float2*);
 
 void QueuedCUDATracker::ComputeBgCorrectedCOM(cudaImageListf& images, float2* d_com)
 {
-	computeBgCorrectedCOM<<<blocks(images.count), threads()>>>(images, d_com);
+	CallKernel_BgCorrectedCOM(images, d_com);
 }
 
 
-CUBOTH void MakeTestImage(int idx, cudaImageListf& images, float3* d_positions)
+static CUBOTH void MakeTestImage(int idx, cudaImageListf& images, float3* d_positions)
 {
 	float3 pos = d_positions[idx];
 	
@@ -240,24 +254,14 @@ CUBOTH void MakeTestImage(int idx, cudaImageListf& images, float3* d_positions)
 	}
 }
 
-/*
-#define KERNEL_DISPATCH(Funcname, Paramdef, Args) \
-__global__ void Funcname##Kernel Paramdef { \
-	int idx = blockIdx.x * blockDim.x + threadIdx.x; \
-	if (idx < images.count) { \
-		Funcname Args; \
-	} \
-} \
-static void CallKernel##Funcname Paramdef { \
 
-}
+KERNEL_DISPATCH(MakeTestImage, float3*); 
 
-KERNEL_DISPATCH(MakeTestImage, (cudaImageListf images, float3 *d_positions), (idx, images, d_positions));
-*/
+
 
 void QueuedCUDATracker::GenerateImages(cudaImageListf& imgList, float3* d_pos)
 {
-	generateTestImages<<<blocks(imgList.count), threads()>>>(imgList, d_pos);
+	CallKernel_MakeTestImage(imgList, d_pos);
 }
 
 QueuedCUDATracker::Batch::~Batch() 

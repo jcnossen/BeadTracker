@@ -19,8 +19,12 @@
 #include "cudaImageList.h"
 #include "QueuedCUDATracker.h"
 
+#include <thrust/device_vector.h>
+
 #define LSQFIT_FUNC __device__ __host__
 #include "LsqQuadraticFit.h"
+
+using namespace thrust;
 
 double getPreciseTime()
 {
@@ -111,13 +115,11 @@ void TestKernelFFT()
 	int N=256;
 	cudafft<float> fft(N, false);
 
-	std::vector< cudafft<float>::cpx_type > data(N), result(N);
+	std::vector< cudafft<float>::cpx_type > data(N), result(N), cpu_result(N);
 	for (int x=0;x<N;x++)
 		data[x].x = 10*cos(x*0.1f-5);
 
-	fft.host_transform(&data[0], &result[0]);
-	for (int x=0;x<N;x++)
-		dbgprintf("[%d] %f+%fi\n", x, result[x].x, result[x].y);
+	fft.host_transform(&data[0], &cpu_result[0]);
 
 	// now put data in video mem
 	cudafft<float>::cpx_type *src,*d_result;
@@ -131,28 +133,67 @@ void TestKernelFFT()
 		runCudaFFT<<<dim3(1),dim3(1),sharedMemSize>>>(src,d_result, fft.kparams);
 	}
 
-	std::vector< cudafft<float>::cpx_type > result2(N);
-	cudaMemcpy(&result2[0], d_result, memSize, cudaMemcpyDeviceToHost);
+	cudaMemcpy(&result[0], d_result, memSize, cudaMemcpyDeviceToHost);
 
 	for (int i=0;i<N;i++) {
-		cudafft<float>::cpx_type d=result2[i]-result[i];
-		dbgprintf("[%d] %f+%fi\n", i, d.x, d.y);
+		cudafft<float>::cpx_type v=cpu_result[i];
+		cudafft<float>::cpx_type d=result[i];
+		dbgprintf("[%d] CPU: %.1f+%.1fi. GPU: %.1f,%.1f\n", i, v.x, v.y, d.x,d.y);
 	}
 
 	cudaFree(src);
 	cudaFree(d_result);
 }
 
+__global__ void test()
+{
+}
+
+
+void ShowCUDAError() {
+	cudaError_t err = cudaGetLastError();
+	dbgprintf("Cuda error: %s\n", cudaGetErrorString(err));
+}
+
+void testCOM()
+{
+	QTrkSettings cfg;
+	cfg.numThreads = -1;
+	QueuedCUDATracker trk(&cfg);
+
+	cudaImageListf images = cudaImageListf::alloc(128,128,32);
+	std::vector<float3> positions(images.count);
+
+	for(int i=0;i<images.count;i++) {
+		float xp = images.w/2+(rand_uniform<float>() - 0.5) * 5;
+		float yp = images.h/2+(rand_uniform<float>() - 0.5) * 5;
+		positions[i] = make_float3(xp, yp, 3);
+		dbgprintf("Pos[%d]=( %f, %f )\n", i, xp, yp);
+	}
+//	device_vector<float3> d_pos(positions);
+	float3* d_pos;
+	cudaMalloc(&d_pos, sizeof(float3)*images.count);
+	cudaMemcpy(d_pos, &positions[0], sizeof(float3)*images.count, cudaMemcpyHostToDevice);
+
+	test<<<dim3(),dim3()>>>();
+	ShowCUDAError();
+	//trk.GenerateImages(images, d_pos);
+	images.free();
+	cudaFree(d_pos);
+}
+
 int main(int argc, char *argv[])
 {
 //	testLinearArray();
 
+	cudaDeviceProp prop;
+	cudaGetDeviceProperties(&prop,0);
+
 	std::string path = getPath(argv[0]);
 
-	cudaDeviceProp prop;
-	cudaGetDeviceProperties(&prop, 0);
+	testCOM();
 
-//	TestKernelFFT();
+	//TestKernelFFT();
 
 	return 0;
 }

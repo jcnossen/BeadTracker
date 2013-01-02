@@ -85,6 +85,9 @@ protected:
 	std::vector<Batch*> active;
 
 	bool useCPU;
+
+	void CallKernel_BgCorrectedCOM(cudaImageListf& images, float2* d_com);
+	void CallKernel_MakeTestImage(cudaImageListf& images, float3* d_positions);
 };
 
 
