@@ -14,9 +14,12 @@ typedef cudaImageList<float> cudaImageListf;
 struct QIParams {
 	float2* d_initial;
 	float2* d_output;
+	sfft::complex<float>* d_twiddles;
 	uchar* d_boundaryHits;
 	float minRadius, maxRadius;
 	int radialSteps, iterations, angularSteps;
+	bool useShared;
+	float2* sharedBuf;
 };
 
 
@@ -105,12 +108,15 @@ protected:
 	Threads::Mutex batchMutex;
 	std::vector<Batch*> active;
 
+	device_vec< sfft::complex<float> > fft_twiddles;
 	bool useCPU;
+	device_vec< float2 > sharedBuf; // temp space for cpu mode or in case the hardware shared space is too small.
 	int qiProfileLen; // QI profiles need to have power-of-two dimensions. qiProfileLen stores the closest power-of-two value that is bigger than cfg.qi_radialsteps
+	cudaDeviceProp deviceProp;
 
-	void CallKernel_BgCorrectedCOM(cudaImageListf& images, float2* d_com);
-	void CallKernel_MakeTestImage(cudaImageListf& images, float3* d_positions);
-	void CallKernel_ComputeQI(cudaImageListf& images, QIParams d_params);
+	void CallKernel_BgCorrectedCOM(cudaImageListf& images, float2* d_com, uint sharedMem=0);
+	void CallKernel_MakeTestImage(cudaImageListf& images, float3* d_positions, uint sharedMem=0);
+	void CallKernel_ComputeQI(cudaImageListf& images, QIParams d_params, uint sharedMem=0);
 };
 
 

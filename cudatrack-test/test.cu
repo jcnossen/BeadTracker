@@ -43,8 +43,6 @@ std::string getPath(const char *file)
 }
 
 
-texture<float, cudaTextureType2D, cudaReadModeElementType> xcor1D_images(0, cudaFilterModeLinear);
-
 inline __device__ float2 mul_conjugate(float2 a, float2 b)
 {
 	float2 r;
@@ -67,8 +65,10 @@ void TestSimpleFFT()
 		data[x].y = 6*cos(x*0.2f-2)+3;
 	}
 
+	std::vector<sfft::complex<double> > twiddles = sfft::fill_twiddles<double>(N);
+
 	fft.host_transform(&data[0], &cpu_result[0]);
-	sfft::fft_forward(N, (sfft::complex<double>*)&data[0]);
+	sfft::fft_forward(N, (sfft::complex<double>*)&data[0], &twiddles[0]);
 	
 	for (int k=0;k<N;k++) {
 		dbgprintf("[%d] kissfft: %f+%fi, sfft: %f+%fi. diff=%f+%fi\n", k, cpu_result[k].x, cpu_result[k].y, data[k].x,data[k].y, cpu_result[k].x - data[k].x,cpu_result[k].y - data[k].y);
@@ -83,16 +83,25 @@ void ShowCUDAError() {
 
 void TestLocalization()
 {
-	int N = 1;
+#ifdef _DEBUG
+	const int NumImages=4;
+#else
+	const int NumImages=256;
+#endif
+	int N = 10;
 	QTrkSettings cfg;
-	cfg.numThreads = 0;
+	cfg.numThreads = -1;
 	cfg.qi_iterations = 2;
+	cfg.qi_maxradius = 30;
 	QueuedCUDATracker trk(&cfg);
 
-	auto images = cudaImageListf::alloc(128,128, 4, trk.UseHostEmulate());
+	auto images = cudaImageListf::alloc(80,80, NumImages, trk.UseHostEmulate());
 	ShowCUDAError();
 	std::vector<float3> positions(images.count);
-
+	{
+	device_vec< sfft::complex<float> > test;
+	test = trk.DeviceMem( std::vector < sfft::complex<float> > (3) );
+	}
 	for(int i=0;i<images.count;i++) {
 		float xp = images.w/2+(rand_uniform<float>() - 0.5) * 5;
 		float yp = images.h/2+(rand_uniform<float>() - 0.5) * 5;
@@ -118,7 +127,7 @@ void TestLocalization()
 	double t2 = getPreciseTime();
 	double tcom = t2 - t1;
 
-	dbgprintf("QI");
+	dbgprintf("QI\n");
 	for (int i=0;i<N;i++)
 		trk.ComputeQI(images, d_com.data, d_qi.data);
 	cudaDeviceSynchronize();
@@ -148,7 +157,6 @@ int main(int argc, char *argv[])
 	std::string path = getPath(argv[0]);
 
 	TestLocalization();
-
 	//TestSimpleFFT();
 	//TestKernelFFT();
 

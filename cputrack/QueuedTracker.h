@@ -51,6 +51,7 @@ struct QTrkSettings {
 		qi_iterations = 2;
 		qi_radialsteps = qi_angularsteps = 64;
 		qi_minradius = 5; qi_maxradius = 60;
+		cuda_device = 0;
 	}
 	int width, height;
 	int numThreads, maxQueueSize;
@@ -66,6 +67,8 @@ struct QTrkSettings {
 	int qi_iterations;
 	int qi_radialsteps, qi_angularsteps;
 	float qi_minradius, qi_maxradius;
+
+	int cuda_device;
 };
 #pragma pack(pop)
 

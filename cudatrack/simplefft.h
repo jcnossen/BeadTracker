@@ -39,9 +39,10 @@ SFFT_BOTH void swap(T& a, T& b) {
 
 
 template<typename T, int sign>
-SFFT_BOTH void fft(size_t N, complex<T> *zs) {
-	const T pi = 3.14159265359;
+SFFT_BOTH void fft(size_t N, complex<T> *zs, complex<T>* twiddles) {
     unsigned int j=0;
+	if (sign < 0) 
+		twiddles += N; // forward FFT twiddles are located after inverse twiddles
     // Warning about signed vs unsigned comparison
     for(unsigned int i=0; i<N-1; ++i) {
         if (i < j) 
@@ -52,8 +53,10 @@ SFFT_BOTH void fft(size_t N, complex<T> *zs) {
     }
     for(unsigned int j=1; j<N; j*=2)
         for(unsigned int m=0; m<j; ++m) {
-            T t = pi * sign * m / j;
-            complex<T> w = complex<T>(cos(t),sin(t));
+            //T t = pi * sign * m / j;
+			//dbgprintf("fac: m=%d. j=%d. k=%d\n", m, j, N*m/(j*2));
+            //complex<T> wcmp = complex<T>(cos(t),sin(t));
+			complex<T> w = twiddles[N*m/(j*2)];
             for(unsigned int i = m; i<N; i+=2*j) {
                 complex<T> zi = zs[i], t = w * zs[i + j];
 				zs[i] = zi+t;
@@ -62,13 +65,30 @@ SFFT_BOTH void fft(size_t N, complex<T> *zs) {
         }
 }
 
+
 template<typename T>
-SFFT_BOTH void fft_forward(size_t N, complex<T> *zs) {
-	fft<T, -1>(N,zs);
+std::vector< complex<T> > fill_twiddles(int N) {
+	const T pi = 3.14159265359;
+	std::vector< complex<T> > twiddles(N*2);
+	for(int i=0;i<N;i++) {
+		T t = pi * 1 * i * 2 / N;
+		twiddles[i] = complex<T>(cos(t),sin(t));
+	}
+	for(int i=0;i<N;i++) {
+		T t = pi * -1 * i * 2 / N;
+		twiddles[i+N] = complex<T>(cos(t),sin(t));
+	}
+	return twiddles;
+}
+
+
+template<typename T>
+SFFT_BOTH void fft_forward(size_t N, complex<T> *zs, complex<T> *twiddles) {
+	fft<T, -1>(N,zs,twiddles);
 }
 template<typename T>
-SFFT_BOTH void fft_inverse(size_t N, complex<T> *zs) {
-	fft<T, 1>(N,zs);
+SFFT_BOTH void fft_inverse(size_t N, complex<T> *zs, complex<T> *twiddles) {
+	fft<T, 1>(N,zs,twiddles);
 }
 
 #undef SFFT_BOTH
