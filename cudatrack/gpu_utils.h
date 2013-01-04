@@ -16,7 +16,7 @@
 template<typename T>
 class device_vec {
 public:
-	device_vec(bool emulate=true) : host_emulate(emulate) {
+	device_vec(bool emulate=false) : host_emulate(emulate) {
 	//	dbgprintf("%p device_vec()\n", this);
 		data = 0;
 		size = 0;
@@ -34,6 +34,12 @@ public:
 		init(src.size);
 	//	dbgprintf("%p. copy constructor: %p to %p. Host emulate=%d\n", this, src.data, data, host_emulate?1:0);
 		cudaMemcpy(data, src.data, sizeof(T)*size, host_emulate ? cudaMemcpyHostToHost : cudaMemcpyDeviceToDevice);
+	}
+	device_vec(const std::vector<T>& src) {
+	//	dbgprintf("%p. operator=(vector)\n", this);
+		data=0; size=0; host_emulate=false;
+		init(src.size());
+		cudaMemcpy(data, &src[0], sizeof(T)*size, host_emulate ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice);
 	}
 	~device_vec(){
 //dbgprintf("%p: ~device_vec. size=%d\n", this, size);

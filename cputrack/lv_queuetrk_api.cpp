@@ -20,7 +20,7 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 
 	dbgprintf("Setting ZLUT size: %d beads, %d planes, %d radialsteps\n", numLUTs, planes, res);
 	
-	tracker->SetZLUT(zlut->elem, planes, res, numLUTs);
+	tracker->SetZLUT(zlut->elem, numLUTs, planes, res);
 }
 
 CDLL_EXPORT void DLL_CALLCONV qtrk_get_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pzlut)

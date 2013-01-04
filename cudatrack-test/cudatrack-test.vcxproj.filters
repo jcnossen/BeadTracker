@@ -11,6 +11,9 @@
     <ClInclude Include="..\cudatrack\cudaImageList.h" />
     <ClInclude Include="..\cudatrack\simplefft.h" />
     <ClInclude Include="..\cudatrack\gpu_utils.h" />
+    <ClInclude Include="..\cputrack\TeLibJpeg\jmemdstsrc.h">
+      <Filter>fastjpeg</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="test.cu" />
@@ -20,8 +23,20 @@
     <Filter Include="cudafft">
       <UniqueIdentifier>{da74a339-6ee1-4e53-94e9-bd01631a49a6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="fastjpeg">
+      <UniqueIdentifier>{ceb06e5e-14c3-46b3-b7f3-70ec6c617d7c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\cputrack\utils.cpp" />
+    <ClCompile Include="..\cputrack\fastjpg.cpp">
+      <Filter>fastjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cputrack\TeLibJpeg\jmemdst.c">
+      <Filter>fastjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cputrack\TeLibJpeg\jmemsrc.c">
+      <Filter>fastjpeg</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

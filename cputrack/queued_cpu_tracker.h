@@ -19,8 +19,8 @@ public:
 	int PollFinished(LocalizationResult* results, int maxResults);
 	void ClearResults();
 	void GenerateTestImage(float* dst, float xp,float yp, float z, float photoncount);
+	void Flush() { }
 
-	int GetJobCount();
 	int GetResultCount();
 	int NumThreads() { return cfg.numThreads; }
 
@@ -51,7 +51,7 @@ private:
 	std::list<Job*> jobs;
 	int jobCount;
 	std::vector<Job*> jobs_buffer; // stores memory
-	std::list<LocalizationResult> results;
+	std::vector<LocalizationResult> results;
 	int resultCount;
 
 	std::vector<Thread> threads;

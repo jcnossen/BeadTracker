@@ -285,8 +285,8 @@ int QueuedCPUTracker::PollFinished(LocalizationResult* dstResults, int maxResult
 	int numResults = 0;
 	results_mutex.lock();
 	while (numResults < maxResults && !results.empty()) {
-		dstResults[numResults++] = results.front();
-		results.pop_front();
+		dstResults[numResults++] = results.back();
+		results.pop_back();
 		resultCount--;
 	}
 	results_mutex.unlock();

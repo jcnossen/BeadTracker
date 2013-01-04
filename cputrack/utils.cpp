@@ -7,6 +7,7 @@
 
 #include "random_distr.h"
 #include "LsqQuadraticFit.h"
+#include "QueuedTracker.h"
 
 std::string SPrintf(const char *fmt, ...) {
 	va_list ap;
@@ -177,4 +178,30 @@ std::vector<uchar> ReadToByteBuffer(const char *filename)
 
 	fclose(f);
 	return buf;
+}
+
+void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelDataType pdt, float* dst)
+{
+	if (pdt == QTrkU8) {
+		for (int y=0;y<height;y++) {
+			for (int x=0;x<width;x++)
+				dst[x] = data[x];
+			data += pitch;
+			dst += width;
+		}
+	} else if(pdt == QTrkU16) {
+		for (int y=0;y<height;y++) {
+			ushort* u = (ushort*)data;
+			for (int x=0;x<width;x++)
+				dst[x] = u[x];
+			data += pitch;
+			dst += width;
+		}
+ 	} else {
+		for (int y=0;y<height;y++) {
+			memcpy(dst, (float*)data, sizeof(float)*width);
+			data += pitch;
+			dst += width;
+		}
+	}
 }
