@@ -46,11 +46,11 @@ struct CUDATrackerJob {
 
 class QueuedCUDATracker : public QueuedTracker {
 public:
-	QueuedCUDATracker(QTrkSettings* cfg);
+	QueuedCUDATracker(QTrkSettings* cfg, int batchSize=-1);
 	~QueuedCUDATracker();
 
 	void Start();
-	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
+	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
 	void ClearResults();
 
 	// data can be zero to allocate ZLUT data. Useful when number of localizations is not a multiple of internal batch size (almost always)
@@ -63,6 +63,8 @@ public:
 	// Debug stuff
 	float* GetDebugImage() { return 0; }
 
+	bool IsQueueFilled();
+	bool IsIdle();
 	int GetResultCount();
 
 	// Direct kernel wrappers
@@ -121,6 +123,7 @@ protected:
 	std::list<Batch*> active;
 	Batch* currentBatch;
 	uint sharedMemSize;
+	int maxActiveBatches;
 
 	std::vector<LocalizationResult> results;
 	

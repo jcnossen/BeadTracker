@@ -29,21 +29,15 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_get_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 
 	float* zlut = tracker->GetZLUT(&dims[0], &dims[1], &dims[2]);
 	ResizeLVArray3D(pzlut, dims[0], dims[1], dims[2]);
-	std::copy(zlut, zlut+(*pzlut)->numElem(), (*pzlut)->elem);
+	memcpy((*pzlut)->elem, zlut, sizeof(float)*(*pzlut)->numElem());
 	delete[] zlut;
 }
 
-CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings, int startNow)
+CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings)
 {
 	QueuedTracker* tracker = CreateQueuedTracker(settings);
-	if (startNow)
-		tracker->Start();
+	tracker->Start();
 	return tracker;
-}
-
-CDLL_EXPORT void qtrk_start(QueuedTracker* qtrk)
-{
-	qtrk->Start();
 }
 
 
@@ -101,15 +95,19 @@ CDLL_EXPORT void qtrk_clear_results(QueuedTracker* qtrk)
 }
 
 
-CDLL_EXPORT int qtrk_jobcount(QueuedTracker* qtrk)
+CDLL_EXPORT int qtrk_hasfullqueue(QueuedTracker* qtrk) 
 {
-	return qtrk->GetJobCount();
+	return qtrk->IsQueueFilled() ? 1 : 0;
 }
-
 
 CDLL_EXPORT int qtrk_resultcount(QueuedTracker* qtrk)
 {
 	return qtrk->GetResultCount();
+}
+
+CDLL_EXPORT void qtrk_flush(QueuedTracker* qtrk)
+{
+	qtrk->Flush();
 }
 
 static bool compareResultsByID(const LocalizationResult& a, const LocalizationResult& b) {
@@ -125,6 +123,11 @@ CDLL_EXPORT int qtrk_get_results(QueuedTracker* qtrk, LocalizationResult* result
 	}
 
 	return resultCount;
+}
+
+CDLL_EXPORT int qtrk_idle(QueuedTracker* qtrk)
+{
+	return qtrk->IsIdle() ? 1 : 0;
 }
 
 CDLL_EXPORT void DLL_CALLCONV qtrk_generate_test_image(QueuedTracker* tracker, LVArray2D<ushort>** image, float xp, float yp, float size, float photoncount)

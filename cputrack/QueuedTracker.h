@@ -80,7 +80,7 @@ public:
 	virtual ~QueuedTracker() {}
 
 	virtual void Start () = 0;
-	virtual void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane) = 0;
+	virtual bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane) = 0;
 	virtual int PollFinished(LocalizationResult* results, int maxResults) = 0;
 	virtual void ClearResults() = 0;
 	virtual void Flush() = 0; // stop waiting for more jobs to do, and just process the current batch
@@ -91,6 +91,9 @@ public:
 	// Debug stuff
 	virtual float* GetDebugImage() { return 0; }
 	virtual int GetResultCount() = 0;
+
+	virtual bool IsQueueFilled() = 0;
+	virtual bool IsIdle() = 0;
 
 	virtual void GenerateTestImage(float* dstImg, float xp, float yp, float size, float photoncount) = 0;
 

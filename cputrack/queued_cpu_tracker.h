@@ -15,13 +15,17 @@ public:
 	void Start();
 	void SetZLUT(float* data, int num_zluts, int planes, int res);
 	float* GetZLUT(int *num_zluts, int* planes, int* res);
-	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
+	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
 	int PollFinished(LocalizationResult* results, int maxResults);
 	void ClearResults();
 	void GenerateTestImage(float* dst, float xp,float yp, float z, float photoncount);
 	void Flush() { }
 
+	bool IsQueueFilled() { return GetJobCount() >= cfg.maxQueueSize; }
+	bool IsIdle() { return GetJobCount() == 0; }
+
 	int GetResultCount();
+	int GetJobCount();
 	int NumThreads() { return cfg.numThreads; }
 
 private:

@@ -181,9 +181,10 @@ void QTrkTest()
 	cfg.qi_maxradius = 50;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
-	cfg.numThreads = 0; // direct processing, dont use queue
+	cfg.numThreads = -1;
 	//cfg.numThreads = 6;
-	QueuedCUDATracker qtrk(&cfg);
+	int NumImages=10, JobsPerImg=200;
+	QueuedCUDATracker qtrk(&cfg, NumImages*JobsPerImg+1);
 	float *image = new float[cfg.width*cfg.height];
 
 	// Generate ZLUT
@@ -212,7 +213,6 @@ void QTrkTest()
 	delete[] zlut; delete[] zlut_bytes;
 	
 	// Schedule images to localize on
-	int NumImages=10, JobsPerImg=2000;
 	dbgprintf("Generating %d images...\n", NumImages);
 	double tgen = 0.0, tschedule = 0.0;
 	std::vector<float> truepos(NumImages*3);

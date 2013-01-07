@@ -243,11 +243,12 @@ float* QueuedCPUTracker::GetZLUT(int *count, int* planes,int *res)
 	return cp;
 }
 
-void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, 
+bool QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, 
 				LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane)
 {
-	while(cfg.maxQueueSize != 0 && GetJobCount () >= cfg.maxQueueSize)
+	while(cfg.maxQueueSize != 0 && GetJobCount () >= cfg.maxQueueSize) {
 		Threads::Sleep(5);
+	}
 
 	Job* j = AllocateJob();
 	int dstPitch = PDT_BytesPerPixel(pdt) * cfg.width;
@@ -278,6 +279,8 @@ void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDa
 		ProcessJob(noThreadTracker, j_);
 		JobFinished(j_);
 	}
+
+	return true;
 }
 
 int QueuedCPUTracker::PollFinished(LocalizationResult* dstResults, int maxResults)

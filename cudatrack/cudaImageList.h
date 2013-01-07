@@ -10,7 +10,17 @@ struct cudaImageList {
 	bool hostMem;
 	T borderValue; // value that pixel() returns outside of image
 
-	static cudaImageList<T> alloc(int w,int h, int amount, bool hostMem) {
+	static cudaImageList<T> empty() {
+		cudaImageList imgl;
+		imgl.data = 0;
+		imgl.pitch = 0;
+		imgl.w = imgl.h = imgl.count = 0;
+		imgl.hostMem = false;
+		imgl.borderValue = 0.0f;
+		return imgl;
+	}
+
+	static cudaImageList<T> alloc(int w,int h, int amount, bool hostMem=false) {
 		cudaImageList imgl;
 		imgl.w = w; imgl.h = h;
 		imgl.count = amount;
