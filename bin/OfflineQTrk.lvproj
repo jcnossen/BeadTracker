@@ -10,6 +10,16 @@
 		<Property Name="server.vi.callsEnabled" Type="Bool">true</Property>
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
+		<Item Name="QTrk C++ interface" Type="Folder">
+			<Item Name="QTrkClearResults.vi" Type="VI" URL="../QTrk.llb/QTrkClearResults.vi"/>
+			<Item Name="QTrkFlush.vi" Type="VI" URL="../QTrk.llb/QTrkFlush.vi"/>
+			<Item Name="QTrkGetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkGetZLUT.vi"/>
+			<Item Name="QTrkIsIdle.vi" Type="VI" URL="../QTrk.llb/QTrkIsIdle.vi"/>
+			<Item Name="QTrkIsQueueFull.vi" Type="VI" URL="../QTrk.llb/QTrkIsQueueFull.vi"/>
+			<Item Name="QTrkQueueImageU8.vi" Type="VI" URL="../QTrk.llb/QTrkQueueImageU8.vi"/>
+			<Item Name="QTrkReadJPEGFile.vi" Type="VI" URL="../QTrk.llb/QTrkReadJPEGFile.vi"/>
+			<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkSetZLUT.vi"/>
+		</Item>
 		<Item Name="BeadPos.ctl" Type="VI" URL="../OfflineQTrk.llb/BeadPos.ctl"/>
 		<Item Name="BuildZLUT.vi" Type="VI" URL="../OfflineQTrk.llb/BuildZLUT.vi"/>
 		<Item Name="EditQTrkSettings.vi" Type="VI" URL="../OfflineQTrk.llb/EditQTrkSettings.vi"/>
@@ -19,20 +29,13 @@
 		<Item Name="LoadImageForDisplay.vi" Type="VI" URL="../OfflineQTrk.llb/LoadImageForDisplay.vi"/>
 		<Item Name="LUTInfo.ctl" Type="VI" URL="../OfflineQTrk.llb/LUTInfo.ctl"/>
 		<Item Name="OfflineQTrk.vi" Type="VI" URL="../OfflineQTrk.llb/OfflineQTrk.vi"/>
-		<Item Name="QTrkClearResults.vi" Type="VI" URL="../QTrk.llb/QTrkClearResults.vi"/>
-		<Item Name="QTrkFlush.vi" Type="VI" URL="../QTrk.llb/QTrkFlush.vi"/>
-		<Item Name="QTrkGetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkGetZLUT.vi"/>
-		<Item Name="QTrkIsIdle.vi" Type="VI" URL="../QTrk.llb/QTrkIsIdle.vi"/>
-		<Item Name="QTrkIsQueueFull.vi" Type="VI" URL="../QTrk.llb/QTrkIsQueueFull.vi"/>
-		<Item Name="QTrkQueueImageU8.vi" Type="VI" URL="../QTrk.llb/QTrkQueueImageU8.vi"/>
-		<Item Name="QTrkReadJPEGFile.vi" Type="VI" URL="../QTrk.llb/QTrkReadJPEGFile.vi"/>
-		<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkSetZLUT.vi"/>
 		<Item Name="QueueSingleFrame.vi" Type="VI" URL="../OfflineQTrk.llb/QueueSingleFrame.vi"/>
 		<Item Name="ReadImageToArray.vi" Type="VI" URL="../OfflineQTrk.llb/ReadImageToArray.vi"/>
 		<Item Name="RunJob.vi" Type="VI" URL="../OfflineQTrk.llb/RunJob.vi"/>
 		<Item Name="SaveOrLoadBeadlist.vi" Type="VI" URL="../OfflineQTrk.llb/SaveOrLoadBeadlist.vi"/>
 		<Item Name="SaveOrLoadQTrkSettings.vi" Type="VI" URL="../OfflineQTrk.llb/SaveOrLoadQTrkSettings.vi"/>
 		<Item Name="SaveResults.vi" Type="VI" URL="../OfflineQTrk.llb/SaveResults.vi"/>
+		<Item Name="ScalePixelsToMicrons.vi" Type="VI" URL="../OfflineQTrk.llb/ScalePixelsToMicrons.vi"/>
 		<Item Name="SimpleTest.vi" Type="VI" URL="../OfflineQTrk.llb/SimpleTest.vi"/>
 		<Item Name="TestJPEGReader.vi" Type="VI" URL="../OfflineQTrk.llb/TestJPEGReader.vi"/>
 		<Item Name="ViewTracesDlg.vi" Type="VI" URL="../OfflineQTrk.llb/ViewTracesDlg.vi"/>
