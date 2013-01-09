@@ -211,13 +211,18 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 void QueuedCPUTracker::SetZLUT(float* data, int num_zluts, int planes, int res)
 {
 	if (zluts) delete[] zluts;
-	zluts = new float[planes*res*num_zluts];
-	std::fill(zluts,zluts+(planes*res*num_zluts), 0.0f);
-	zlut_planes = planes;
-	zlut_res = res;
-	zlut_count = num_zluts;
-	if(data)
-		std::copy(data, data+(planes*res*num_zluts), zluts);
+	int total = num_zluts*res*planes;
+	if (total > 0) {
+		zluts = new float[planes*res*num_zluts];
+		std::fill(zluts,zluts+(planes*res*num_zluts), 0.0f);
+		zlut_planes = planes;
+		zlut_res = res;
+		zlut_count = num_zluts;
+		if(data)
+			std::copy(data, data+(planes*res*num_zluts), zluts);
+	}
+	else
+		zluts = 0;
 
 	UpdateZLUTs();
 }

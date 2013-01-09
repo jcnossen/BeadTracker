@@ -22,7 +22,6 @@
 		</Item>
 		<Item Name="BeadPos.ctl" Type="VI" URL="../OfflineQTrk.llb/BeadPos.ctl"/>
 		<Item Name="BuildZLUT.vi" Type="VI" URL="../OfflineQTrk.llb/BuildZLUT.vi"/>
-		<Item Name="EditQTrkSettings.vi" Type="VI" URL="../OfflineQTrk.llb/EditQTrkSettings.vi"/>
 		<Item Name="FormatTimespan.vi" Type="VI" URL="../OfflineQTrk.llb/FormatTimespan.vi"/>
 		<Item Name="GetBeadImage.vi" Type="VI" URL="../OfflineQTrk.llb/GetBeadImage.vi"/>
 		<Item Name="GetFrametimes.vi" Type="VI" URL="../OfflineQTrk.llb/GetFrametimes.vi"/>
@@ -37,9 +36,6 @@
 		<Item Name="SaveOrLoadQTrkSettings.vi" Type="VI" URL="../OfflineQTrk.llb/SaveOrLoadQTrkSettings.vi"/>
 		<Item Name="SaveResults.vi" Type="VI" URL="../OfflineQTrk.llb/SaveResults.vi"/>
 		<Item Name="ScalePixelsToMicrons.vi" Type="VI" URL="../OfflineQTrk.llb/ScalePixelsToMicrons.vi"/>
-		<Item Name="SimpleTest.vi" Type="VI" URL="../OfflineQTrk.llb/SimpleTest.vi"/>
-		<Item Name="TestJPEGReader.vi" Type="VI" URL="../OfflineQTrk.llb/TestJPEGReader.vi"/>
-		<Item Name="ViewTracesDlg.vi" Type="VI" URL="../OfflineQTrk.llb/ViewTracesDlg.vi"/>
 		<Item Name="XYZf.ctl" Type="VI" URL="../QTrk.llb/XYZf.ctl"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
