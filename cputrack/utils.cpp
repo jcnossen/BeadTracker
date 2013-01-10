@@ -4,6 +4,7 @@
 #undef min
 #undef max
 #include <string>
+#include <complex>
 
 #include "random_distr.h"
 #include "LsqQuadraticFit.h"
@@ -164,6 +165,22 @@ void WriteImageAsCSV(const char* file, float* d, int w,int h)
 	fclose(f);
 }
 
+
+void WriteComplexImageAsCSV(const char* file, std::complex<float>* d, int w,int h)
+{
+	FILE* f = fopen(file, "w");
+
+	for (int y=0;y<h;y++) {
+		for (int x=0;x<w;x++)
+		{
+			fprintf(f, "%f+%fi", d[y*w+x].real(), d[y*w+x].imag());
+			if(x<w-1) fputs("\t", f); 
+		}
+		fprintf(f, "\n");
+	}
+
+	fclose(f);
+}
 
 std::vector<uchar> ReadToByteBuffer(const char *filename)
 {

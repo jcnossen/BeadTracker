@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstddef>
+#include <complex>
 
 template<typename T> bool isNAN(const T& v) { 
 	return !(v == v); 
@@ -82,6 +83,7 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float zlut_radius, vector2f pos, float z, float M);
 void ApplyPoissonNoise(ImageData& img, float factor);
 void WriteImageAsCSV(const char* file, float* d, int w,int h);
+void WriteComplexImageAsCSV(const char* file, std::complex<float>* d, int w,int h);
 
 int ReadJPEGFile(uchar* srcbuf, int srclen, uchar** data, int* width, int*height);
 void WriteJPEGFile(uchar* data,int w,int h, char * filename, int quality);

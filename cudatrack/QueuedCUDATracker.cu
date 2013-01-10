@@ -1,3 +1,20 @@
+/*
+
+Quadrant Interpolation on CUDA
+This implementation is designed to perform QI on many small images, processing each image on 2 CUDA processors.
+
+Layout of CUDA shared memory:
+
+Per warp:
+- float2[radialsteps*2]: twiddles
+
+Per localization job (16 per warp)
+- float2: Current position
+- float2[radialsteps*2]: Temporary buffer 1
+- float2[radialsteps*2]: Temporary buffer 2
+
+*/
+
 #include <algorithm>
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
@@ -23,19 +40,19 @@ __shared__ float2 cudaSharedMemory[];
 // QueuedCUDATracker allows runtime choosing of GPU or CPU code. All GPU kernel calls are done through the following macro:
 // Depending on 'useCPU' it either invokes a CUDA kernel named 'Funcname', or simply loops over the data on the CPU side calling 'Funcname' for each image
 #define KERNEL_DISPATCH(Funcname, TParam) \
-__global__ void Funcname##Kernel(cudaImageListf images, TParam param) { \
+__global__ void Funcname##Kernel(cudaImageListf images, TParam param, int sharedMemPerThread) { \
 	int idx = blockIdx.x * blockDim.x + threadIdx.x; \
 	if (idx < images.count) { \
-		Funcname<false>(idx, images, param); \
+		Funcname(idx, images, &cudaSharedMemory [threadIdx.x * sharedMemPerThread], param); \
 	} \
 } \
-void QueuedCUDATracker::CallKernel_##Funcname(cudaImageListf& images, TParam param, uint sharedMem)  { \
+void QueuedCUDATracker::CallKernel_##Funcname(cudaImageListf& images, TParam param, uint sharedMemPerThread)  { \
 	if (useCPU) { \
 		for (int idx=0;idx<images.count;idx++) { \
-			::Funcname <true> (idx, images, param); \
+			::Funcname(idx, images, sharedBuf.data, param); \
 		} \
 	} else { \
-		Funcname##Kernel <<<blocks(images.count), threads(), sharedMem>>> (images,param); \
+		Funcname##Kernel <<<blocks(images.count), threads(), sharedMemPerThread * numThreads >>> (images,param, sharedMemPerThread); \
 	} \
 }
 
@@ -61,15 +78,17 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	dbgprintf("# of CUDA processors:%d\n", deviceProp.multiProcessorCount);
 	dbgprintf("warp size: %d\n", deviceProp.warpSize);
 
-	useCPU = false;//cfg->numThreads == 0;
+	useCPU = cfg->numThreads == 0;
 	qiProfileLen = 1;
-	while (qiProfileLen < cfg->qi_radialsteps) qiProfileLen *= 2;
+	while (qiProfileLen < cfg->qi_radialsteps*2) qiProfileLen *= 2;
+
+	sharedMemSize = sizeof(float2) * qiProfileLen + // twiddles
+		( sizeof(float2) + // current position
+		sizeof(float2) * qiProfileLen * 2 ) * 16; // 2x temporary computing buffers
 
 	fft_twiddles = DeviceMem( sfft::fill_twiddles<float> (qiProfileLen) );
-	sharedBuf.init(qiProfileLen*2*batchSize);
-	sharedMemSize = sizeof(float2) * cfg->qi_radialsteps*2*numThreads; 
 	KernelParams &p = kernelParams;
-	QIParams qi = p.qi_params;
+	QIParams& qi = p.qi_params;
 	qi.angularSteps = cfg->qi_angularsteps;
 	qi.iterations = cfg->qi_iterations;
 	qi.maxRadius = cfg->qi_maxradius;
@@ -77,10 +96,9 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	qi.radialSteps = cfg->qi_radialsteps;
 	qi.d_twiddles = fft_twiddles.data;
 	p.sharedBuf = sharedBuf.data;
-	p.useShared = qi.radialSteps*2 * numThreads < deviceProp.sharedMemPerBlock;
+	//p.useShared = qi.radialSteps*2 * numThreads < deviceProp.sharedMemPerBlock;
 
-	dbgprintf("Required shared memory: %d\n", sharedMemSize);
-
+	dbgprintf("Required shared memory: %d\n", sharedMemSize );
 	currentBatch = AllocBatch();
 
 	zlut = cudaImageListf::empty();
@@ -96,9 +114,6 @@ void QueuedCUDATracker::GenerateTestImage(float* dst, float xp,float yp, float z
 {
 }
 
-
-
-template<bool cpuMode>
 static CUBOTH float2 BgCorrectedCOM(int idx, cudaImageListf& images)
 {
 	int imgsize = images.w*images.h;
@@ -135,23 +150,19 @@ static CUBOTH float2 BgCorrectedCOM(int idx, cudaImageListf& images)
 	return com;
 }
 
+static CUBOTH void BgCorrectedCOM(int idx, cudaImageListf& images, float2* sharedMem, float2* d_com) {
+	d_com[idx] = BgCorrectedCOM(idx, images);
+}
 
-__global__ void BgCorrectedCOMKernel(cudaImageListf images, float2* d_com) { 
-	int idx = blockIdx.x * blockDim.x + threadIdx.x; 
-	if (idx < images.count) { 
-		d_com[idx] = BgCorrectedCOM<false>(idx, images);
-	} 
-} 
-
+KERNEL_DISPATCH(BgCorrectedCOM, float2*);
 
 void QueuedCUDATracker::ComputeBgCorrectedCOM(cudaImageListf& images, float2* d_com)
 {
-	BgCorrectedCOMKernel<<<blocks(images.count), threads()>>> (images, d_com);
+	CallKernel_BgCorrectedCOM(images, d_com);
 }
 
 
-template<bool cpuMode>
-static CUBOTH void MakeTestImage(int idx, cudaImageListf& images, float3* d_positions)
+static CUBOTH void MakeTestImage(int idx, cudaImageListf& images, float2* sharedMem, float3* d_positions)
 {
 	float3 pos = d_positions[idx];
 	
@@ -178,16 +189,16 @@ void QueuedCUDATracker::GenerateImages(cudaImageListf& imgList, float3* d_pos)
 
 texture<float, cudaTextureType2D, cudaReadModeElementType> qi_image_texture(0, cudaFilterModeLinear);
 
-
 static __device__ qivalue_t QI_ComputeOffset(qicomplex_t* profile, qicomplex_t* tmpbuf, const QIParams& params, int idx) {
 	int nr = params.radialSteps;
 
 	qicomplex_t* reverse;
-	reverse = tmpbuf;
+	reverse = (qicomplex_t*)malloc(sizeof(qicomplex_t)*nr*2);//tmpbuf;
 
 	for(int x=0;x<nr*2;x++)
 		reverse[x] = profile[nr*2-1-x];
 
+//	std::vector< sfft::complex<float> > tw = sfft::fill_twiddles<float> (nr*2);
 	sfft::fft_forward(nr*2, profile, params.d_twiddles);
 	sfft::fft_forward(nr*2, reverse, params.d_twiddles);
 
@@ -198,12 +209,13 @@ static __device__ qivalue_t QI_ComputeOffset(qicomplex_t* profile, qicomplex_t* 
 	sfft::fft_inverse(nr*2, profile, params.d_twiddles);
 	// fft_out2 now contains the autoconvolution
 	// convert it to float
-	qivalue_t* autoconv = (qivalue_t*)tmpbuf;
+	qivalue_t* autoconv = (qivalue_t*)reverse;
 	for(int x=0;x<nr*2;x++)  {
 		autoconv[x] = profile[(x+nr)%(nr*2)].real();
 	}
 
-	float maxPos = ComputeMaxInterp<qivalue_t, 5>(autoconv, nr*2);
+	float maxPos = ComputeMaxInterp<qivalue_t,7>(autoconv, nr*2);
+	free(reverse);
 	return (maxPos - nr) / (3.14159265359f * 0.5f);
 }
 
@@ -239,13 +251,37 @@ static __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, f
 	}
 }
 
+template<typename T>
+static __device__ void CopyToShared(T* dst, T* src, int numElem)
+{
+	int elemPerThread = (numElem + blockDim.x-1) / blockDim.x;
+	int offset = elemPerThread * threadIdx.x;
+	int endpos = min(numElem, offset + elemPerThread);
+	for (int x=offset;x<endpos;x++)
+		dst[x] = src[x];
+}
+
 
 static __device__ float2 ComputeQIPosition(int idx, cudaImageListf& images, KernelParams params, float2 initial, bool& error)
 {
+	// Prepare shared memory
+	int pl = params.qi_params.radialSteps*2;
+	float2* sharedBuf = params.sharedBuf;
+	
+	// Copy twiddles to shared
+	sfft::complex<float>* s_twiddles = (sfft::complex<float>*)&sharedBuf[0];
+	CopyToShared(s_twiddles, params.qi_params.d_twiddles, pl);
+
+	sharedBuf += pl;
+	int sharedElemPerImg = pl*2+1;
+	float2* s_currentPos = &sharedBuf[idx * sharedElemPerImg];
+	float2* s_tmpbuf0 = &sharedBuf[idx * sharedElemPerImg + 1];
+	float2* s_tmpbuf1 = &sharedBuf[idx * sharedElemPerImg + 1 + pl];
+
+	// Localize
 	QIParams& qp = params.qi_params;
 	int nr=qp.radialSteps;
 	float2 center = initial;
-
 	float pixelsPerProfLen = (qp.maxRadius-qp.minRadius)/qp.radialSteps;
 
 	size_t total_required = sizeof(qivalue_t)*nr*4 + sizeof(qicomplex_t)*nr*2;
@@ -257,7 +293,7 @@ static __device__ float2 ComputeQIPosition(int idx, cudaImageListf& images, Kern
 
 	qicomplex_t* concat0 = (qicomplex_t*)(buf + nr*4);
 	qicomplex_t* concat1 = concat0 + nr;
-	qicomplex_t* tmpbuf = (qicomplex_t*) &cudaSharedMemory[idx * nr*2];
+	qicomplex_t* tmpbuf = (qicomplex_t*)params.sharedBuf;
 	for (int k=0;k<qp.iterations;k++){
 		// check bounds
 		error = images.boundaryHit(center, qp.maxRadius);
@@ -294,24 +330,32 @@ static __device__ float2 ComputeQIPosition(int idx, cudaImageListf& images, Kern
 	return center;
 }
 
-/*
-__global__ void ComputeQIKernel(cudaImageListf images, QIParams param) {
-	int idx = blockIdx.x * blockDim.x + threadIdx.x; 
-	if (idx < images.count) { 
-		ComputeQI<false>(idx, images, param);
-	} 
+__global__ void ComputeQIKernel(cudaImageListf images, KernelParams params, float2* d_initial, float2* d_result)
+{
+	int idx = (threadIdx.x + blockDim.x * blockIdx.x) / 2;
+
+	if (idx < images.count) {
+		bool error;
+		params.sharedBuf = cudaSharedMemory;
+		d_result[idx] = ComputeQIPosition(idx, images, params, d_initial[idx], error);
+	}
 }
-*/
+
 void QueuedCUDATracker::ComputeQI(cudaImageListf& images, float2* d_initial, float2* d_result)
 {
-	if (!useCPU) {
-		images.bind(qi_image_texture);
-	}
+	images.bind(qi_image_texture);
+	dim3 blocks((batchSize*2+numThreads-1)/numThreads);
+	dim3 threads(32);
 
-	//ComputeQIKernel <<<blocks(images.count), threads(), sharedMemSize>>> (images, params);
+	KernelParams param(kernelParams);
 
-	if (!useCPU)
-		images.unbind(qi_image_texture);
+	// See file header comment for shared memory layout
+	uint sharedMemSize = sizeof(float2) * ( qiProfileLen + // twiddles
+		( 1 + // current position
+		qiProfileLen * 2 ) * 16); // 2x temporary computing buffers
+
+	ComputeQIKernel<<< blocks, threads, sharedMemSize >>> (images, kernelParams, d_initial, d_result);
+	images.unbind(qi_image_texture);
 }
 
 QueuedCUDATracker::Batch::~Batch() 
@@ -362,7 +406,7 @@ __global__ void LocalizeBatchKernel(int numImages, cudaImageListf images, Kernel
 	if(idx >= numImages)
 		return;
 
-	float2 com = BgCorrectedCOM<false>(idx, images);
+	float2 com = BgCorrectedCOM(idx, images);
 
 	CUDATrackerJob* j = &jobs[idx];
 

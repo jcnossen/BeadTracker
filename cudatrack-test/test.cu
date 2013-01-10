@@ -108,14 +108,14 @@ void TestJobPassing()
 void TestLocalization()
 {
 #ifdef _DEBUG
-	const int NumImages=4;
+	const int NumImages=100;
 #else
 	const int NumImages=256;
 #endif
-	int N = 10;
+	int N = 1;
 	QTrkSettings cfg;
 	cfg.numThreads = -1;
-	cfg.qi_iterations = 2;
+	cfg.qi_iterations = 5;
 	cfg.qi_maxradius = 30;
 	QueuedCUDATracker trk(&cfg);
 
@@ -158,12 +158,20 @@ void TestLocalization()
 	double tqi = getPreciseTime() - t2;
 
 	std::vector<float2> com(d_com), qi(d_qi);
-	/*
+	double comErrX=0, comErrY=0;
+	double qiErrX=0, qiErrY=0;
+
 	for (int i=0;i<images.count;i++) {
 		dbgprintf("[%d] true pos=( %.4f, %.4f ).  COM error=( %.4f, %.4f ).  QI error=( %.4f, %.4f ) \n", i, 
 			positions[i].x, positions[i].y, com[i].x - positions[i].x, com[i].y - positions[i].y, qi[i].x - positions[i].x, qi[i].y - positions[i].y );
-	}*/
 
+		qiErrX += fabsf(positions[i].x-qi[i].x);
+		qiErrY += fabsf(positions[i].y-qi[i].y);
+		comErrX += fabsf(positions[i].x-com[i].x);
+		comErrY += fabsf(positions[i].y-com[i].y);
+	}
+
+	dbgprintf("Errors: COM.x: %f, COM.y: %f, QI.x=%f, QI.y=%f\n", comErrX/images.count, comErrY/images.count, qiErrX/images.count, qiErrY/images.count);
 	N *= images.count;
 	dbgprintf("Image generating: %f img/s. COM: %f img/s. QI: %f img/s\n", N/tgen, N/tcom, N/tqi);
 
@@ -277,16 +285,11 @@ int main(int argc, char *argv[])
 {
 //	testLinearArray();
 
-	cudaDeviceProp prop;
-	cudaGetDeviceProperties(&prop,0);
-
-	std::string path = getPath(argv[0]);
-
 	//TestJobPassing();
-	//TestLocalization();
+	TestLocalization();
 	//TestSimpleFFT();
 	//TestKernelFFT();
-	QTrkTest();
+	//QTrkTest();
 
 	return 0;
 }

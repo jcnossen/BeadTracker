@@ -11,6 +11,9 @@ CPU only tracker
 #include "random_distr.h"
 #include <exception>
 
+#define SFFT_BOTH 
+#include "../cudatrack/simplefft.h"
+
 const float XCorScale = 1.0f; // keep this at 1, because linear oversampling was obviously a bad idea..
 
 static int round(xcor_t f) { return (int)(f+0.5f); }
@@ -319,6 +322,17 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 }
 
 
+template<typename T>
+double sum_diff(T* begin, T* end, T* other)
+{
+	double sd = 0.0;
+	for (T* i = begin; i != end; i++, other++) {
+		T d = *i - *other;
+		sd += abs(d.real()) + abs(d.imag());
+	}
+	return sd;
+}
+
 // Profile is complexc[nr*2]
 CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr)
 {
@@ -332,17 +346,28 @@ CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr
 	qi_fft_forward->transform(profile, fft_out);
 	qi_fft_forward->transform(reverse, fft_out2); // fft_out2 contains fourier-domain version of reverse profile
 
+	/*std::vector<sfft::complex<qi_t> > twiddles = sfft::fill_twiddles<qi_t>(nr*2);
+	sfft::fft_forward<qi_t>(nr*2, (sfft::complex<qi_t>*)profile, &twiddles[0]);
+	sfft::fft_forward<qi_t>(nr*2, (sfft::complex<qi_t>*)reverse, &twiddles[0]);
+
+	qi_t fw = sum_diff(fft_out, fft_out+nr*2, profile);
+	qi_t bw = sum_diff(fft_out2, fft_out2+nr*2, reverse);
+	*/
 	// multiply with conjugate
 	for(int x=0;x<nr*2;x++)
 		fft_out[x] *= conjugate(fft_out2[x]);
+		//profile[x] *= conjugate(reverse[x]);
 
 	qi_fft_backward->transform(fft_out, fft_out2);
+	//sfft::fft_inverse<qi_t>(nr*2, (sfft::complex<qi_t>*)profile, &twiddles[0]);
+
 	// fft_out2 now contains the autoconvolution
 	// convert it to float
 	qi_t* autoconv = ALLOCA_ARRAY(qi_t, nr*2);
 	//float* tmp=ALLOCA_ARRAY(float,nr*2);
 	for(int x=0;x<nr*2;x++)  {
 		autoconv[x] = fft_out2[(x+nr)%(nr*2)].real();
+//		autoconv[x] = profile[(x+nr)%(nr*2)].real();
 //		tmp[x]=autoconv[x];
 	}
 

@@ -18,13 +18,18 @@ struct QIParams {
 };
 
 struct KernelParams {
-	float2* d_initial;
-	float2* d_output;
-	bool useShared;
 	float2* sharedBuf;
-	uchar* d_boundaryHits;
 	QIParams qi_params;
+	int sharedMemPerThread;
 };
+
+
+struct QIParamWrapper {
+	KernelParams kernel;
+	float2* d_initial;
+	float2* d_result;
+};
+
 
 struct CUDATrackerJob {
 	CUDATrackerJob () { 
@@ -88,7 +93,6 @@ public:
 
 protected:
 
-
 	struct Batch{
 		Batch() { hostImageBuf = 0; images.data=0; }
 		~Batch();
@@ -98,7 +102,6 @@ protected:
 		float* hostImageBuf; // original image format pixel buffer
 		device_vec<CUDATrackerJob> d_jobs;
 		cudaEvent_t localizationDone, imageBufferCopied;
-		
 	};
 	Batch* AllocBatch();
 	void CopyBatchResults(Batch* b);
@@ -122,7 +125,6 @@ protected:
 	Threads::Mutex batchMutex;
 	std::list<Batch*> active;
 	Batch* currentBatch;
-	uint sharedMemSize;
 	int maxActiveBatches;
 
 	std::vector<LocalizationResult> results;
@@ -137,6 +139,7 @@ protected:
 	int zlut_count, zlut_planes, zlut_res;
 	cudaImageListf zlut;
 
+	void CallKernel_ComputeQI(cudaImageListf& images, QIParamWrapper params, uint sharedMem=0);
 	void CallKernel_BgCorrectedCOM(cudaImageListf& images, float2* d_com, uint sharedMem=0);
 	void CallKernel_MakeTestImage(cudaImageListf& images, float3* d_positions, uint sharedMem=0);
 
