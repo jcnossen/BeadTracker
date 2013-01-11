@@ -86,8 +86,8 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 
 	// See file header comment for shared memory layout
 	sharedMemSize = sizeof(float2) * 2*qiProfileLen + // twiddles
-		sizeof(float2) * 16 + 
-		sizeof(float2) * 2*qiProfileLen * 32;
+		sizeof(float2) * 16+
+	sizeof(float2) *qiProfileLen * 32;
 		
 	fft_twiddles = DeviceMem( sfft::fill_twiddles<float> (qiProfileLen) );
 	KernelParams &p = kernelParams;
@@ -316,7 +316,7 @@ static __device__ float2 ComputeQIPosition(int idx, cudaImageListf& images, Kern
 	sharedBuf += pl*2;
 	float2* s_currentPos = &sharedBuf[threadIdx.x/2];
 
-	int sharedElemPerImg = pl*2;
+	int sharedElemPerImg = pl;
 	sharedBuf += 16;
 	float2* s_tmpbuf0 = &sharedBuf[threadIdx.x * sharedElemPerImg];
 	float2* s_tmpbuf1 = &sharedBuf[threadIdx.x * sharedElemPerImg + pl];
@@ -334,7 +334,7 @@ static __device__ float2 ComputeQIPosition(int idx, cudaImageListf& images, Kern
 	qivalue_t* buf = (qivalue_t*)&params.buffer[total_required * idx];
 	qivalue_t* q0=buf, *q1=buf+nr, *q2=buf+nr*2, *q3=buf+nr*3;
 
-	qicomplex_t* concat0 = (qicomplex_t*)(buf + nr*4);
+	qicomplex_t* concat0 = (qicomplex_t*)  (qicomplex_t*)(buf + nr*4);
 	qicomplex_t* concat1 = concat0 + nr;
 	for (int k=0;k<qp.iterations;k++) {
 		// check bounds
@@ -389,10 +389,9 @@ __global__ void ComputeQIKernel(cudaImageListf images, KernelParams params, floa
 void QueuedCUDATracker::ComputeQI(cudaImageListf& images, float2* d_initial, float2* d_result)
 {
 	images.bind(qi_image_texture);
-	dim3 blocks((batchSize*2+numThreads-1)/numThreads);
 	dim3 threads(32);
 
-	ComputeQIKernel<<< blocks, threads, sharedMemSize >>> (images, kernelParams, d_initial, d_result);
+	ComputeQIKernel<<< blocks(images.count), threads, sharedMemSize >>> (images, kernelParams, d_initial, d_result);
 	images.unbind(qi_image_texture);
 }
 
@@ -530,7 +529,9 @@ void QueuedCUDATracker::QueueCurrentBatch()
 	cudaMemcpyAsync(cb->d_jobs.data, &cb->jobs[0], sizeof(CUDATrackerJob) * cb->jobs.size(), cudaMemcpyHostToDevice);
 
 	cudaEventRecord(cb->imageBufferCopied);
+	cb->images.bind(qi_image_texture);
 	LocalizeBatchKernel<<<blocks(cb->jobs.size()), threads(), sharedMemSize >>> (cb->jobs.size(), cb->images, kernelParams, cb->d_jobs.data);
+	cb->images.unbind(qi_image_texture);
 	// Copy back the results
 	cudaMemcpyAsync(&cb->jobs[0], cb->d_jobs.data, sizeof(CUDATrackerJob) * cb->jobs.size(), cudaMemcpyDeviceToHost);
 

@@ -107,15 +107,11 @@ void TestJobPassing()
 
 void TestLocalization()
 {
-#ifdef _DEBUG
-	const int NumImages=100;
-#else
-	const int NumImages=256;
-#endif
+	const int NumImages=480;
 	int N = 10;
 	QTrkSettings cfg;
 	cfg.numThreads = -1;
-	cfg.qi_iterations = 3;
+	cfg.qi_iterations = 2;
 	cfg.qi_maxradius = 30;
 	QueuedCUDATracker trk(&cfg);
 
@@ -191,7 +187,7 @@ void QTrkTest()
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1;
 	//cfg.numThreads = 6;
-	int NumImages=10, JobsPerImg=200;
+	int NumImages=10, JobsPerImg=20;
 	QueuedCUDATracker qtrk(&cfg, NumImages*JobsPerImg+1);
 	float *image = new float[cfg.width*cfg.height];
 
@@ -286,10 +282,10 @@ int main(int argc, char *argv[])
 //	testLinearArray();
 
 	//TestJobPassing();
-	TestLocalization();
+//	TestLocalization();
 	//TestSimpleFFT();
 	//TestKernelFFT();
-	//QTrkTest();
+	QTrkTest();
 
 	return 0;
 }
