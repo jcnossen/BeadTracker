@@ -112,10 +112,10 @@ void TestLocalization()
 #else
 	const int NumImages=256;
 #endif
-	int N = 1;
+	int N = 10;
 	QTrkSettings cfg;
 	cfg.numThreads = -1;
-	cfg.qi_iterations = 5;
+	cfg.qi_iterations = 3;
 	cfg.qi_maxradius = 30;
 	QueuedCUDATracker trk(&cfg);
 

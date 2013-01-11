@@ -17,9 +17,18 @@ struct QIParams {
 	int radialSteps, iterations, angularSteps;
 };
 
+struct ZLUTParams {
+	CUBOTH float* GetZLUT(int bead, int plane) { return &d_zlut[bead * (radialSteps*planes) + radialSteps*plane]; }
+	float minRadius, maxRadius;
+	int radialSteps, angularSteps;
+	float* d_zlut;
+	int planes;
+};
+
 struct KernelParams {
-	float2* sharedBuf;
-	QIParams qi_params;
+	float2* sharedBuf, *buffer;
+	QIParams qi;
+	ZLUTParams zlut;
 	int sharedMemPerThread;
 };
 
@@ -132,7 +141,8 @@ protected:
 	device_vec< sfft::complex<float> > fft_twiddles;
 	bool useCPU;
 	device_vec< float2 > sharedBuf; // temp space for cpu mode or in case the hardware shared space is too small.
-	int qiProfileLen; // QI profiles need to have power-of-two dimensions. qiProfileLen stores the closest power-of-two value that is bigger than cfg.qi_radialsteps
+	device_vec< float2 > buffer; // general buffer space for computation
+	int qiProfileLen, sharedMemSize; // QI profiles need to have power-of-two dimensions. qiProfileLen stores the closest power-of-two value that is bigger than cfg.qi_radialsteps
 	cudaDeviceProp deviceProp;
 	KernelParams kernelParams;
 

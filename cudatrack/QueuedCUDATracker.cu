@@ -6,10 +6,12 @@ This implementation is designed to perform QI on many small images, processing e
 Layout of CUDA shared memory:
 
 Per warp:
-- float2[radialsteps*2]: twiddles
+- float2[radialsteps*4]: twiddles
 
 Per localization job (16 per warp)
 - float2: Current position
+
+Per thread( 32 per warp )
 - float2[radialsteps*2]: Temporary buffer 1
 - float2[radialsteps*2]: Temporary buffer 2
 
@@ -82,13 +84,20 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	qiProfileLen = 1;
 	while (qiProfileLen < cfg->qi_radialsteps*2) qiProfileLen *= 2;
 
-	sharedMemSize = sizeof(float2) * qiProfileLen + // twiddles
-		( sizeof(float2) + // current position
-		sizeof(float2) * qiProfileLen * 2 ) * 16; // 2x temporary computing buffers
-
+	// See file header comment for shared memory layout
+	sharedMemSize = sizeof(float2) * 2*qiProfileLen + // twiddles
+		sizeof(float2) * 16 + 
+		sizeof(float2) * 2*qiProfileLen * 32;
+		
 	fft_twiddles = DeviceMem( sfft::fill_twiddles<float> (qiProfileLen) );
 	KernelParams &p = kernelParams;
-	QIParams& qi = p.qi_params;
+	
+	ZLUTParams& zp = p.zlut;
+	zp.angularSteps = cfg->zlut_angularsteps;
+	zp.maxRadius = cfg->zlut_maxradius;
+	zp.minRadius = cfg->zlut_minradius;
+
+	QIParams& qi = p.qi;
 	qi.angularSteps = cfg->qi_angularsteps;
 	qi.iterations = cfg->qi_iterations;
 	qi.maxRadius = cfg->qi_maxradius;
@@ -100,6 +109,10 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 
 	dbgprintf("Required shared memory: %d\n", sharedMemSize );
 	currentBatch = AllocBatch();
+	
+	int bufperimg = sizeof(qivalue_t)*qiProfileLen*2 + sizeof(qicomplex_t)*qiProfileLen;
+	buffer.init(batchSize * bufperimg);
+	kernelParams.buffer = buffer.data;
 
 	zlut = cudaImageListf::empty();
 }
@@ -189,24 +202,51 @@ void QueuedCUDATracker::GenerateImages(cudaImageListf& imgList, float3* d_pos)
 
 texture<float, cudaTextureType2D, cudaReadModeElementType> qi_image_texture(0, cudaFilterModeLinear);
 
-static __device__ qivalue_t QI_ComputeOffset(qicomplex_t* profile, qicomplex_t* tmpbuf, const QIParams& params, int idx) {
+static __device__ void RadialProfile(int idx, cudaImageListf& images, float *dst, float2* tmpbuf, const ZLUTParams zlut, float2 center, bool& error)
+{
+	for (int i=0;i<zlut.radialSteps;i++)
+		dst[i]=0.0f;
+
+	float totalrmssum2 = 0.0f;
+	float rstep = (zlut.maxRadius-zlut.minRadius) / zlut.radialSteps;
+	for (int i=0;i<zlut.radialSteps; i++) {
+		float sum = 0.0f;
+
+		float r = zlut.minRadius+rstep*i;
+		for (int a=0;a<zlut.angularSteps;a++) {
+			float ang = 2*3.141593f*a/(float)zlut.angularSteps;
+			float x = center.x + __cosf(ang) * r;
+			float y = center.y + __sinf(ang) * r;
+			sum += images.interpolate(x,y, idx);
+		}
+
+		dst[i] = sum/zlut.angularSteps-images.borderValue;
+		totalrmssum2 += dst[i]*dst[i];
+	}
+	double invTotalrms = 1.0f/sqrt(totalrmssum2/zlut.radialSteps);
+	for (int i=0;i<zlut.radialSteps;i++) {
+		dst[i] *= invTotalrms;
+	}
+}
+
+
+static __device__ qivalue_t QI_ComputeOffset(qicomplex_t* profile, qicomplex_t* tmpbuf1, const QIParams& params, int idx, sfft::complex<float>* s_twiddles) {
 	int nr = params.radialSteps;
 
-	qicomplex_t* reverse;
-	reverse = (qicomplex_t*)malloc(sizeof(qicomplex_t)*nr*2);//tmpbuf;
+	qicomplex_t* reverse = tmpbuf1;
 
 	for(int x=0;x<nr*2;x++)
 		reverse[x] = profile[nr*2-1-x];
 
 //	std::vector< sfft::complex<float> > tw = sfft::fill_twiddles<float> (nr*2);
-	sfft::fft_forward(nr*2, profile, params.d_twiddles);
-	sfft::fft_forward(nr*2, reverse, params.d_twiddles);
+	sfft::fft_forward(nr*2, profile, s_twiddles);
+	sfft::fft_forward(nr*2, reverse, s_twiddles);
 
 	// multiply with conjugate
 	for(int x=0;x<nr*2;x++)
 		profile[x] = profile[x] * reverse[x].conjugate();
 
-	sfft::fft_inverse(nr*2, profile, params.d_twiddles);
+	sfft::fft_inverse(nr*2, profile, s_twiddles);
 	// fft_out2 now contains the autoconvolution
 	// convert it to float
 	qivalue_t* autoconv = (qivalue_t*)reverse;
@@ -215,7 +255,7 @@ static __device__ qivalue_t QI_ComputeOffset(qicomplex_t* profile, qicomplex_t* 
 	}
 
 	float maxPos = ComputeMaxInterp<qivalue_t,7>(autoconv, nr*2);
-	free(reverse);
+	//free(reverse);
 	return (maxPos - nr) / (3.14159265359f * 0.5f);
 }
 
@@ -265,21 +305,24 @@ static __device__ void CopyToShared(T* dst, T* src, int numElem)
 static __device__ float2 ComputeQIPosition(int idx, cudaImageListf& images, KernelParams params, float2 initial, bool& error)
 {
 	// Prepare shared memory
-	int pl = params.qi_params.radialSteps*2;
+	int pl = params.qi.radialSteps*2;
 	float2* sharedBuf = params.sharedBuf;
+	int imgThread = threadIdx.x&1; // either 0 or 1. 0 does the X coordinate, 1, does the Y coordinate
 	
 	// Copy twiddles to shared
 	sfft::complex<float>* s_twiddles = (sfft::complex<float>*)&sharedBuf[0];
-	CopyToShared(s_twiddles, params.qi_params.d_twiddles, pl);
+	CopyToShared(s_twiddles, params.qi.d_twiddles, pl*2); // twiddles are pl*2 (first the forward version, then the inverse version)
 
-	sharedBuf += pl;
-	int sharedElemPerImg = pl*2+1;
-	float2* s_currentPos = &sharedBuf[idx * sharedElemPerImg];
-	float2* s_tmpbuf0 = &sharedBuf[idx * sharedElemPerImg + 1];
-	float2* s_tmpbuf1 = &sharedBuf[idx * sharedElemPerImg + 1 + pl];
+	sharedBuf += pl*2;
+	float2* s_currentPos = &sharedBuf[threadIdx.x/2];
+
+	int sharedElemPerImg = pl*2;
+	sharedBuf += 16;
+	float2* s_tmpbuf0 = &sharedBuf[threadIdx.x * sharedElemPerImg];
+	float2* s_tmpbuf1 = &sharedBuf[threadIdx.x * sharedElemPerImg + pl];
 
 	// Localize
-	QIParams& qp = params.qi_params;
+	QIParams& qp = params.qi;
 	int nr=qp.radialSteps;
 	float2 center = initial;
 	float pixelsPerProfLen = (qp.maxRadius-qp.minRadius)/qp.radialSteps;
@@ -288,13 +331,12 @@ static __device__ float2 ComputeQIPosition(int idx, cudaImageListf& images, Kern
 
 	error = false;
 
-	qivalue_t* buf = (qivalue_t*)malloc(total_required);
+	qivalue_t* buf = (qivalue_t*)&params.buffer[total_required * idx];
 	qivalue_t* q0=buf, *q1=buf+nr, *q2=buf+nr*2, *q3=buf+nr*3;
 
 	qicomplex_t* concat0 = (qicomplex_t*)(buf + nr*4);
 	qicomplex_t* concat1 = concat0 + nr;
-	qicomplex_t* tmpbuf = (qicomplex_t*)params.sharedBuf;
-	for (int k=0;k<qp.iterations;k++){
+	for (int k=0;k<qp.iterations;k++) {
 		// check bounds
 		error = images.boundaryHit(center, qp.maxRadius);
 
@@ -310,7 +352,8 @@ static __device__ float2 ComputeQIPosition(int idx, cudaImageListf& images, Kern
 			concat1[r] = qicomplex_t(q0[r]+q3[r]);
 		}
 
-		float offsetX = QI_ComputeOffset(concat0, tmpbuf, qp, idx);
+		
+		float offsetX = QI_ComputeOffset(concat0, (qicomplex_t*) s_tmpbuf0, qp, idx, s_twiddles);
 
 		// Build Iy = qB(-r) || qT(r)
 		// qT = q0 + q1
@@ -319,20 +362,22 @@ static __device__ float2 ComputeQIPosition(int idx, cudaImageListf& images, Kern
 			concat0[r] = qicomplex_t(q0[r]+q1[r]);
 			concat1[nr-r-1] = qicomplex_t(q2[r]+q3[r]);
 		}
-		float offsetY = QI_ComputeOffset(concat0, tmpbuf, qp, idx);
+		float offsetY = QI_ComputeOffset(concat0, (qicomplex_t*)s_tmpbuf0, qp, idx, s_twiddles);
 
 		//printf("[%d] OffsetX: %f, OffsetY: %f\n", k, offsetX, offsetY);
 		center.x += offsetX * pixelsPerProfLen;
 		center.y += offsetY * pixelsPerProfLen;
 	}
 
-	free(buf);
+	//free(buf);
 	return center;
 }
 
+
+
 __global__ void ComputeQIKernel(cudaImageListf images, KernelParams params, float2* d_initial, float2* d_result)
 {
-	int idx = (threadIdx.x + blockDim.x * blockIdx.x) / 2;
+	int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
 	if (idx < images.count) {
 		bool error;
@@ -346,13 +391,6 @@ void QueuedCUDATracker::ComputeQI(cudaImageListf& images, float2* d_initial, flo
 	images.bind(qi_image_texture);
 	dim3 blocks((batchSize*2+numThreads-1)/numThreads);
 	dim3 threads(32);
-
-	KernelParams param(kernelParams);
-
-	// See file header comment for shared memory layout
-	uint sharedMemSize = sizeof(float2) * ( qiProfileLen + // twiddles
-		( 1 + // current position
-		qiProfileLen * 2 ) * 16); // 2x temporary computing buffers
 
 	ComputeQIKernel<<< blocks, threads, sharedMemSize >>> (images, kernelParams, d_initial, d_result);
 	images.unbind(qi_image_texture);
@@ -413,11 +451,22 @@ __global__ void LocalizeBatchKernel(int numImages, cudaImageListf images, Kernel
 	LocalizeType locType = (LocalizeType)(j->locType&Localize2DMask);
 	bool boundaryHit = false;
 	float2 result = com;
+	//float* tmpbuf = &params.buffer[params.bufferMemPerThread * threadIdx.x];
+	//float* sharedtmpbuf 
 
 	if (locType == LocalizeQI) {
 		bool error;
 		result = ComputeQIPosition(idx, images, params, com, error);
 		j->error = error?1:0;
+	}
+
+	if (j->locType & LocalizeBuildZLUT) {
+		float* d_zlut = params.zlut.GetZLUT(j->zlut, j->zlutPlane);
+		RadialProfile(idx, images, d_zlut, params.sharedBuf, params.zlut, result, boundaryHit);
+	}
+	else if (j->locType & LocalizeZ) {
+		float* d_zlut = params.zlut.GetZLUT(j->zlut, 0);
+		//RadialProfile(idx, images, , params.sharedBuf, params.zlut, result, boundaryHit);
 	}
 
 	j->firstGuess = com;
@@ -481,7 +530,7 @@ void QueuedCUDATracker::QueueCurrentBatch()
 	cudaMemcpyAsync(cb->d_jobs.data, &cb->jobs[0], sizeof(CUDATrackerJob) * cb->jobs.size(), cudaMemcpyHostToDevice);
 
 	cudaEventRecord(cb->imageBufferCopied);
-	LocalizeBatchKernel<<<blocks(cb->jobs.size()), threads(), sharedMemSize>>> (cb->jobs.size(), cb->images, kernelParams, cb->d_jobs.data);
+	LocalizeBatchKernel<<<blocks(cb->jobs.size()), threads(), sharedMemSize >>> (cb->jobs.size(), cb->images, kernelParams, cb->d_jobs.data);
 	// Copy back the results
 	cudaMemcpyAsync(&cb->jobs[0], cb->d_jobs.data, sizeof(CUDATrackerJob) * cb->jobs.size(), cudaMemcpyDeviceToHost);
 
