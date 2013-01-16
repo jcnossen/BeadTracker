@@ -285,7 +285,15 @@ int main(int argc, char *argv[])
 //	TestLocalization();
 	//TestSimpleFFT();
 	//TestKernelFFT();
-	QTrkTest();
+	//QTrkTest();
+
+	cudaDeviceProp prop;
+	int dc;
+	cudaGetDeviceCount(&dc);
+	for (int k=0;k<dc;k++) {
+		cudaGetDeviceProperties(&prop, k);
+		dbgprintf("Device[%d] = %s\n", k, prop.name);
+	}
 
 	return 0;
 }

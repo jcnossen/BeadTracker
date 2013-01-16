@@ -67,7 +67,28 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 {
 	this->cfg = *cfg;
 
-	cudaGetDeviceProperties(&deviceProp, 0);
+	// Select the most powerful one
+	if (cfg->cuda_device < 0) {
+		int numDev;
+		cudaGetDeviceCount(&numDev);
+
+		int bestScore;
+		int bestDev;
+		for (int a=0;a<numDev;a++) {
+			int score;
+			cudaDeviceProp prop;
+			cudaGetDeviceProperties(&prop, a);
+			score = prop.multiProcessorCount * prop.clockRate;
+			if (a==0 || bestScore < score) {
+				bestScore = score;
+				bestDev = a;
+			}
+		}
+
+		cfg->cuda_device = bestDev;
+	}
+
+	cudaGetDeviceProperties(&deviceProp, cfg->cuda_device);
 
 	if(batchSize<0) batchSize = numThreads * deviceProp.multiProcessorCount;
 	this->batchSize = batchSize;

@@ -52,7 +52,7 @@ struct QTrkSettings {
 		qi_radialsteps = 32; 
 		qi_angularsteps = 64;
 		qi_minradius = 5; qi_maxradius = 60;
-		cuda_device = 0;
+		cuda_device = -1;
 	}
 	int width, height;
 	int numThreads, maxQueueSize;
