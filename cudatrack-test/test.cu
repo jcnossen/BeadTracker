@@ -276,17 +276,8 @@ void QTrkTest()
 	dbgprintf("ErrX: %f, ErrY: %f, ErrZ: %f\n", errX/total, errY/total,errZ/total);
 }
 
-
-int main(int argc, char *argv[])
+void listDevices()
 {
-//	testLinearArray();
-
-	//TestJobPassing();
-//	TestLocalization();
-	//TestSimpleFFT();
-	//TestKernelFFT();
-	//QTrkTest();
-
 	cudaDeviceProp prop;
 	int dc;
 	cudaGetDeviceCount(&dc);
@@ -295,5 +286,18 @@ int main(int argc, char *argv[])
 		dbgprintf("Device[%d] = %s\n", k, prop.name);
 	}
 
+}
+
+int main(int argc, char *argv[])
+{
+//	testLinearArray();
+
+	//TestJobPassing();
+	TestLocalization();
+	//TestSimpleFFT();
+	//TestKernelFFT();
+	//QTrkTest();
+
+	listDevices();
 	return 0;
 }

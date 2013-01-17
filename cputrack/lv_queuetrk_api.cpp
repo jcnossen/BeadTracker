@@ -10,6 +10,41 @@ Labview API for the functionality in QueuedTracker.h
 #include "TeLibJpeg\jmemdstsrc.h"
 
 
+
+#include "lv_prolog.h"
+struct QueueImageParams {
+	uint locType;
+	uint frame;
+	vector3f initialPos;
+	uint zlutIndex; // or bead#
+	uint zlutPlane; // for ZLUT building
+
+	LocalizeType LocType()  { return (LocalizeType)locType; }
+};
+#include "lv_epilog.h"
+
+
+MgErr FillErrorCluster(MgErr err, const char *message, ErrorCluster *error)
+{
+	if (err)
+	{
+		int msglen = strlen(message);
+		error->status = LVBooleanTrue;
+		error->code = err;
+		err = NumericArrayResize(uB, 1, (UHandle*)&(error->message), msglen);
+		if (!err)
+		{
+			MoveBlock(message, LStrBuf(*error->message), msglen);
+			LStrLen(*error->message) = msglen;
+		} 
+	}
+	return err;
+}
+
+void ArgumentErrorMsg(ErrorCluster* e, const std::string& msg) {
+	FillErrorCluster(mgArgErr, msg.c_str(), e);
+}
+
 CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pZlut)
 {
 	LVArray3D<float>* zlut = *pZlut;
@@ -45,35 +80,44 @@ CDLL_EXPORT void qtrk_destroy(QueuedTracker* qtrk)
 	delete qtrk;
 }
 
-
-CDLL_EXPORT void qtrk_queue_u16(QueuedTracker* qtrk, LVArray2D<ushort>** data, uint locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane)
+template<typename T>
+bool CheckImageInput(QueuedTracker* qtrk, LVArray2D<T> **data, ErrorCluster  *error)
 {
-	qtrk->ScheduleLocalization( (uchar*)(*data)->elem, sizeof(ushort)*(*data)->dimSizes[1], QTrkU16, (LocalizeType)locType, id, initialPos, zlutIndex, zlutPlane);
+	if (!data) {
+		ArgumentErrorMsg(error, "Image data array is empty");
+		return false;
+	} else if( (*data)->dimSizes[1] != qtrk->cfg.width || (*data)->dimSizes[0] != qtrk->cfg.height ) {
+		ArgumentErrorMsg(error, SPrintf( "Image data array has wrong size (%d,%d). Should be: (%d,%d)", (*data)->dimSizes[1], (*data)->dimSizes[0], qtrk->cfg.width, qtrk->cfg.height));
+		return false;
+	}
+	return true;
 }
 
-CDLL_EXPORT void qtrk_queue_u8(QueuedTracker* qtrk, LVArray2D<uchar>** data, uint locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane)
+CDLL_EXPORT void qtrk_queue_u16(QueuedTracker* qtrk, ErrorCluster* error, LVArray2D<ushort>** data, QueueImageParams* params)
 {
-	qtrk->ScheduleLocalization( (*data)->elem, sizeof(uchar)*(*data)->dimSizes[1], QTrkU8, (LocalizeType) locType, id, initialPos, zlutIndex, zlutPlane);
+	if (CheckImageInput(qtrk, data, error))
+		qtrk->ScheduleLocalization( (uchar*)(*data)->elem, sizeof(ushort)*(*data)->dimSizes[1], QTrkU16, params->LocType(), params->frame, &params->initialPos, params->zlutIndex, params->zlutPlane);
 }
 
-CDLL_EXPORT void qtrk_queue_float(QueuedTracker* qtrk, LVArray2D<float>** data, uint locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane)
+CDLL_EXPORT void qtrk_queue_u8(QueuedTracker* qtrk, ErrorCluster* error, LVArray2D<uchar>** data, QueueImageParams* params)
 {
-	qtrk->ScheduleLocalization( (uchar*) (*data)->elem, sizeof(float)*(*data)->dimSizes[1], QTrkFloat, (LocalizeType) locType, id, initialPos, zlutIndex, zlutPlane);
+	if (CheckImageInput(qtrk, data, error))
+		qtrk->ScheduleLocalization( (*data)->elem, sizeof(uchar)*(*data)->dimSizes[1], QTrkU8, params->LocType(), params->frame, &params->initialPos, params->zlutIndex, params->zlutPlane);
 }
 
-CDLL_EXPORT void test_array_passing(LVArray2D<float>** data, float* data2, int* len)
+CDLL_EXPORT void qtrk_queue_float(QueuedTracker* qtrk, ErrorCluster* error, LVArray2D<float>** data, QueueImageParams* params)
 {
-	int total=len[0]*len[1];
-	for(int i=0;i<total;i++)
-		dbgprintf("[%d] Data=%f, Data2=%f\n", i,(*data)->elem[i], data2[i]);
+	if (CheckImageInput(qtrk, data, error))
+		qtrk->ScheduleLocalization( (uchar*) (*data)->elem, sizeof(float)*(*data)->dimSizes[1], QTrkFloat, params->LocType(), params->frame, &params->initialPos, params->zlutIndex, params->zlutPlane);
 }
 
-CDLL_EXPORT void qtrk_queue(QueuedTracker* qtrk, uchar* data, int pitch, uint pdt, uint locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane)
+
+CDLL_EXPORT void qtrk_queue_pitchedmem(QueuedTracker* qtrk, uchar* data, int pitch, uint pdt, QueueImageParams* params)
 {
-	qtrk->ScheduleLocalization(data, pitch, (QTRK_PixelDataType)pdt, (LocalizeType) locType, id, initialPos, zlutIndex, zlutPlane);
+	qtrk->ScheduleLocalization(data, pitch, (QTRK_PixelDataType)pdt, params->LocType(), params->frame, &params->initialPos, params->zlutIndex, params->zlutPlane);
 }
 
-CDLL_EXPORT void qtrk_queue_array(QueuedTracker* qtrk, LVArray2D<uchar>** data, uint pdt, uint locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane)
+CDLL_EXPORT void qtrk_queue_array(QueuedTracker* qtrk,  ErrorCluster* error,LVArray2D<uchar>** data,uint pdt,  QueueImageParams* params)
 {
 	uint pitch;
 
@@ -83,9 +127,12 @@ CDLL_EXPORT void qtrk_queue_array(QueuedTracker* qtrk, LVArray2D<uchar>** data, 
 		pitch = 2;
 	else pitch = 1;
 
+	if (!CheckImageInput(qtrk, data, error))
+		return;
+
 	pitch *= (*data)->dimSizes[1]; // LVArray2D<uchar> type works for ushort and float as well
-	dbgprintf("zlutindex: %d, zlutplane: %d\n", zlutIndex,zlutPlane);
-	qtrk_queue(qtrk, (*data)->elem, pitch, pdt, locType, id, initialPos, zlutIndex, zlutPlane);
+//	dbgprintf("zlutindex: %d, zlutplane: %d\n", zlutIndex,zlutPlane);
+	qtrk_queue_pitchedmem(qtrk, (*data)->elem, pitch, pdt, params);
 }
 
 CDLL_EXPORT void qtrk_clear_results(QueuedTracker* qtrk)
