@@ -12,6 +12,7 @@
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
 		<Item Name="QTrk C++ interface" Type="Folder">
 			<Item Name="QTrkClearResults.vi" Type="VI" URL="../QTrk.llb/QTrkClearResults.vi"/>
+			<Item Name="QTrkDebugDumpMemoryLeaks.vi" Type="VI" URL="../QTrk.llb/QTrkDebugDumpMemoryLeaks.vi"/>
 			<Item Name="QTrkFlush.vi" Type="VI" URL="../QTrk.llb/QTrkFlush.vi"/>
 			<Item Name="QTrkGetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkGetZLUT.vi"/>
 			<Item Name="QTrkIsIdle.vi" Type="VI" URL="../QTrk.llb/QTrkIsIdle.vi"/>
@@ -29,7 +30,6 @@
 		<Item Name="LoadImageForDisplay.vi" Type="VI" URL="../OfflineQTrk.llb/LoadImageForDisplay.vi"/>
 		<Item Name="LUTInfo.ctl" Type="VI" URL="../OfflineQTrk.llb/LUTInfo.ctl"/>
 		<Item Name="OfflineQTrk.vi" Type="VI" URL="../OfflineQTrk.llb/OfflineQTrk.vi"/>
-		<Item Name="QTrkDebugDumpMemoryLeaks.vi" Type="VI" URL="../QTrk.llb/QTrkDebugDumpMemoryLeaks.vi"/>
 		<Item Name="QueueSingleFrame.vi" Type="VI" URL="../OfflineQTrk.llb/QueueSingleFrame.vi"/>
 		<Item Name="ReadImageToArray.vi" Type="VI" URL="../OfflineQTrk.llb/ReadImageToArray.vi"/>
 		<Item Name="RunJob.vi" Type="VI" URL="../OfflineQTrk.llb/RunJob.vi"/>
