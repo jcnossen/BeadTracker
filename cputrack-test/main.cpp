@@ -497,7 +497,7 @@ void BuildConvergenceMap(int iterations)
 
 int main()
 {
-	SpeedTest();
+	//SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
@@ -506,6 +506,9 @@ int main()
 	QTrkTest();
 	//for (int i=1;i<8;i++)
 //		BuildConvergenceMap(i);
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF|_CRTDBG_LEAK_CHECK_DF);
+
+	_CrtDumpMemoryLeaks();
 
 	return 0;
 }
