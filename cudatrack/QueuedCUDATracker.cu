@@ -63,6 +63,15 @@ QueuedTracker* CreateQueuedTracker(QTrkSettings* cfg)
 	return new QueuedCUDATracker(cfg);
 }
 
+void CheckCUDAError()
+{
+	cudaError_t err = cudaGetLastError();
+	if (err != cudaSuccess) {
+		const char* errstr = cudaGetErrorString(err);
+		dbgprintf("CUDA error: %s\n" ,errstr);
+	}
+}
+
 QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 {
 	this->cfg = *cfg;
@@ -131,7 +140,8 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	dbgprintf("Required shared memory: %d\n", sharedMemSize );
 	currentBatch = AllocBatch();
 	
-	int bufperimg = sizeof(qivalue_t)*qiProfileLen*2 + sizeof(qicomplex_t)*qiProfileLen;
+	// [ memory for quadrant radial profiles ] + [accumulated profiles ready for FFT] + [fourier-domain temp memory]
+	int bufperimg = sizeof(qivalue_t)*qiProfileLen*2 + sizeof(qicomplex_t)*qiProfileLen + sizeof(qicomplex_t)*qiProfileLen; 
 	buffer.init(batchSize * bufperimg);
 	kernelParams.buffer = buffer.data;
 
@@ -148,7 +158,7 @@ void QueuedCUDATracker::GenerateTestImage(float* dst, float xp,float yp, float z
 {
 }
 
-static CUBOTH float2 BgCorrectedCOM(int idx, cudaImageListf& images)
+static CUBOTH float2 BgCorrectedCOM(int idx, cudaImageListf images)
 {
 	int imgsize = images.w*images.h;
 	float sum=0, sum2=0;
@@ -171,7 +181,7 @@ static CUBOTH float2 BgCorrectedCOM(int idx, cudaImageListf& images)
 		for(int x=0;x<images.w;x++)
 		{
 			float v = images.pixel(x,y,idx);
-			v = fabs(v-mean)-2.0f*stdev;
+			v = fabsf(v-mean)-2.0f*stdev;
 			if(v<0.0f) v=0.0f;
 			sum += v;
 			momentX += x*v;
@@ -223,7 +233,7 @@ void QueuedCUDATracker::GenerateImages(cudaImageListf& imgList, float3* d_pos)
 
 texture<float, cudaTextureType2D, cudaReadModeElementType> qi_image_texture(0, cudaFilterModeLinear);
 
-static __device__ void RadialProfile(int idx, cudaImageListf& images, float *dst, float2* tmpbuf, const ZLUTParams zlut, float2 center, bool& error)
+static __device__ void RadialProfile(int idx, cudaImageListf& images, float *dst, const ZLUTParams zlut, float2 center, bool& error)
 {
 	for (int i=0;i<zlut.radialSteps;i++)
 		dst[i]=0.0f;
@@ -323,7 +333,8 @@ static __device__ void CopyToShared(T* dst, T* src, int numElem)
 }
 
 
-static __device__ float2 ComputeQIPosition(int idx, cudaImageListf& images, KernelParams params, float2 initial, bool& error)
+
+static __device__ float2 ComputeQIPosition_SharedMem(int idx, cudaImageListf& images, KernelParams params, float2 initial, bool& error)
 {
 	// Prepare shared memory
 	int pl = params.qi.radialSteps*2;
@@ -395,6 +406,63 @@ static __device__ float2 ComputeQIPosition(int idx, cudaImageListf& images, Kern
 }
 
 
+static __device__ float2 ComputeQIPosition(int idx, cudaImageListf& images, KernelParams params, float2 initial, bool& error)
+{
+	// Prepare shared memory
+	int pl = params.qi.radialSteps*2;
+	
+	// Localize
+	QIParams& qp = params.qi;
+	int nr=qp.radialSteps;
+	float2 center = initial;
+	float pixelsPerProfLen = (qp.maxRadius-qp.minRadius)/qp.radialSteps;
+
+	size_t total_required = sizeof(qivalue_t)*pl*2 + sizeof(qicomplex_t)*pl*2;
+	error = false;
+
+	qivalue_t* buf = (qivalue_t*)&params.buffer[total_required * idx];
+	qivalue_t* q0=buf, *q1=buf+nr, *q2=buf+nr*2, *q3=buf+nr*3; // buf is sizeof(qivalue_t)*nr*4, or sizeof(qicomplex_t)*nr*2
+
+	qicomplex_t* concat0 = (qicomplex_t*)(buf + nr*4);
+	qicomplex_t* concat1 = concat0 + nr;
+	qicomplex_t* tmpbuf = concat0 + nr*2;
+	for (int k=0;k<qp.iterations;k++) {
+		// check bounds
+		error = images.boundaryHit(center, qp.maxRadius);
+
+		for (int q=0;q<4;q++) {
+			ComputeQuadrantProfile(images, idx, buf+q*nr, qp, q, center);
+		}
+		
+		// Build Ix = qL(-r) || qR(r)
+		// qL = q1 + q2   (concat0)
+		// qR = q0 + q3   (concat1)
+		for(int r=0;r<nr;r++) {
+			concat0[nr-r-1] = qicomplex_t(q1[r]+q2[r]);
+			concat1[r] = qicomplex_t(q0[r]+q3[r]);
+		}
+
+		
+		float offsetX = QI_ComputeOffset(concat0, tmpbuf, qp, idx, params.qi.d_twiddles);
+
+		// Build Iy = qB(-r) || qT(r)
+		// qT = q0 + q1
+		// qB = q2 + q3
+		for(int r=0;r<nr;r++) {
+			concat0[r] = qicomplex_t(q0[r]+q1[r]);
+			concat1[nr-r-1] = qicomplex_t(q2[r]+q3[r]);
+		}
+		float offsetY = QI_ComputeOffset(concat0, tmpbuf, qp, idx, params.qi.d_twiddles);
+
+		//printf("[%d] OffsetX: %f, OffsetY: %f\n", k, offsetX, offsetY);
+		center.x += offsetX * pixelsPerProfLen;
+		center.y += offsetY * pixelsPerProfLen;
+	}
+
+	//free(buf);
+	return center;
+}
+
 
 __global__ void ComputeQIKernel(cudaImageListf images, KernelParams params, float2* d_initial, float2* d_result)
 {
@@ -402,7 +470,6 @@ __global__ void ComputeQIKernel(cudaImageListf images, KernelParams params, floa
 
 	if (idx < images.count) {
 		bool error;
-		params.sharedBuf = cudaSharedMemory;
 		d_result[idx] = ComputeQIPosition(idx, images, params, d_initial[idx], error);
 	}
 }
@@ -467,12 +534,11 @@ __global__ void LocalizeBatchKernel(int numImages, cudaImageListf images, Kernel
 	float2 com = BgCorrectedCOM(idx, images);
 
 	CUDATrackerJob* j = &jobs[idx];
+	int s=sizeof(CUDATrackerJob);
 
 	LocalizeType locType = (LocalizeType)(j->locType&Localize2DMask);
 	bool boundaryHit = false;
 	float2 result = com;
-	//float* tmpbuf = &params.buffer[params.bufferMemPerThread * threadIdx.x];
-	//float* sharedtmpbuf 
 
 	if (locType == LocalizeQI) {
 		bool error;
@@ -482,7 +548,7 @@ __global__ void LocalizeBatchKernel(int numImages, cudaImageListf images, Kernel
 
 	if (j->locType & LocalizeBuildZLUT) {
 		float* d_zlut = params.zlut.GetZLUT(j->zlut, j->zlutPlane);
-		RadialProfile(idx, images, d_zlut, params.sharedBuf, params.zlut, result, boundaryHit);
+		RadialProfile(idx, images, d_zlut, params.zlut, result, boundaryHit);
 	}
 	else if (j->locType & LocalizeZ) {
 		float* d_zlut = params.zlut.GetZLUT(j->zlut, 0);
@@ -519,6 +585,7 @@ bool QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 	job.id = id;
 	job.zlut = zlutIndex;
 	job.locType = locType;
+	job.zlutPlane = zlutPlane;
 
 	Batch* cb = currentBatch;
 	cb->jobs.push_back(job);
@@ -544,18 +611,30 @@ void QueuedCUDATracker::QueueCurrentBatch()
 		return;
 
 	dbgprintf("Sending %d images to GPU...\n", cb->jobs.size());
+	
+	cb->images.copyToDevice(cb->hostImageBuf, true);
+	//cudaMemcpy2DAsync(cb->images.data, cb->images.pitch, cb->hostImageBuf,  sizeof(float)*cfg.width, cfg.width*sizeof(float), cfg.height*cb->jobs.size(), cudaMemcpyHostToDevice);
+	cb->d_jobs.copyToDevice(cb->jobs, true);
 
-	cudaMemcpy2DAsync(cb->images.data, cb->images.pitch, cb->hostImageBuf, 
-		sizeof(float)*cfg.width, cfg.width*sizeof(float), cfg.height*cb->jobs.size(), cudaMemcpyHostToDevice);
-	cudaMemcpyAsync(cb->d_jobs.data, &cb->jobs[0], sizeof(CUDATrackerJob) * cb->jobs.size(), cudaMemcpyHostToDevice);
+
+/*	// validate memory copy
+	int flatmemsize = sizeof(float)*cfg.width*cfg.height*batchSize;
+	float* tmp = (float*)new float[cfg.width*cfg.height*batchSize];
+	cb->images.copyToHost(tmp, false);
+
+	assert (memcmp(tmp, cb->hostImageBuf, flatmemsize) == 0);
+	delete[] tmp;*/
 
 	cudaEventRecord(cb->imageBufferCopied);
-	cb->images.bind(qi_image_texture);
-	LocalizeBatchKernel<<<blocks(cb->jobs.size()), threads(), sharedMemSize >>> (cb->jobs.size(), cb->images, kernelParams, cb->d_jobs.data);
-	cb->images.unbind(qi_image_texture);
+//	cb->images.bind(qi_image_texture);
+	LocalizeBatchKernel<<<blocks(cb->jobs.size()), threads() >>> (cb->jobs.size(), cb->images, kernelParams, cb->d_jobs.data);
+	CheckCUDAError();
+//	cb->images.unbind(qi_image_texture);
 	// Copy back the results
-	cudaMemcpyAsync(&cb->jobs[0], cb->d_jobs.data, sizeof(CUDATrackerJob) * cb->jobs.size(), cudaMemcpyDeviceToHost);
+	cb->d_jobs.copyToHost(cb->jobs, true);
 
+	CheckCUDAError();
+	
 	// Make sure we can query the all done signal
 	cudaEventRecord(currentBatch->localizationDone);
 
@@ -626,7 +705,7 @@ void QueuedCUDATracker::SetZLUT(float* data,  int numLUTs, int planes, int res)
 	zlut_res = res;
 
 	zlut = cudaImageListf::alloc(res, planes, numLUTs);
-	if (data) zlut.copyFrom(data, false);
+	if (data) zlut.copyToDevice(data, false);
 }
 
 // delete[] memory afterwards
@@ -634,7 +713,7 @@ float* QueuedCUDATracker::GetZLUT(int *count, int* planes, int *res)
 {
 	float* data = new float[zlut_planes * zlut_res * zlut_count];
 	if (zlut.data)
-		zlut.copyTo(data, false);
+		zlut.copyToHost(data, false);
 	else
 		std::fill(data, data+(zlut_res*zlut_planes*zlut_count), 0.0f);
 

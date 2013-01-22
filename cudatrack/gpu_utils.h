@@ -16,7 +16,7 @@
 template<typename T>
 class device_vec {
 public:
-	device_vec(bool emulate=false) : host_emulate(emulate) {
+	device_vec() {
 	//	dbgprintf("%p device_vec()\n", this);
 		data = 0;
 		size = 0;
@@ -24,73 +24,81 @@ public:
 	device_vec(bool emulate, size_t N) { 
 		data = 0;
 		size = 0;
-		host_emulate=emulate;
+		init(N);
+//dbgprintf("%p. device_vec(emulate=%s, N=%d)\n",this, emulate?"true":"false", N);
+	}
+	device_vec(size_t N) { 
+		data = 0;
+		size = 0;
 		init(N);
 //dbgprintf("%p. device_vec(emulate=%s, N=%d)\n",this, emulate?"true":"false", N);
 	}
 	device_vec(const device_vec<T>& src) {
 		data = 0; size = 0;
-		host_emulate = src.host_emulate;
 		init(src.size);
 	//	dbgprintf("%p. copy constructor: %p to %p. Host emulate=%d\n", this, src.data, data, host_emulate?1:0);
-		cudaMemcpy(data, src.data, sizeof(T)*size, host_emulate ? cudaMemcpyHostToHost : cudaMemcpyDeviceToDevice);
+		cudaMemcpy(data, src.data, sizeof(T)*size, cudaMemcpyDeviceToDevice);
 	}
 	device_vec(const std::vector<T>& src) {
 	//	dbgprintf("%p. operator=(vector)\n", this);
-		data=0; size=0; host_emulate=false;
+		data=0; size=0; 
 		init(src.size());
-		cudaMemcpy(data, &src[0], sizeof(T)*size, host_emulate ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice);
+		cudaMemcpy(data, &src[0], sizeof(T)*size, cudaMemcpyHostToDevice);
 	}
 	~device_vec(){
 //dbgprintf("%p: ~device_vec. size=%d\n", this, size);
-		if (host_emulate)
-			delete[] data;
-		else
-			cudaFree(data); 
+		cudaFree(data); 
 		data=0;
 	}
 	void init(int s) {
 		if(size != s) {
 			clear();
-			if(host_emulate)
-				data = new T[s];
-			else
-				cudaMalloc(&data, sizeof(T)*s);
+			cudaMalloc(&data, sizeof(T)*s);
 		}
 		size = s;
 	}
 	void clear() {
 		if (data) {
-			if (host_emulate)
-				delete[] data;
-			else
-				cudaFree(data);
+			cudaFree(data);
 			data=0;
 		}
 	}
 	operator std::vector<T>() const {
 		std::vector<T> dst(size);
-		cudaMemcpy(&dst[0], data, sizeof(T)*size, host_emulate ? cudaMemcpyHostToHost : cudaMemcpyDeviceToHost);
+		cudaMemcpy(&dst[0], data, sizeof(T)*size, cudaMemcpyDeviceToHost);
 		return dst;
 	}
 	device_vec<T>& operator=(const std::vector<T>& src) {
 	//	dbgprintf("%p. operator=(vector)\n", this);
 		init(src.size());
-		cudaMemcpy(data, &src[0], sizeof(T)*size, host_emulate ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice);
+		cudaMemcpy(data, &src[0], sizeof(T)*size, cudaMemcpyHostToDevice);
 		return *this;
 	}
 	device_vec<T>& operator=(const device_vec<T>& src) {
 	//	dbgprintf("%p. operator=(device_vec)\n", this);
 		clear();
-		host_emulate=src.host_emulate;
 		init(src.size);
-		cudaMemcpy(data, src.data, sizeof(T)*size, host_emulate ? cudaMemcpyHostToHost : cudaMemcpyDeviceToDevice);
+		cudaMemcpy(data, src.data, sizeof(T)*size, cudaMemcpyDeviceToDevice);
 		return *this;
 	}
-
+	void copyToHost(std::vector<T>& dst ,bool async) {
+		if (dst.size() != size)
+			dst.resize(size);
+		if (async)
+			cudaMemcpyAsync(&dst[0], data, sizeof(T) * size, cudaMemcpyDeviceToHost);
+		else
+			cudaMemcpy(&dst[0], data, sizeof(T) * size, cudaMemcpyDeviceToHost);
+	}
+	void copyToDevice(std::vector<T>& src, bool async) {
+		if (size != src.size())
+			init(src.size());
+		if (async)
+			cudaMemcpyAsync(data, &src[0], sizeof(T) * size, cudaMemcpyHostToDevice);
+		else
+			cudaMemcpy(data, &src[0], sizeof(T) * size, cudaMemcpyHostToDevice);
+	}
 	size_t size;
 	T* data;
-	bool host_emulate;
 };
 
 

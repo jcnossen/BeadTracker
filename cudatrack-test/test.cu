@@ -132,7 +132,7 @@ void TestLocalization()
 	dbgprintf("Generating... %d images\n", N*images.count);
 
 	double t0 = getPreciseTime();
-	for (int i=0;i<N;i++) 
+	for (int i=0;i<N;i++)
 		trk.GenerateImages(images, d_pos.data);
 	cudaDeviceSynchronize();
 	double tgen = getPreciseTime() - t0;
@@ -176,6 +176,64 @@ void TestLocalization()
 }
 
 
+__shared__ float cudaSharedMem[];
+
+__device__ float compute(int idx, float* buf, int s)
+{
+	// some random calcs to make the kernel unempty
+	float k=0.0f;
+	for (int x=0;x<s;x++ ){
+		k+=cosf(x*0.1f*idx);
+		buf[x]=k;
+	}
+	for (int x=0;x<s/2;x++){
+		buf[x]=buf[x]*buf[x];
+	}
+	float sum=0.0f;
+	for (int x=s-1;x>=1;x--) {
+		sum += buf[x-1]/(fabsf(buf[x])+0.1f);
+	}
+	return sum;
+}
+
+
+__global__ void testWithGlobal(int n, int s, float* result, float* buf) {
+	int idx = threadIdx.x + blockIdx.x * blockDim.x;
+	if (idx < n) {
+		result [idx] = compute(idx, &buf [idx * s],s);
+	}
+}
+
+__global__ void testWithShared(int n, int s, float* result) {
+	int idx = threadIdx.x + blockIdx.x * blockDim.x;
+	if (idx < n) {
+		result [idx] = compute(idx, &cudaSharedMem[threadIdx.x * s],s);
+	}
+}
+
+void TestSharedMem()
+{
+	int n=100, s=200;
+	dim3 nthreads(32), nblocks( (n+nthreads.x-1)/nthreads.x);
+	device_vec<float> buf(n*s);
+	device_vec<float> result_s(n), result_g(n);
+
+	double t0 = getPreciseTime();
+	testWithGlobal<<<nblocks,nthreads>>>(n,s,result_g.data,buf.data);
+	cudaDeviceSynchronize();
+	double t1 = getPreciseTime();
+	testWithShared <<<nblocks,nthreads,s*sizeof(float)*nthreads.x>>>(n,s,result_s.data);
+	cudaDeviceSynchronize();
+	double t2 = getPreciseTime();
+
+	std::vector<float> rs = result_s, rg = result_g;
+	for (int x=0;x<n;x++) {
+		dbgprintf("result_s[%d]=%f.   result_g[%d]=%f\n", x,rs[x], x,rg[x]);
+	}
+
+	dbgprintf("Speed of shared comp: %f, speed of global comp: %f\n", n/(t2-t1), n/(t1-t0));
+}
+
 
 void QTrkTest()
 {
@@ -187,28 +245,30 @@ void QTrkTest()
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1;
 	//cfg.numThreads = 6;
-	int NumImages=10, JobsPerImg=20;
-	QueuedCUDATracker qtrk(&cfg, NumImages*JobsPerImg+1);
+	int NumImages=100, JobsPerImg=10;
+	QueuedCUDATracker qtrk(&cfg, 256);
 	float *image = new float[cfg.width*cfg.height];
 
 	// Generate ZLUT
+	bool haveZLUT = false;
 	int radialSteps=64, zplanes=100;
 	float zmin=0.5,zmax=3;
 	qtrk.SetZLUT(0, 1, zplanes, radialSteps);
-	qtrk.Start();
-	for (int x=0;x<zplanes;x++)  {
-		vector2f center = { cfg.width/2, cfg.height/2 };
-		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
-		GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
-		qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, (LocalizeType)(LocalizeBuildZLUT|LocalizeQI), x, 0, 0, x);
-	}
-	qtrk.Flush();
-	// wait to finish ZLUT
-	while(true) {
-		int rc = qtrk.GetResultCount();
-		if (rc == zplanes) break;
-		Sleep(100);
-		dbgprintf(".");
+	if (haveZLUT) {
+		for (int x=0;x<zplanes;x++)  {
+			vector2f center = { cfg.width/2, cfg.height/2 };
+			float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
+			GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, (LocalizeType)(LocalizeBuildZLUT|LocalizeOnlyCOM), x, 0, 0, x);
+		}
+		qtrk.Flush();
+		// wait to finish ZLUT
+		while(true) {
+			int rc = qtrk.GetResultCount();
+			if (rc == zplanes) break;
+			Sleep(100);
+			dbgprintf(".");
+		}
 	}
 	float* zlut = qtrk.GetZLUT(0,0,0);
 	qtrk.ClearResults();
@@ -293,11 +353,12 @@ int main(int argc, char *argv[])
 //	testLinearArray();
 
 	//TestJobPassing();
-	TestLocalization();
+	//TestLocalization();
 	//TestSimpleFFT();
 	//TestKernelFFT();
-	//QTrkTest();
+	QTrkTest();
 
+	//TestSharedMem();
 	listDevices();
 	return 0;
 }

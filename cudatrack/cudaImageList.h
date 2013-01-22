@@ -65,18 +65,18 @@ struct cudaImageList {
 			cudaFree(data);
 	}
 
-	void copyTo(T* dst, bool async) {
+	void copyToHost(T* dst, bool async) {
 		if (async)
 			cudaMemcpy2DAsync(dst, sizeof(T)*w, data, pitch, w*sizeof(T), count*h, cudaMemcpyDeviceToHost);
 		else
 			cudaMemcpy2D(dst, sizeof(T)*w, data, pitch, w*sizeof(T), count*h, cudaMemcpyDeviceToHost);
 	}
 	
-	void copyFrom(T* src, bool async) {
+	void copyToDevice(T* src, bool async) {
 		if (async)
-			cudaMemcpy2DAsync(data, sizeof(T)*w, src, pitch, w*sizeof(T), count*h, cudaMemcpyHostToDevice);
+			cudaMemcpy2DAsync(data, pitch, src, w*sizeof(T), w*sizeof(T), count*h, cudaMemcpyHostToDevice);
 		else
-			cudaMemcpy2D(data, sizeof(T)*w, src, pitch, w*sizeof(T), count*h, cudaMemcpyHostToDevice);
+			cudaMemcpy2D(data, pitch, src, w*sizeof(T), w*sizeof(T), count*h, cudaMemcpyHostToDevice);
 	}
 
 	CUBOTH int totalsize() { return pitch*h*count; }
