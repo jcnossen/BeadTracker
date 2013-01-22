@@ -497,7 +497,7 @@ void BuildConvergenceMap(int iterations)
 
 int main()
 {
-	SpeedTest();
+	//SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();

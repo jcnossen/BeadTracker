@@ -1,7 +1,7 @@
 /*
 Labview API for the functionality in QueuedTracker.h
 */
-
+#include "std_incl.h"
 #include "utils.h"
 #include "labview.h"
 #include "QueuedTracker.h"
@@ -260,4 +260,10 @@ CDLL_EXPORT int DLL_CALLCONV qtrk_read_jpeg_from_file(const char* filename, LVAr
 }
 
 
+CDLL_EXPORT void qtrk_dump_memleaks()
+{
+#ifdef USE_MEMDBG
+	_CrtDumpMemoryLeaks();
+#endif
+}
 

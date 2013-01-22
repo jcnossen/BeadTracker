@@ -1,5 +1,19 @@
 #pragma once
 
+#ifdef USE_MEMDBG
+// CRT memory leak debugging is not straightforward to get working. Read comments in 
+// http://msdn.microsoft.com/en-us/library/e5ewb1h3(v=vs.80).aspx for details.
+//	#define _CRTDBG_MAP_ALLOC needs to be defined in preprocessor options for some reason?
+	#include <stdlib.h>
+	#include <crtdbg.h>
+
+	#ifndef DEBUG_NEW
+	#define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
+	#define new DEBUG_NEW
+	#endif
+#endif
+
+
 
 #pragma pack(push, 4)
 struct vector2f {
@@ -45,7 +59,7 @@ typedef unsigned char uchar;
 	#define VSNPRINTF vsnprintf
 	#define ALLOCA(size) alloca(size)
 #endif
-#define ALLOCA_ARRAY(T, N) (new(ALLOCA(sizeof(T) * N)) T[N])
+#define ALLOCA_ARRAY(T, N) ((T*)ALLOCA(sizeof(T) * N))
 
 #define DLL_CALLCONV __cdecl
 #define CDLL_EXPORT extern "C" __declspec(dllexport) 

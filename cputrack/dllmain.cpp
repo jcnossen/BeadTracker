@@ -1,3 +1,4 @@
+#include "std_incl.h"
 #include <Windows.h>
 #undef max
 #undef min

@@ -1,6 +1,7 @@
 /*
 Labview API for CPU tracker
 */
+#include "std_incl.h"
 #include <Windows.h>
 #undef min
 #undef max

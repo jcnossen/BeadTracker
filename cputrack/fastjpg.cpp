@@ -1,3 +1,4 @@
+#include "std_incl.h"
 #include <cstdio>
 #include "jpeglib.h"
 #include "utils.h"

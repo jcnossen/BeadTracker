@@ -1,4 +1,4 @@
-
+#include "std_incl.h"
 #include "queued_cpu_tracker.h"
 
 QueuedTracker* CreateQueuedTracker(QTrkSettings* s) {
@@ -113,6 +113,10 @@ QueuedCPUTracker::~QueuedCPUTracker()
 	// free job memory
 	DeleteAllElems(jobs);
 	DeleteAllElems(jobs_buffer);
+
+	if (zluts) {
+		delete[] zluts;
+	}
 }
 
 
