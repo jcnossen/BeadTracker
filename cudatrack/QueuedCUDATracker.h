@@ -18,11 +18,11 @@ struct QIParams {
 };
 
 struct ZLUTParams {
-	CUBOTH float* GetZLUT(int bead, int plane) { return &d_zlut[bead * (radialSteps*planes) + radialSteps*plane]; }
+	CUBOTH float* GetZLUT(int bead, int plane) { return &img.pixel(0, plane, bead); }
 	float minRadius, maxRadius;
-	int radialSteps, angularSteps;
-	float* d_zlut;
+	int angularSteps;
 	int planes;
+	cudaImageListf img;
 };
 
 struct KernelParams {
@@ -130,12 +130,13 @@ protected:
 
 //	cudafft<float> *forward_fft, *backward_fft;
 
+	Threads::Mutex currentBatchMutex, activeBatchMutex;
 	std::vector<Batch*> freeBatches;
-	Threads::Mutex batchMutex;
 	std::list<Batch*> active;
 	Batch* currentBatch;
 	int maxActiveBatches;
 
+	Threads::Mutex resultsMutex;
 	std::vector<LocalizationResult> results;
 	
 	device_vec< sfft::complex<float> > fft_twiddles;
@@ -153,7 +154,7 @@ protected:
 	void CallKernel_BgCorrectedCOM(cudaImageListf& images, float2* d_com, uint sharedMem=0);
 	void CallKernel_MakeTestImage(cudaImageListf& images, float3* d_positions, uint sharedMem=0);
 
-	void FetchResults();
+	int FetchResults();
 	void QueueCurrentBatch();
 };
 

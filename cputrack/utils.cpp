@@ -39,7 +39,7 @@ void dbgprintf(const char *fmt,...) {
 	va_end(ap);
 }
 
-void GenerateTestImage(ImageData& img, float xp, float yp, float size, float MaxPhotons)
+void GenerateTestImage(ImageData img, float xp, float yp, float size, float MaxPhotons)
 {
 	float S = 1.0f/size;
 	for (int y=0;y<img.h;y++) {

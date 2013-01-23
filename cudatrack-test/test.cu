@@ -238,19 +238,19 @@ void TestSharedMem()
 void QTrkTest()
 {
 	QTrkSettings cfg;
-	cfg.width = cfg.height = 128;
-	cfg.qi_iterations = 3;
+	cfg.width = cfg.height = 60;
+	cfg.qi_iterations = 4;
 	cfg.qi_maxradius = 50;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1;
 	//cfg.numThreads = 6;
-	int NumImages=100, JobsPerImg=10;
-	QueuedCUDATracker qtrk(&cfg, 256);
+	int NumImages=10, JobsPerImg=5;
+	QueuedCUDATracker qtrk(&cfg, 64 );
 	float *image = new float[cfg.width*cfg.height];
 
 	// Generate ZLUT
-	bool haveZLUT = false;
+	bool haveZLUT = true;
 	int radialSteps=64, zplanes=100;
 	float zmin=0.5,zmax=3;
 	qtrk.SetZLUT(0, 1, zplanes, radialSteps);
@@ -259,6 +259,9 @@ void QTrkTest()
 			vector2f center = { cfg.width/2, cfg.height/2 };
 			float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 			GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
+			uchar* zlutimg = floatToNormalizedInt(image, cfg.width,cfg.height, (uchar)255);
+			WriteJPEGFile(zlutimg, cfg.width,cfg.height, "qtrkzlutimg.jpg", 99);
+			delete[] zlutimg;
 			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, (LocalizeType)(LocalizeBuildZLUT|LocalizeOnlyCOM), x, 0, 0, x);
 		}
 		qtrk.Flush();
@@ -356,9 +359,9 @@ int main(int argc, char *argv[])
 	//TestLocalization();
 	//TestSimpleFFT();
 	//TestKernelFFT();
+//	TestSharedMem();
 	QTrkTest();
 
-	//TestSharedMem();
 	listDevices();
 	return 0;
 }

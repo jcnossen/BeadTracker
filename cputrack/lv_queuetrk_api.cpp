@@ -207,3 +207,11 @@ CDLL_EXPORT void qtrk_dump_memleaks()
 #endif
 }
 
+
+
+CDLL_EXPORT void test_struct_pass(ErrorCluster* e, QueueImageParams* d1)
+{
+
+}
+
+

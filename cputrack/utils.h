@@ -78,7 +78,7 @@ struct ImageData {
 	}
 };
 
-void GenerateTestImage(ImageData& img, float xp, float yp, float size, float MaxPhotons);
+void GenerateTestImage(ImageData img, float xp, float yp, float size, float MaxPhotons);
 void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, ImageData* src, float* radialweights,float mean);
 void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float zlut_radius, vector2f pos, float z, float M);
 void ApplyPoissonNoise(ImageData& img, float factor);

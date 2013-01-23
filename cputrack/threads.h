@@ -1,4 +1,4 @@
-
+// Thread OS related code is abstracted into a simple "Threads" struct
 #ifdef USE_PTHREADS
 
 #include "pthread.h"
