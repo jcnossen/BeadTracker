@@ -11,6 +11,11 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstddef>
+#include <complex>
+
+template<typename T> bool isNAN(const T& v) { 
+	return !(v == v); 
+}
 
 DLL_EXPORT void dbgout(std::string s);
 DLL_EXPORT std::string SPrintf(const char *fmt, ...);
@@ -37,7 +42,7 @@ void normalize(TPixel* d, uint w,uint h)
 		d[k]=(d[k]-minv)/(maxv-minv);
 }
 
-const inline float interp(float a, float b, float x) { return a + (b-a)*x; }
+inline float interp(float a, float b, float x) { return a + (b-a)*x; }
 
 inline float Interpolate(float* image, int width, int height, float x,float y, float paddingValue=0.0f)
 {
@@ -73,11 +78,12 @@ struct ImageData {
 	}
 };
 
-void GenerateTestImage(ImageData& img, float xp, float yp, float size, float MaxPhotons);
+void GenerateTestImage(ImageData img, float xp, float yp, float size, float MaxPhotons);
 void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, ImageData* src, float* radialweights,float mean);
 void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float zlut_radius, vector2f pos, float z, float M);
 void ApplyPoissonNoise(ImageData& img, float factor);
 void WriteImageAsCSV(const char* file, float* d, int w,int h);
+void WriteComplexImageAsCSV(const char* file, std::complex<float>* d, int w,int h);
 
 int ReadJPEGFile(uchar* srcbuf, int srclen, uchar** data, int* width, int*height);
 void WriteJPEGFile(uchar* data,int w,int h, char * filename, int quality);

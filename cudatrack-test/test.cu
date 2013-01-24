@@ -12,15 +12,14 @@
 #include <cstdarg>
 #include <valarray>
 
-#include "cudafft/cudafft.h"
 #include "random_distr.h"
 
 #include <stdint.h>
-#include "cudaImageList.h"
+#include "gpu_utils.h"
 #include "QueuedCUDATracker.h"
 
-#define LSQFIT_FUNC __device__ __host__
-#include "LsqQuadraticFit.h"
+#include "simplefft.h"
+#include "cudafft/cudafft.h"
 
 double getPreciseTime()
 {
@@ -31,9 +30,6 @@ double getPreciseTime()
 
 	return (double)time / (double)freq;
 }
-
-
-
 
 
 std::string getPath(const char *file)
@@ -47,95 +43,6 @@ std::string getPath(const char *file)
 }
 
 
-texture<float, cudaTextureType2D, cudaReadModeElementType> xcor1D_images(0, cudaFilterModeLinear);
-
-template<typename T>
-__global__ void XCor1D_BuildProfiles_Kernel(cudaImageList<T> images, float2* d_initial, T* d_profiles, int profileLength, int profileWidth)
-{
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	T* hprof = &d_profiles[idx*profileLength*2];
-	T* vprof = hprof+profileLength;
-
-	if (idx >= images.count)
-		return;
-	
-	float2* profile, *reverseProf, *result;
-	profile = (float2*)malloc(sizeof(float2)*profileLength*3);
-	reverseProf = profile + profileLength;
-	result = profile + profileLength*2;
-
-	float2 pos = d_initial[idx];
-//	float2 pos = make_float2(images.w/2, images.h/2);
-
-	int iterations=1;
-	bool boundaryHit = false;
-
-	for (int k=0;k<iterations;k++) {
-		float xmin = pos.x - profileLength/2;
-		float ymin = pos.y - profileLength/2;
-
-		if (images.boundaryHit(pos, profileLength/2)) {
-			boundaryHit = true;
-			break;
-		}
-
-		// generate X position xcor array (summing over y range)
-		for (int x=0;x<profileLength;x++) {
-			float s = 0.0f;
-			for (int y=0;y<profileWidth;y++) {
-				float xp = x + xmin;
-				float yp = pos.y + (y - profileWidth/2);
-
-				s += tex2D(xcor1D_images, xp, yp + images.h * idx);
-			}
-			profile [x].x = s;
-			profile [x].y = 0.0f;
-			reverseProf[profileLength-x-1] = profile[x];
-			hprof[x] = s;
-
-			printf("x profile[%d] = %f\n", x, s);
-		}
-		
-		//float offsetX = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
-
-		// generate Y position xcor array (summing over x range)
-		for (int y=0;y<profileLength;y++) {
-			float s = 0.0f; 
-			for (int x=0;x<profileWidth;x++) {
-				float xp = pos.x + (x - profileWidth/2);
-				float yp = y + ymin;
-				s += tex2D(xcor1D_images, xp, yp + images.h * idx);
-			}
-			profile[y].x = s;
-			profile[y].y = 0.0f;
-			reverseProf[profileLength-y-1] = profile[y];
-
-			vprof[y] = s;
-		}
-
-		//float offsetY = XCor1D_ComputeOffset(profile, reverseProf, result, fwkp, bwkp, profileLength);
-	}
-
-	free(profile);
-}
-
-void XCor1D_BuildProfiles(cudaImageListf& images, float2* d_centers, float* d_profiles, int xcorProfileLen, int xcorProfileWidth)
-{
-	images.bind(xcor1D_images);
-	XCor1D_BuildProfiles_Kernel<float> <<<dim3(1), dim3(images.count) >>> (images, d_centers, d_profiles, xcorProfileLen, xcorProfileWidth);
-	cudaThreadSynchronize();
-	images.unbind(xcor1D_images);
-
-	int profileSpace=xcorProfileLen*2*images.count;
-	float* profs = new float[profileSpace];
-	cudaMemcpy(profs, d_profiles, sizeof(float)*profileSpace, cudaMemcpyDeviceToHost);
-
-	WriteImageAsCSV("prof.txt", profs, xcorProfileLen*2, images.count);
-	delete[] profs;
-}
-
-
-
 inline __device__ float2 mul_conjugate(float2 a, float2 b)
 {
 	float2 r;
@@ -144,299 +51,303 @@ inline __device__ float2 mul_conjugate(float2 a, float2 b)
 	return r;
 }
 
-template<typename T>
-__device__ T max_(T a, T b) { return a>b ? a : b; }
-template<typename T>
-__device__ T min_(T a, T b) { return a<b ? a : b; }
-
-template<typename T, int numPts>
-__device__ T ComputeMaxInterp(T* data, int len)
-{
-	int iMax=0;
-	T vMax=data[0];
-	for (int k=1;k<len;k++) {
-		if (data[k]>vMax) {
-			vMax = data[k];
-			iMax = k;
-		}
-	}
-	T xs[numPts]; 
-	int startPos = max_(iMax-numPts/2, 0);
-	int endPos = min_(iMax+(numPts-numPts/2), len);
-	int numpoints = endPos - startPos;
-
-
-	if (numpoints<3) 
-		return iMax;
-	else {
-		for(int i=startPos;i<endPos;i++)
-			xs[i-startPos] = i-iMax;
-
-		LsqSqQuadFit<T> qfit(numpoints, xs, &data[startPos]);
-		//printf("iMax: %d. qfit: data[%d]=%f\n", iMax, startPos, data[startPos]);
-		//for (int k=0;k<numpoints;k++) {
-	//		printf("data[%d]=%f\n", startPos+k, data[startPos]);
-		//}
-		T interpMax = qfit.maxPos();
-
-		if (fabs(qfit.a)<1e-9f)
-			return (T)iMax;
-		else
-			return (T)iMax + interpMax;
-	}
-}
-
-__device__ float XCor1D_ProfileFFT(float2* profile, float2* reverseProfile, float2* result, 
-			cudafft<float>::KernelParams fwkp, cudafft<float>::KernelParams bwkp, int len, float *dbgout)
-{
-	cudafft<float>::transform((cudafft<float>::cpx_type*) profile, (cudafft<float>::cpx_type*)result, fwkp);
-	// data in 'profile' is no longer needed since we have the fourier domain version
-	cudafft<float>::transform((cudafft<float>::cpx_type*) reverseProfile, (cudafft<float>::cpx_type*)profile, fwkp);
-
-	// multiply with complex conjugate
-	for (int k=0;k<len;k++)
-		profile[k] = mul_conjugate(profile[k], result[k]);
-
-	cudafft<float>::transform((cudafft<float>::cpx_type*) profile, (cudafft<float>::cpx_type*) result, bwkp);
-
-	// shift by len/2, so the maximum will be somewhere in the middle of the array
-	float* shifted = dbgout;
-	for (int k=0;k<len;k++) {
-		shifted[(k+len/2)%len] = result[k].x;
-		//printf("result[%d]=%f\n", k,result[k].x);
-	}
-	
-	// find the interpolated maximum peak
-	float maxPos = ComputeMaxInterp<float, 5>(shifted, len) - len/2;
-	return maxPos;
-}
-
-
-
-__global__ void XCor1D_ComputeOffsets(float* d_profiles, float2* d_positions, int profileLen, cudafft<float>::KernelParams fwkp, cudafft<float>::KernelParams bwkp)
-{
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-	float2* profile, *reverseProf, *result;
-	profile = (float2*)malloc(sizeof(float2)*profileLen*3);
-	reverseProf = profile + profileLen;
-	result = profile + profileLen*2;
-
-	float* hprof = &d_profiles[idx*profileLen*2];
-	float* vprof = hprof+profileLen;
-
-	for (int k=0;k<profileLen;k++)
-		profile[k] = make_float2(hprof[k],0.0f);
-	float offsetX = XCor1D_ProfileFFT(profile, reverseProf, result, fwkp, bwkp, profileLen, hprof);
-
-	for (int k=0;k<profileLen;k++)
-		profile[k] = make_float2(vprof[k],0.0f);
-	float offsetY = XCor1D_ProfileFFT(profile, reverseProf, result, fwkp, bwkp, profileLen, vprof);
-	
-
-	printf("[%d] offsetX: %f, offsetY: %f\n", idx, offsetX,offsetY);
-
-	d_positions[idx].x += (offsetX - 1)*0.5f;
-	d_positions[idx].y += (offsetY - 1)*0.5f;
-
-	free(profile);
-}
-
-void ComputeOffsets(cudaImageListf& images, float* d_profiles, float2* d_positions, int profileLen, cudafft<float>::KernelParams fwkp, cudafft<float>::KernelParams bwkp)
-{
-	XCor1D_ComputeOffsets<<<dim3(1), dim3(images.count)>>> (d_profiles, d_positions, profileLen,fwkp, bwkp);
-
-	int profileSpace=profileLen*2*images.count;
-	float* profs = new float[profileSpace];
-	cudaMemcpy(profs, d_profiles, sizeof(float)*profileSpace, cudaMemcpyDeviceToHost);
-
-	WriteImageAsCSV("fdprof.txt", profs, profileLen*2, images.count);
-	delete[] profs;
-}
-
-//void XCor1D
-
 texture<float, cudaTextureType2D, cudaReadModeElementType> smpImgRef(0, cudaFilterModeLinear);
 
-__global__ void smpImageKernel(cudaImageListf images, float2 center, int w, int h, float* dst, float zoom)
+
+void TestSimpleFFT()
 {
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	if (idx >= images.count)
-		return;
+	int N=64;
+	cudafft<double> fft(N, false);
+
+	std::vector< cudafft<double>::cpx_type > data(N), result(N), cpu_result(N);
+	for (int x=0;x<N;x++) {
+		data[x].x = 10*cos(x*0.1f-5);
+		data[x].y = 6*cos(x*0.2f-2)+3;
+	}
+
+	std::vector<sfft::complex<double> > twiddles = sfft::fill_twiddles<double>(N);
+
+	fft.host_transform(&data[0], &cpu_result[0]);
+	sfft::fft_forward(N, (sfft::complex<double>*)&data[0], &twiddles[0]);
 	
-	float halfX = w*0.5f;
-	float halfY = h*0.5f;
-	for (int y=0;y<h;y++)
-		for (int x=0;x<w;x++){
-			 dst[y*w+x] = tex2D( smpImgRef, center.x + (x - halfX) * zoom, center.y + ( y - halfY ) * zoom + idx*h );
-		}
-}
-
-void SampleImage(cudaImageListf& images, float2 center, int w, int h)
-{
-	float* dst;
-	cudaMalloc(&dst,sizeof(float)*w*h);
-	images.bind(smpImgRef);
-	smpImageKernel<<<dim3(1),dim3(images.count)>>> (images,center,w,h,dst, 0.5f);
-	float* tmp = (float*)ALLOCA(sizeof(float)*w*h);
-	cudaMemcpy(tmp, dst, sizeof(float)*w*h, cudaMemcpyDeviceToHost);
-	cudaFree(dst);
-	images.unbind(smpImgRef);
-
-	WriteImageAsCSV("imgsmp.txt", tmp, w,h);
+	for (int k=0;k<N;k++) {
+		dbgprintf("[%d] kissfft: %f+%fi, sfft: %f+%fi. diff=%f+%fi\n", k, cpu_result[k].x, cpu_result[k].y, data[k].x,data[k].y, cpu_result[k].x - data[k].x,cpu_result[k].y - data[k].y);
+	}
 }
 
 
-void TestLocalizationSpeed()
-{
-	int repeat = 1;
-	int numImages=60;
-	int xcorProfileLen = 128, xcorProfileWidth = 16;
-	float t_gen=0, t_com=0, t_xcor=0;
+void ShowCUDAError() {
+	cudaError_t err = cudaGetLastError();
+	dbgprintf("Cuda error: %s\n", cudaGetErrorString(err));
+}
 
+__global__ void testJobPassing(CUDATrackerJob job, CUDATrackerJob* a)
+{
+	CUDATrackerJob* a0 = &a[0];
+	CUDATrackerJob* a1 = &a[1];
+}
+
+void TestJobPassing()
+{
+	CUDATrackerJob job;
+	job.id = 1;
+	job.initialPos.x = 2;
+	job.initialPos.y = 3;
+	job.initialPos.z = 4;
+	job.zlut = 5;
+	job.zlutPlane = 6;
+	job.locType = LocalizeBuildZLUT;
+
+	std::vector<CUDATrackerJob> jobs;
+	jobs.push_back(job);
+	jobs.push_back(job);
+
+	testJobPassing<<<dim3(),dim3()>>>(job, device_vec<CUDATrackerJob> (jobs).data);
+}
+
+void TestLocalization()
+{
+	const int NumImages=480;
+	int N = 10;
 	QTrkSettings cfg;
-	QueuedCUDATracker qtrk(&cfg);
+	cfg.numThreads = -1;
+	cfg.qi_iterations = 2;
+	cfg.qi_maxradius = 30;
+	QueuedCUDATracker trk(&cfg);
 
-	cudaEvent_t gen_start, gen_end, com_start, com_end, xcor_end, xc1_profiles_end;
-	cudaEventCreate(&gen_start);
-	cudaEventCreate(&gen_end);
-	cudaEventCreate(&com_start);
-	cudaEventCreate(&com_end);
-	cudaEventCreate(&xcor_end);
-	cudaEventCreate(&xc1_profiles_end);
-
-	// Create some space for images
-	cudaImageListf images = cudaImageListf::alloc(170,150,numImages);
-	dbgprintf("Image memory used: %d bytes\n", images.totalsize());
-	float3* d_pos;
-	cudaMalloc(&d_pos, sizeof(float3)*images.count);
-	float2* d_com;
-	cudaMalloc(&d_com, sizeof(float2)*images.count);
-	float2* d_xcor;
-	cudaMalloc(&d_xcor, sizeof(float2)*images.count);
-	std::vector<float2> xcor(images.count);
-	std::fill(xcor.begin(),xcor.end(), make_float2(0,0));
-	cudaMemcpy(d_xcor,&xcor[0],sizeof(float2)*images.count,cudaMemcpyHostToDevice);
-
-	float* d_profiles;
-	cudaMalloc(&d_profiles, sizeof(float)*images.count*3*cfg.xc1_profileLength);
-
-	float3* positions = new float3[images.count];
+	auto images = cudaImageListf::alloc(80,80, NumImages, trk.UseHostEmulate());
+	ShowCUDAError();
+	std::vector<float3> positions(images.count);
+	{
+	device_vec< sfft::complex<float> > test;
+	test = trk.DeviceMem( std::vector < sfft::complex<float> > (3) );
+	}
 	for(int i=0;i<images.count;i++) {
 		float xp = images.w/2+(rand_uniform<float>() - 0.5) * 5;
 		float yp = images.h/2+(rand_uniform<float>() - 0.5) * 5;
 		positions[i] = make_float3(xp, yp, 3);
-		dbgprintf("Pos[%d]=( %f, %f )\n", i, xp, yp);
 	}
-	cudaMemcpy(d_pos, positions, sizeof(float3)*images.count, cudaMemcpyHostToDevice);
-	double comErr=0.0, xcorErrX=0.0, xcorErrY=0.0;
+	device_vec<float3> d_pos = trk.DeviceMem(positions);
 
-	cudafft<float> fwfft(xcorProfileLen, true) ,bwfft(xcorProfileLen,false);
+	dbgprintf("Generating... %d images\n", N*images.count);
 
-	for (int k=0;k<repeat;k++) {
-		cudaEventRecord(gen_start);
-		qtrk.GenerateImages(images, d_pos);
-		cudaEventRecord(gen_end);
+	double t0 = getPreciseTime();
+	for (int i=0;i<N;i++)
+		trk.GenerateImages(images, d_pos.data);
+	cudaDeviceSynchronize();
+	double tgen = getPreciseTime() - t0;
 
-		cudaEventRecord(com_start);
-		qtrk.ComputeBgCorrectedCOM(images, d_com);
-		cudaEventRecord(com_end);
-		cudaEventSynchronize(com_end);
+	auto d_com = trk.DeviceMem<float2>(positions.size());
+	auto d_qi = trk.DeviceMem<float2>(positions.size());
+	double t1 = getPreciseTime();
+	dbgprintf("COM\n");
+	for (int i=0;i<N;i++)
+		trk.ComputeBgCorrectedCOM(images, d_com.data);
+	cudaDeviceSynchronize();
+	double t2 = getPreciseTime();
+	double tcom = t2 - t1;
 
-		float t_gen0, t_com0, t_xcor0;
-		cudaEventElapsedTime(&t_gen0, gen_start, gen_end);
-		t_gen+=t_gen0;
-		cudaEventElapsedTime(&t_com0, com_start, com_end);
-		t_com+=t_com0;
-		std::vector<float2> com(images.count);
-		cudaMemcpyAsync(&com[0], d_com, sizeof(float2)*images.count, cudaMemcpyDeviceToHost);
-		cudaMemcpyAsync(d_xcor, d_com, sizeof(float2)*images.count, cudaMemcpyDeviceToDevice);
+	dbgprintf("QI\n");
+	for (int i=0;i<N;i++)
+		trk.ComputeQI(images, d_com.data, d_qi.data);
+	cudaDeviceSynchronize();
+	double tqi = getPreciseTime() - t2;
 
-		//qtrk.Compute1DXCor(images, d_com, d_xcor);
+	std::vector<float2> com(d_com), qi(d_qi);
+	double comErrX=0, comErrY=0;
+	double qiErrX=0, qiErrY=0;
 
-		SampleImage(images, com[0], 30,30);
+	for (int i=0;i<images.count;i++) {
+		dbgprintf("[%d] true pos=( %.4f, %.4f ).  COM error=( %.4f, %.4f ).  QI error=( %.4f, %.4f ) \n", i, 
+			positions[i].x, positions[i].y, com[i].x - positions[i].x, com[i].y - positions[i].y, qi[i].x - positions[i].x, qi[i].y - positions[i].y );
 
-		XCor1D_BuildProfiles(images, d_com, d_profiles, xcorProfileLen, xcorProfileWidth);
+		qiErrX += fabsf(positions[i].x-qi[i].x);
+		qiErrY += fabsf(positions[i].y-qi[i].y);
+		comErrX += fabsf(positions[i].x-com[i].x);
+		comErrY += fabsf(positions[i].y-com[i].y);
+	}
 
-		ComputeOffsets(images, d_profiles, d_xcor, xcorProfileLen, fwfft.kparams, bwfft.kparams);
-		cudaEventRecord(xcor_end);
-		cudaEventSynchronize(xcor_end);
+	dbgprintf("Errors: COM.x: %f, COM.y: %f, QI.x=%f, QI.y=%f\n", comErrX/images.count, comErrY/images.count, qiErrX/images.count, qiErrY/images.count);
+	N *= images.count;
+	dbgprintf("Image generating: %f img/s. COM: %f img/s. QI: %f img/s\n", N/tgen, N/tcom, N/tqi);
 
-		cudaEventElapsedTime(&t_xcor0, com_end, xcor_end);
-		t_xcor+=t_xcor0;
+	ShowCUDAError();
+	images.free();
+}
 
-		cudaMemcpy(&xcor[0], d_xcor, sizeof(float2)*images.count, cudaMemcpyDeviceToHost);
 
-		float dx,dy;
-		for (int i=0;i<images.count;i++) {
-			dx = (com[i].x-positions[i].x);
-			dy = (com[i].y-positions[i].y);
-			comErr += sqrt(dx*dx+dy*dy);
+__shared__ float cudaSharedMem[];
 
-			dx = (xcor[i].x-positions[i].x)+1.5f;
-			dy = (xcor[i].y-positions[i].y)+1.5f;
-			xcorErrX += dx;
-			xcorErrY += dy;
+__device__ float compute(int idx, float* buf, int s)
+{
+	// some random calcs to make the kernel unempty
+	float k=0.0f;
+	for (int x=0;x<s;x++ ){
+		k+=cosf(x*0.1f*idx);
+		buf[x]=k;
+	}
+	for (int x=0;x<s/2;x++){
+		buf[x]=buf[x]*buf[x];
+	}
+	float sum=0.0f;
+	for (int x=s-1;x>=1;x--) {
+		sum += buf[x-1]/(fabsf(buf[x])+0.1f);
+	}
+	return sum;
+}
+
+
+__global__ void testWithGlobal(int n, int s, float* result, float* buf) {
+	int idx = threadIdx.x + blockIdx.x * blockDim.x;
+	if (idx < n) {
+		result [idx] = compute(idx, &buf [idx * s],s);
+	}
+}
+
+__global__ void testWithShared(int n, int s, float* result) {
+	int idx = threadIdx.x + blockIdx.x * blockDim.x;
+	if (idx < n) {
+		result [idx] = compute(idx, &cudaSharedMem[threadIdx.x * s],s);
+	}
+}
+
+void TestSharedMem()
+{
+	int n=100, s=200;
+	dim3 nthreads(32), nblocks( (n+nthreads.x-1)/nthreads.x);
+	device_vec<float> buf(n*s);
+	device_vec<float> result_s(n), result_g(n);
+
+	double t0 = getPreciseTime();
+	testWithGlobal<<<nblocks,nthreads>>>(n,s,result_g.data,buf.data);
+	cudaDeviceSynchronize();
+	double t1 = getPreciseTime();
+	testWithShared <<<nblocks,nthreads,s*sizeof(float)*nthreads.x>>>(n,s,result_s.data);
+	cudaDeviceSynchronize();
+	double t2 = getPreciseTime();
+
+	std::vector<float> rs = result_s, rg = result_g;
+	for (int x=0;x<n;x++) {
+		dbgprintf("result_s[%d]=%f.   result_g[%d]=%f\n", x,rs[x], x,rg[x]);
+	}
+
+	dbgprintf("Speed of shared comp: %f, speed of global comp: %f\n", n/(t2-t1), n/(t1-t0));
+}
+
+
+void QTrkTest()
+{
+	QTrkSettings cfg;
+	cfg.width = cfg.height = 60;
+	cfg.qi_iterations = 4;
+	cfg.qi_maxradius = 50;
+	cfg.xc1_iterations = 2;
+	cfg.xc1_profileLength = 64;
+	cfg.numThreads = -1;
+	//cfg.numThreads = 6;
+	int NumImages=10, JobsPerImg=5;
+	QueuedCUDATracker qtrk(&cfg, 64 );
+	float *image = new float[cfg.width*cfg.height];
+
+	// Generate ZLUT
+	bool haveZLUT = true;
+	int radialSteps=64, zplanes=100;
+	float zmin=0.5,zmax=3;
+	qtrk.SetZLUT(0, 1, zplanes, radialSteps);
+	if (haveZLUT) {
+		for (int x=0;x<zplanes;x++)  {
+			vector2f center = { cfg.width/2, cfg.height/2 };
+			float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
+			GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
+			uchar* zlutimg = floatToNormalizedInt(image, cfg.width,cfg.height, (uchar)255);
+			WriteJPEGFile(zlutimg, cfg.width,cfg.height, "qtrkzlutimg.jpg", 99);
+			delete[] zlutimg;
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, (LocalizeType)(LocalizeBuildZLUT|LocalizeOnlyCOM), x, 0, 0, x);
+		}
+		qtrk.Flush();
+		// wait to finish ZLUT
+		while(true) {
+			int rc = qtrk.GetResultCount();
+			if (rc == zplanes) break;
+			Sleep(100);
+			dbgprintf(".");
 		}
 	}
+	float* zlut = qtrk.GetZLUT(0,0,0);
+	qtrk.ClearResults();
+	uchar* zlut_bytes = floatToNormalizedInt(zlut, radialSteps, zplanes, (uchar)255);
+	WriteJPEGFile(zlut_bytes, radialSteps, zplanes, "qtrkzlutcuda.jpg", 99);
+	delete[] zlut; delete[] zlut_bytes;
+	
+	// Schedule images to localize on
+	dbgprintf("Generating %d images...\n", NumImages);
+	double tgen = 0.0, tschedule = 0.0;
+	std::vector<float> truepos(NumImages*3);
+	for (int n=0;n<NumImages;n++) {
+		double t1 = getPreciseTime();
+		float xp = cfg.width/2+(rand_uniform<float>() - 0.5) * 5;
+		float yp = cfg.height/2+(rand_uniform<float>() - 0.5) * 5;
+		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
+		truepos[n*3+0] = xp;
+		truepos[n*3+1] = yp;
+		truepos[n*3+2] = z;
 
+		GenerateTestImage(ImageData(image, cfg.width, cfg.height), xp, yp, z, 10000);
+		double t2 = getPreciseTime();
+		for (int k=0;k<JobsPerImg;k++)
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI|LocalizeZ), n, 0, 0, 0);
+		double t3 = getPreciseTime();
+		tgen += t2-t1;
+		tschedule += t3-t2;
+	}
+	delete[] image;
+	dbgprintf("Schedule time: %f, Generation time: %f\n", tschedule, tgen);
 
-	int N = images.count*repeat*1000; // times are in ms
-	dbgprintf("COM error: %f pixels. XCor error: [X %f, Y %f] pixels\n",comErr/(images.count*repeat), xcorErrX/(images.count*repeat),xcorErrY/(images.count*repeat));
-	dbgprintf("Image generating: %f img/s. COM computation: %f img/s. 1D XCor: %f img/s\n", N/t_gen, N/t_com, N/t_xcor);
-	cudaFree(d_com);
-	cudaFree(d_pos);
-	cudaFree(d_profiles);
-	images.free();
+	// Measure speed
+	dbgprintf("Localizing on %d images...\n", NumImages*JobsPerImg);
+	double tstart = getPreciseTime();
+	int total = NumImages*JobsPerImg;
+	qtrk.Flush();
+	int rc = 0, displayrc=0;
+	do {
+		rc = qtrk.GetResultCount();
+		while (displayrc<rc) {
+			if( displayrc%JobsPerImg==0) dbgprintf("Done: %d / %d\n", displayrc, total);
+			displayrc++;
+		}
+		Sleep(10);
+	} while (rc != total);
+	double tend = getPreciseTime();
 
-	cudaEventDestroy(gen_start); cudaEventDestroy(gen_end); 
-	cudaEventDestroy(com_start); cudaEventDestroy(com_end); 
-	cudaEventDestroy(xc1_profiles_end);
+	// Wait for last jobs
+	double errX=0.0, errY=0.0, errZ=0.0;
+
+	for (int i=0;i<total;i++) {
+		LocalizationResult result;
+
+		if (qtrk.PollFinished(&result, 1)) {
+			int iid = result.id;
+			float x = fabs(truepos[iid*3+0]-result.pos.x);
+			float y = fabs(truepos[iid*3+1]-result.pos.y);
+			result.z = zmin + (zmax-zmin) * result.z / (float)(zplanes-1); // transform from index scale to coordinate scale
+			float z = fabs(truepos[iid*3+2]-result.z);
+		//	dbgprintf("ID: %d. Boundary Error:%d. ErrX=%f, ErrY=%f, ErrZ=%f\n", result.id, result.error, x,y,z);
+			errX += x; errY += y; errZ += z;
+		}
+	}
+	dbgprintf("Localization Speed: %d (img/s)\n", (int)( total/(tend-tstart) ));
+	dbgprintf("ErrX: %f, ErrY: %f, ErrZ: %f\n", errX/total, errY/total,errZ/total);
 }
 
-
-
-__global__ void runCudaFFT(cudafft<float>::cpx_type *src, cudafft<float>::cpx_type *dst, cudafft<float>::KernelParams kparams)
+void listDevices()
 {
-	kparams.makeShared();
-	cudafft<float>::transform(src,dst, kparams);
-}
-
-void TestKernelFFT()
-{
-	int N=256;
-	cudafft<float> fft(N, false);
-
-	std::vector< cudafft<float>::cpx_type > data(N), result(N);
-	for (int x=0;x<N;x++)
-		data[x].x = 10*cos(x*0.1f-5);
-
-	fft.host_transform(&data[0], &result[0]);
-	for (int x=0;x<N;x++)
-		dbgprintf("[%d] %f+%fi\n", x, result[x].x, result[x].y);
-
-	// now put data in video mem
-	cudafft<float>::cpx_type *src,*d_result;
-	int memSize = sizeof(cudafft<float>::cpx_type)*N;
-	cudaMalloc(&src, memSize);
-	cudaMemcpy(src, &data[0], memSize, cudaMemcpyHostToDevice);
-	cudaMalloc(&d_result, memSize);
-
-	int sharedMemSize = fft.kparams_size;
-	for (int k=0;k<100;k++) {
-		runCudaFFT<<<dim3(1),dim3(1),sharedMemSize>>>(src,d_result, fft.kparams);
+	cudaDeviceProp prop;
+	int dc;
+	cudaGetDeviceCount(&dc);
+	for (int k=0;k<dc;k++) {
+		cudaGetDeviceProperties(&prop, k);
+		dbgprintf("Device[%d] = %s\n", k, prop.name);
 	}
-
-	std::vector< cudafft<float>::cpx_type > result2(N);
-	cudaMemcpy(&result2[0], d_result, memSize, cudaMemcpyDeviceToHost);
-
-	for (int i=0;i<N;i++) {
-		cudafft<float>::cpx_type d=result2[i]-result[i];
-		dbgprintf("[%d] %f+%fi\n", i, d.x, d.y);
-	}
-
-	cudaFree(src);
-	cudaFree(d_result);
 
 }
 
@@ -444,14 +355,13 @@ int main(int argc, char *argv[])
 {
 //	testLinearArray();
 
-	std::string path = getPath(argv[0]);
+	//TestJobPassing();
+	//TestLocalization();
+	//TestSimpleFFT();
+	//TestKernelFFT();
+//	TestSharedMem();
+	QTrkTest();
 
-	cudaDeviceProp prop;
-	cudaGetDeviceProperties(&prop, 0);
-
-	TestLocalizationSpeed();
-//	TestKernelFFT();
-
-	
+	listDevices();
 	return 0;
 }

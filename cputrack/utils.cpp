@@ -1,12 +1,15 @@
+#include "std_incl.h"
 #include <cstdarg>
 #include "utils.h"
 #include <Windows.h>
 #undef min
 #undef max
 #include <string>
+#include <complex>
 
 #include "random_distr.h"
 #include "LsqQuadraticFit.h"
+#include "QueuedTracker.h"
 
 std::string SPrintf(const char *fmt, ...) {
 	va_list ap;
@@ -36,7 +39,7 @@ void dbgprintf(const char *fmt,...) {
 	va_end(ap);
 }
 
-void GenerateTestImage(ImageData& img, float xp, float yp, float size, float MaxPhotons)
+void GenerateTestImage(ImageData img, float xp, float yp, float size, float MaxPhotons)
 {
 	float S = 1.0f/size;
 	for (int y=0;y<img.h;y++) {
@@ -44,7 +47,7 @@ void GenerateTestImage(ImageData& img, float xp, float yp, float size, float Max
 			float X = x - xp;
 			float Y = y - yp;
 			float r = sqrtf(X*X+Y*Y)+1;
-			float v = sinf(r/(5*S)) * expf(-r*r*S*0.01f);
+			float v = sinf(r/(5*S)) * expf(-r*r*S*0.001f);
 			img.at(x,y)=v;
 		}
 	}
@@ -164,6 +167,22 @@ void WriteImageAsCSV(const char* file, float* d, int w,int h)
 }
 
 
+void WriteComplexImageAsCSV(const char* file, std::complex<float>* d, int w,int h)
+{
+	FILE* f = fopen(file, "w");
+
+	for (int y=0;y<h;y++) {
+		for (int x=0;x<w;x++)
+		{
+			fprintf(f, "%f+%fi", d[y*w+x].real(), d[y*w+x].imag());
+			if(x<w-1) fputs("\t", f); 
+		}
+		fprintf(f, "\n");
+	}
+
+	fclose(f);
+}
+
 std::vector<uchar> ReadToByteBuffer(const char *filename)
 {
 	FILE *f = fopen(filename, "rb");
@@ -177,4 +196,30 @@ std::vector<uchar> ReadToByteBuffer(const char *filename)
 
 	fclose(f);
 	return buf;
+}
+
+void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelDataType pdt, float* dst)
+{
+	if (pdt == QTrkU8) {
+		for (int y=0;y<height;y++) {
+			for (int x=0;x<width;x++)
+				dst[x] = data[x];
+			data += pitch;
+			dst += width;
+		}
+	} else if(pdt == QTrkU16) {
+		for (int y=0;y<height;y++) {
+			ushort* u = (ushort*)data;
+			for (int x=0;x<width;x++)
+				dst[x] = u[x];
+			data += pitch;
+			dst += width;
+		}
+ 	} else {
+		for (int y=0;y<height;y++) {
+			memcpy(dst, (float*)data, sizeof(float)*width);
+			data += pitch;
+			dst += width;
+		}
+	}
 }

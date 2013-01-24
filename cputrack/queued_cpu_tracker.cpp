@@ -1,4 +1,4 @@
-
+#include "std_incl.h"
 #include "queued_cpu_tracker.h"
 
 QueuedTracker* CreateQueuedTracker(QTrkSettings* s) {
@@ -82,17 +82,14 @@ QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 	quitWork = false;
 
 	if (cfg.numThreads < 0) {
-		// preferably 
-		#ifdef WIN32	
-		SYSTEM_INFO sysInfo;
-		GetSystemInfo(&sysInfo);
-		cfg.numThreads = sysInfo.dwNumberOfProcessors;
-		#else
-		cfg.numThreads = 4;
-		#endif
+		cfg.numThreads = Threads::GetCPUCount();
 		dbgprintf("Using %d threads\n", cfg.numThreads);
-	}
+	} 
 
+	if (cfg.numThreads == 0) {
+		noThreadTracker = new CPUTracker(cfg.width, cfg.height, cfg.xc1_profileLength);
+	} else
+		noThreadTracker = 0;
 	jobCount = 0;
 	resultCount = 0;
 
@@ -110,15 +107,25 @@ QueuedCPUTracker::~QueuedCPUTracker()
 		delete threads[k].tracker;
 	}
 
+	if (noThreadTracker)
+		delete noThreadTracker;
+
 	// free job memory
 	DeleteAllElems(jobs);
 	DeleteAllElems(jobs_buffer);
+
+	if (zluts) {
+		delete[] zluts;
+	}
 }
 
 
 void QueuedCPUTracker::Start()
 {
 	quitWork = false;
+	if (noThreadTracker) 
+		return;
+
 	threads.resize(cfg.numThreads);
 	for (int k=0;k<cfg.numThreads;k++) {
 		threads[k].tracker = new CPUTracker(cfg.width, cfg.height, cfg.xc1_profileLength);
@@ -138,11 +145,11 @@ DWORD QueuedCPUTracker::WorkerThreadMain(void* arg)
 	while (!this_->quitWork) {
 		Job* j = this_->GetNextJob();
 		if (j) {
-			this_->ProcessJob(th, j);
+			this_->ProcessJob(th->tracker, j);
 			this_->JobFinished(j);
 		} else {
 			#ifdef WIN32
-				Sleep(1);
+				Threads::Sleep(1);
 			#endif
 		}
 	}
@@ -150,24 +157,24 @@ DWORD QueuedCPUTracker::WorkerThreadMain(void* arg)
 	return 0;
 }
 
-void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
+void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 {
 	if (j->dataType == QTrkU8) {
-		th->tracker->SetImage8Bit(j->data, cfg.width);
+		trk->SetImage8Bit(j->data, cfg.width);
 	} else if (j->dataType == QTrkU16) {
-		th->tracker->SetImage16Bit((ushort*)j->data, cfg.width*2);
+		trk->SetImage16Bit((ushort*)j->data, cfg.width*2);
 	} else {
-		th->tracker->SetImageFloat((float*)j->data);
+		trk->SetImageFloat((float*)j->data);
 	}
 
-	dbgprintf("Job: id %d, bead %d\n", j->zlutPlane, j->zlut);
+//	dbgprintf("Job: id %d, bead %d\n", j->id, j->zlut);
 
 	LocalizationResult result={};
 	result.id = j->id;
 	result.locType = j->locType;
 	result.zlutIndex = j->zlut;
 
-	vector2f com = th->tracker->ComputeBgCorrectedCOM();
+	vector2f com = trk->ComputeBgCorrectedCOM();
 
 	LocalizeType locType = (LocalizeType)(j->locType&Localize2DMask);
 	bool boundaryHit = false;
@@ -175,22 +182,22 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 	switch(locType) {
 	case LocalizeXCor1D:
 		result.firstGuess = com;
-		result.pos = th->tracker->ComputeXCorInterpolated(com, cfg.xc1_iterations, cfg.xc1_profileWidth, boundaryHit);
+		result.pos = trk->ComputeXCorInterpolated(com, cfg.xc1_iterations, cfg.xc1_profileWidth, boundaryHit);
 		break;
 	case LocalizeOnlyCOM:
 		result.firstGuess = result.pos = com;
 		break;
 	case LocalizeQI:
 		result.firstGuess = com;
-		result.pos = th->tracker->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
+		result.pos = trk->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
 		break;
 	}
 
 	if(j->locType & LocalizeZ) {
-		result.z = th->tracker->ComputeZ(result.pos, cfg.zlut_angularsteps, j->zlut, &boundaryHit);
+		result.z = trk->ComputeZ(result.pos, cfg.zlut_angularsteps, j->zlut, &boundaryHit);
 	} else if (j->locType & LocalizeBuildZLUT) {
 		float* zlut = GetZLUTByIndex(j->zlut);
-		th->tracker->ComputeRadialProfile(&zlut[j->zlutPlane * zlut_res], zlut_res, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, result.pos, &boundaryHit);
+		trk->ComputeRadialProfile(&zlut[j->zlutPlane * zlut_res], zlut_res, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, result.pos, &boundaryHit);
 	}
 
 #ifdef _DEBUG
@@ -208,13 +215,18 @@ void QueuedCPUTracker::ProcessJob(Thread* th, Job* j)
 void QueuedCPUTracker::SetZLUT(float* data, int num_zluts, int planes, int res)
 {
 	if (zluts) delete[] zluts;
-	zluts = new float[planes*res*num_zluts];
-	std::fill(zluts,zluts+(planes*res*num_zluts), 0.0f);
-	zlut_planes = planes;
-	zlut_res = res;
-	zlut_count = num_zluts;
-	if(data)
-		std::copy(data, data+(planes*res*num_zluts), zluts);
+	int total = num_zluts*res*planes;
+	if (total > 0) {
+		zluts = new float[planes*res*num_zluts];
+		std::fill(zluts,zluts+(planes*res*num_zluts), 0.0f);
+		zlut_planes = planes;
+		zlut_res = res;
+		zlut_count = num_zluts;
+		if(data)
+			std::copy(data, data+(planes*res*num_zluts), zluts);
+	}
+	else
+		zluts = 0;
 
 	UpdateZLUTs();
 }
@@ -240,9 +252,13 @@ float* QueuedCPUTracker::GetZLUT(int *count, int* planes,int *res)
 	return cp;
 }
 
-void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, 
+bool QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, 
 				LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane)
 {
+	while(cfg.maxQueueSize != 0 && GetJobCount () >= cfg.maxQueueSize) {
+		Threads::Sleep(5);
+	}
+
 	Job* j = AllocateJob();
 	int dstPitch = PDT_BytesPerPixel(pdt) * cfg.width;
 
@@ -264,8 +280,16 @@ void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDa
 #ifdef _DEBUG
 	dbgprintf("Scheduled job: frame %d, bead %d\n", j->zlutPlane, j->zlut);
 #endif
-	
+
 	AddJob(j);
+
+	if (noThreadTracker) {
+		Job* j_ = GetNextJob();
+		ProcessJob(noThreadTracker, j_);
+		JobFinished(j_);
+	}
+
+	return true;
 }
 
 int QueuedCPUTracker::PollFinished(LocalizationResult* dstResults, int maxResults)
@@ -273,8 +297,8 @@ int QueuedCPUTracker::PollFinished(LocalizationResult* dstResults, int maxResult
 	int numResults = 0;
 	results_mutex.lock();
 	while (numResults < maxResults && !results.empty()) {
-		dstResults[numResults++] = results.front();
-		results.pop_front();
+		dstResults[numResults++] = results.back();
+		results.pop_back();
 		resultCount--;
 	}
 	results_mutex.unlock();

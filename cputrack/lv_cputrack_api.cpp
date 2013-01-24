@@ -1,6 +1,7 @@
 /*
 Labview API for CPU tracker
 */
+#include "std_incl.h"
 #include <Windows.h>
 #undef min
 #undef max
@@ -9,26 +10,6 @@ Labview API for CPU tracker
 #include "labview.h"
 #include "cpu_tracker.h"
 
-MgErr FillErrorCluster(MgErr err, const char *message, ErrorCluster *error)
-{
-	if (err)
-	{
-		int msglen = strlen(message);
-		error->status = LVBooleanTrue;
-		error->code = err;
-		err = NumericArrayResize(uB, 1, (UHandle*)&(error->message), msglen);
-		if (!err)
-		{
-			MoveBlock(message, LStrBuf(*error->message), msglen);
-			LStrLen(*error->message) = msglen;
-		} 
-	}
-	return err;
-}
-
-void ArgumentErrorMsg(ErrorCluster* e, const std::string& msg) {
-	FillErrorCluster(mgArgErr, msg.c_str(), e);
-}
 
 
 CDLL_EXPORT CPUTracker* DLL_CALLCONV create_tracker(uint w, uint h, uint xcorw)
