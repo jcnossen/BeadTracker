@@ -624,12 +624,12 @@ void QueuedCUDATracker::QueueCurrentBatch()
 	cudaEventRecord(cb->imageBufferCopied);
 //	cb->images.bind(qi_image_texture);
 	LocalizeBatchKernel<<<blocks(cb->jobs.size()), threads() >>> (cb->jobs.size(), cb->images, kernelParams, cb->d_jobs.data);
-	CheckCUDAError();
+//	CheckCUDAError(); synchronizes!!
 //	cb->images.unbind(qi_image_texture);
 	// Copy back the results
 	cb->d_jobs.copyToHost(cb->jobs, true);
 
-	CheckCUDAError();
+	//CheckCUDAError();
 	
 	// Make sure we can query the all done signal
 	cudaEventRecord(currentBatch->localizationDone);

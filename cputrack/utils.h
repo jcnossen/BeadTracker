@@ -79,7 +79,11 @@ struct ImageData {
 };
 
 void GenerateTestImage(ImageData img, float xp, float yp, float size, float MaxPhotons);
-void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, ImageData* src, float* radialweights,float mean);
+
+// Corrected Radial Profile
+float ComputeBgCorrectedCOM1D(float *data, int len, float cf=2.0f);
+void ComputeCRP(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, ImageData* src,float mean, float*crpmap=0);
+void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, ImageData* src, float mean);
 void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float zlut_radius, vector2f pos, float z, float M);
 void ApplyPoissonNoise(ImageData& img, float factor);
 void WriteImageAsCSV(const char* file, float* d, int w,int h);
@@ -113,3 +117,14 @@ T* floatToNormalizedInt(float *src, uint w,uint h, T maxValue)
 	return r; 
 }
 
+template<typename T>
+T ComputeStdDev(T* data, int len)
+{
+	T sum = 0.0, sum2=0.0;
+	for (int a=0;a<len;a++) {
+		sum+=data[a];
+		sum2+=data[a]*data[a];
+	}
+	T mean = sum / len;
+	return sqrt(sum2 / len- mean * mean);
+}

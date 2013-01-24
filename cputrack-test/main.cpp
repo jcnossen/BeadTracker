@@ -42,7 +42,7 @@ void SpeedTest()
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, s, 0.0f);
 		tracker->mean = 0.0f;
-		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1, zradius, center);	
+		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1, zradius, center, false);	
 	}
 	tracker->SetZLUT(zlut, zplanes, radialSteps, 1,1, zradius, 64, true, true);
 	delete[] zlut;
@@ -89,7 +89,7 @@ void SpeedTest()
 			dbgprintf("qi boundaryhit!!\n");
 
 		boundaryHit = false;
-		float est_z = zmin + (zmax-zmin)*tracker->ComputeZ(qi, 64, 0, &boundaryHit, 0) / (zplanes-1);
+		float est_z = zmin + (zmax-zmin)*tracker->ComputeZ(qi, 64, 0, false, &boundaryHit, 0) / (zplanes-1);
 		zdist += fabsf(est_z-z);
 		zerrsum += est_z-z;
 
@@ -255,7 +255,7 @@ float EstimateZError(int zplanes)
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, s, 0.0f);
 	//	dbgout(SPrintf("z=%f\n", s));
-		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1.0f, zradius, center);
+		tracker->ComputeRadialProfile(&zlut[x*radialSteps], radialSteps, 64, 1.0f, zradius, center, false);
 	}
 
 	tracker->SetZLUT(zlut, zplanes, radialSteps, 1, 1.0f, zradius, 64, true, true);
@@ -495,6 +495,66 @@ void BuildConvergenceMap(int iterations)
 
 
 
+void CRP_TestGeneratedData()
+{
+	int w=64,h=64;
+	float* img = new float[w*h];
+	const char* lutname = "LUTexample25X.jpg";
+	std::vector<uchar> lutdata = ReadToByteBuffer(lutname);
+
+	int lutw,luth;
+	uchar* lut;
+	ReadJPEGFile(&lutdata[0], lutdata.size(), &lut, &lutw, &luth);
+	delete[] img;
+}
+
+ImageData ReadJPEGFile(const char*fn)
+{
+	int w, h;
+	uchar* imgdata;
+	std::vector<uchar> jpgdata = ReadToByteBuffer(fn);
+	ReadJPEGFile(&jpgdata[0], jpgdata.size(), &imgdata, &w,&h);
+
+	float* fbuf = new float[w*h];
+	for (int x=0;x<w*h;x++)
+		fbuf[x] = imgdata[x]/255.0f;
+	delete[] imgdata;
+
+	return ImageData(fbuf,w,h);
+}
+
+void CorrectedRadialProfileTest()
+{
+	// read image
+	const char* imgname = "SingleBead.jpg";
+	ImageData img = ReadJPEGFile(imgname);
+
+	// localize
+	CPUTracker trk(img.w,img.h);
+	trk.SetImageFloat(img.data);
+	vector2f com = trk.ComputeBgCorrectedCOM();
+	bool boundaryHit;
+	vector2f qi = trk.ComputeQI(com, 4, 64, 64, 1, 30, boundaryHit);
+	dbgprintf("%s: COM: %f, %f. QI: %f, %f\n", imgname, com.x, com.y, qi.x, qi.y);
+
+	std::vector<float> angularProfile(128);
+	float asym = trk.ComputeAsymmetry(qi, 64, angularProfile.size(), 1, 30, &angularProfile[0]);
+//	ComputeAngularProfile(&angularProfile[0], 64, angularProfile.size(), 1, 30, qi, &img, trk.mean);
+	WriteImageAsCSV("angprof.csv", &angularProfile[0], angularProfile.size(), 1);
+	dbgprintf("Asymmetry value: %f\n", asym);
+	std::vector<float> crp(128);
+	float* crpmap = new float[angularProfile.size()*crp.size()];
+	ComputeCRP(&crp[0], crp.size(), angularProfile.size(), 1, 30, qi, &img, 0.0f); 
+	WriteImageAsCSV("crpmap.csv", crpmap, crp.size(), angularProfile.size());
+	delete[] crpmap;
+	delete[] img.data;
+
+	//CRP_TestGeneratedData();
+
+//	GenerateImageFromLUT(ImageData(img,w,h), ImageData
+}
+
+
 int main()
 {
 	//SpeedTest();
@@ -503,9 +563,12 @@ int main()
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
-	QTrkTest();
+	//QTrkTest();
 	//for (int i=1;i<8;i++)
 //		BuildConvergenceMap(i);
+
+
+	CorrectedRadialProfileTest();
 
 	return 0;
 }

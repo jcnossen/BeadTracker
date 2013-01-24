@@ -349,39 +349,66 @@ CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr
 	qi_fft_forward->transform(profile, fft_out);
 	qi_fft_forward->transform(reverse, fft_out2); // fft_out2 contains fourier-domain version of reverse profile
 
-	/*std::vector<sfft::complex<qi_t> > twiddles = sfft::fill_twiddles<qi_t>(nr*2);
-	sfft::fft_forward<qi_t>(nr*2, (sfft::complex<qi_t>*)profile, &twiddles[0]);
-	sfft::fft_forward<qi_t>(nr*2, (sfft::complex<qi_t>*)reverse, &twiddles[0]);
-
-	qi_t fw = sum_diff(fft_out, fft_out+nr*2, profile);
-	qi_t bw = sum_diff(fft_out2, fft_out2+nr*2, reverse);
-	*/
 	// multiply with conjugate
 	for(int x=0;x<nr*2;x++)
 		fft_out[x] *= conjugate(fft_out2[x]);
-		//profile[x] *= conjugate(reverse[x]);
 
 	qi_fft_backward->transform(fft_out, fft_out2);
-	//sfft::fft_inverse<qi_t>(nr*2, (sfft::complex<qi_t>*)profile, &twiddles[0]);
 
 	// fft_out2 now contains the autoconvolution
 	// convert it to float
 	qi_t* autoconv = ALLOCA_ARRAY(qi_t, nr*2);
-	//float* tmp=ALLOCA_ARRAY(float,nr*2);
 	for(int x=0;x<nr*2;x++)  {
 		autoconv[x] = fft_out2[(x+nr)%(nr*2)].real();
-//		autoconv[x] = profile[(x+nr)%(nr*2)].real();
-//		tmp[x]=autoconv[x];
 	}
-
-//	WriteImageAsCSV("autoconv.txt",tmp,nr*2,1);
 
 	float maxPos = ComputeMaxInterp(autoconv, nr*2);
 	return (maxPos - nr) / (3.141593 * 0.5);
 }
 
 
-void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, int angularSteps, int quadrant, float minRadius, float maxRadius, vector2f center)
+float CPUTracker::ComputeAsymmetry(vector2f center, int radialSteps, int angularSteps, 
+						float minRadius, float maxRadius, float *dstAngProf)
+{
+	vector2f* radialDirs = (vector2f*)ALLOCA(sizeof(vector2f)*angularSteps);
+	for (int j=0;j<angularSteps;j++) {
+		float ang = 2*3.141593f*j/(float)angularSteps;
+		vector2f d = { cosf(ang), sinf(ang) };
+		radialDirs[j] = d;
+	}
+
+	// profile along single radial direction
+	float* rline = (float*)ALLOCA(sizeof(float)*radialSteps);
+
+	if (!dstAngProf) 
+		dstAngProf = (float*)ALLOCA(sizeof(float)*radialSteps);
+
+	double totalrmssum2 = 0.0f;
+	float rstep = (maxRadius-minRadius) / radialSteps;
+
+	for (int a=0;a<angularSteps;a++) {
+		// fill rline
+		// angularProfile[a] = rline COM 
+		
+		float r = minRadius;
+		for (int i=0;i<radialSteps;i++) {
+			float x = center.x + radialDirs[a].x * r;
+			float y = center.y + radialDirs[a].y * r;
+			rline[i] = Interpolate(srcImage,width,height, x,y,mean);
+			r += rstep;
+		}
+
+		// Compute rline COM
+		dstAngProf[a] = ComputeBgCorrectedCOM1D(rline, radialSteps, 1.0f);
+	}
+	
+	float stdev = ComputeStdDev(dstAngProf, angularSteps);
+	return stdev;
+}
+
+
+void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, int angularSteps, 
+				int quadrant, float minRadius, float maxRadius, vector2f center)
 {
 	const int qmat[] = {
 		1, 1,
@@ -455,12 +482,18 @@ void CPUTracker::Normalize(float* d)
 }
 
 
-void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, bool* pBoundaryHit)
+void CPUTracker::ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, bool crp, bool* pBoundaryHit)
 {
 	bool boundaryHit = CheckBoundaries(center, maxradius);
 	if (pBoundaryHit) *pBoundaryHit = boundaryHit;
+
 	ImageData imgData (srcImage, width,height);
-	::ComputeRadialProfile(dst, radialSteps, angularSteps, minradius, maxradius, center, &imgData, 0, mean);
+	if (crp) {
+		ComputeCRP(dst, radialSteps, angularSteps, minradius, maxradius, center, &imgData, mean);
+	}
+	else {
+		::ComputeRadialProfile(dst, radialSteps, angularSteps, minradius, maxradius, center, &imgData, mean);
+	}
 }
 
 void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float minradius, float maxradius, int angularSteps, bool copyMemory, bool useCorrelation, float* radweights)
@@ -491,7 +524,7 @@ void CPUTracker::SetZLUT(float* data, int planes, int res, int numLUTs, float mi
 
 
 
-float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, bool* boundaryHit, float* profile, float* cmpProf)
+float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, bool crp, bool* boundaryHit, float* profile, float* cmpProf)
 {
 	if (!zluts)
 		return 0.0f;
@@ -499,7 +532,7 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, boo
 	float* rprof = ALLOCA_ARRAY(float, zlut_res);
 	float* rprof_diff = ALLOCA_ARRAY(float, zlut_planes);
 
-	ComputeRadialProfile(rprof, zlut_res, angularSteps, zlut_minradius, zlut_maxradius, center, boundaryHit);
+	ComputeRadialProfile(rprof, zlut_res, angularSteps, zlut_minradius, zlut_maxradius, center, crp, boundaryHit);
 	if (profile) std::copy(rprof, rprof+zlut_res, profile);
 
 	// Now compare the radial profile to the profiles stored in Z
@@ -549,12 +582,5 @@ bool CPUTracker::GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xco
 	}
 	return true;
 }
-
-vector2f CPUTracker::ComputeXCor2D()
-{
-	vector2f x={};
-	return x;
-}
-
 
 

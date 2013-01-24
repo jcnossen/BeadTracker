@@ -61,8 +61,87 @@ void GenerateTestImage(ImageData img, float xp, float yp, float size, float MaxP
 	normalize(img.data,img.w,img.h);
 }
 
+
+
+void ComputeCRP(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius,
+	vector2f center, ImageData* img, float paddingValue, float*crpmap)
+{
+	vector2f* radialDirs = (vector2f*)ALLOCA(sizeof(vector2f)*angularSteps);
+	for (int j=0;j<angularSteps;j++) {
+		float ang = 2*3.141593f*j/(float)angularSteps;
+		vector2f d = { cosf(ang), sinf(ang) };
+		radialDirs[j] = d;
+	}
+
+	for (int i=0;i<radialSteps;i++)
+		dst[i]=0.0f;
+
+	float* map = crpmap ? crpmap : (float*)ALLOCA(sizeof(float)*radialSteps*angularSteps);
+	float* com = (float*)ALLOCA(sizeof(float)*angularSteps);
+
+	float rstep = (maxradius-minradius) / radialSteps;
+	float comsum = 0.0f;
+	for (int a=0;a<angularSteps;a++) {
+		float r = minradius;
+		float sum = 0.0f, moment=0.0f;
+		for (int i=0;i<radialSteps; i++) {
+			float x = center.x + radialDirs[a].x * r;
+			float y = center.y + radialDirs[a].y * r;
+			float v = img->interpolate(x,y, paddingValue);
+			r += rstep;
+			map[a*radialSteps+i] = v;
+			sum += v;
+			moment += i*v;
+		}
+		com[a] = moment/sum;
+		comsum += com[a];
+	}
+	float avgcom = comsum/angularSteps;
+	float totalrmssum2 = 0.0f;
+	for (int i=0;i<radialSteps; i++) {
+		double sum = 0.0f;
+		for (int a=0;a<angularSteps;a++) {
+			float shift = com[a]-avgcom;
+			sum += map[a*radialSteps+i];
+		}
+		dst[i] = sum/angularSteps-paddingValue;
+		totalrmssum2 += dst[i]*dst[i];
+	}
+	double invTotalrms = 1.0f/sqrt(totalrmssum2/radialSteps);
+	for (int i=0;i<radialSteps;i++) {
+		dst[i] *= invTotalrms;
+	}
+}
+
+
+float ComputeBgCorrectedCOM1D(float *data, int len, float cf)
+{
+	float sum=0, sum2=0;
+	float moment=0;
+
+	for (int x=0;x<len;x++) {
+		float v = data[x];
+		sum += v;
+		sum2 += v*v;
+	}
+
+	float invN = 1.0f/len;
+	float mean = sum * invN;
+	float stdev = sqrtf(sum2 * invN - mean * mean);
+	sum = 0.0f;
+
+	for(int x=0;x<len;x++)
+	{
+		float v = data[x];
+		v = std::max(0.0f, fabs(v-mean)-cf*stdev);
+		sum += v;
+		moment += x*v;
+	}
+	return moment / (float)sum;
+}
+
 void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius,
-	vector2f center, ImageData* img, float* radialweights, float paddingValue)
+	vector2f center, ImageData* img, float paddingValue)
 {
 	vector2f* radialDirs = (vector2f*)ALLOCA(sizeof(vector2f)*angularSteps);
 	for (int j=0;j<angularSteps;j++) {
@@ -92,7 +171,6 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 	double invTotalrms = 1.0f/sqrt(totalrmssum2/radialSteps);
 	for (int i=0;i<radialSteps;i++) {
 		dst[i] *= invTotalrms;
-		if (radialweights) dst[i] *= radialweights[i];
 	}
 }
 
@@ -186,6 +264,9 @@ void WriteComplexImageAsCSV(const char* file, std::complex<float>* d, int w,int 
 std::vector<uchar> ReadToByteBuffer(const char *filename)
 {
 	FILE *f = fopen(filename, "rb");
+
+	if (!f)
+		throw std::runtime_error(SPrintf("%s was not found", filename));
 
 	fseek(f, 0, SEEK_END);
 	int len = ftell(f);
