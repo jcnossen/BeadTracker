@@ -339,9 +339,9 @@ void Test2DTracking()
 void QTrkTest()
 {
 	QTrkSettings cfg;
-	cfg.width = cfg.height = 128;
+	cfg.width = cfg.height = 80;
 	cfg.qi_iterations = 3;
-	cfg.qi_maxradius = 50;
+	cfg.qi_maxradius = 40;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = 0; // direct processing, dont use queue
@@ -382,6 +382,8 @@ void QTrkTest()
 	dbgprintf("Generating %d images...\n", NumImages);
 	double tgen = 0.0, tschedule = 0.0;
 	std::vector<float> truepos(NumImages*3);
+	qtrk.ClearResults();
+	qtrk.Break(true);
 	for (int n=0;n<NumImages;n++) {
 		double t1 = getPreciseTime();
 		float xp = cfg.width/2+(rand_uniform<float>() - 0.5) * 5;
@@ -405,23 +407,23 @@ void QTrkTest()
 	// Measure speed
 	dbgprintf("Localizing on %d images...\n", NumImages*JobsPerImg);
 	double tstart = getPreciseTime();
-	int jobc = 0;
-	int hjobc = qtrk.GetJobCount();
-	int startJobs = hjobc;
-	qtrk.Start();
+	int total = NumImages*JobsPerImg;
+	qtrk.Flush();
+	qtrk.Break(false);
+	int rc = 0, displayrc=0;
 	do {
-		jobc = qtrk.GetJobCount();
-		while (hjobc>jobc) {
-			if( hjobc%JobsPerImg==0) dbgprintf("TODO: %d\n", hjobc);
-			hjobc--;
+		rc = qtrk.GetResultCount();
+		while (displayrc<rc) {
+			if( displayrc%JobsPerImg==0) dbgprintf("Done: %d / %d\n", displayrc, total);
+			displayrc++;
 		}
 		Sleep(10);
-	} while (jobc!=0);
+	} while (rc != total);
+
 	double tend = getPreciseTime();
 
 	// Wait for last jobs
-	jobc = NumImages*JobsPerImg;
-	int rc = jobc;
+	rc = NumImages*JobsPerImg;
 	double errX=0.0, errY=0.0, errZ=0.0;
 
 	while(rc>0) {
@@ -438,8 +440,8 @@ void QTrkTest()
 			rc--;
 		}
 	}
-	dbgprintf("Localization Speed: %d (img/s), using %d threads\n", (int)( startJobs/(tend-tstart) ), qtrk.NumThreads());
-	dbgprintf("ErrX: %f, ErrY: %f, ErrZ: %f\n", errX/jobc, errY/jobc,errZ/jobc);
+	dbgprintf("Localization Speed: %d (img/s), using %d threads\n", (int)( total/(tend-tstart) ), qtrk.NumThreads());
+	dbgprintf("ErrX: %f, ErrY: %f, ErrZ: %f\n", errX/total, errY/total,errZ/total);
 }
 
 void BuildConvergenceMap(int iterations)
@@ -563,12 +565,12 @@ int main()
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
-	//QTrkTest();
+	QTrkTest();
 	//for (int i=1;i<8;i++)
 //		BuildConvergenceMap(i);
 
 
-	CorrectedRadialProfileTest();
+	//CorrectedRadialProfileTest();
 
 	return 0;
 }

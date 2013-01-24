@@ -13,6 +13,7 @@ public:
 	~QueuedCPUTracker();
 
 	void Start();
+	void Break(bool pause);
 	void SetZLUT(float* data, int num_zluts, int planes, int res);
 	float* GetZLUT(int *num_zluts, int* planes, int* res);
 	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
@@ -65,7 +66,7 @@ private:
 	void UpdateZLUTs();
 
 	// signal threads to stop their work
-	bool quitWork;
+	bool quitWork, processJobs;
 
 	void JobFinished(Job* j);
 	Job* GetNextJob();

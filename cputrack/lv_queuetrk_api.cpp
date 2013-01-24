@@ -51,6 +51,7 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 	int res = zlut->dimSizes[2];
 
 	dbgprintf("Setting ZLUT size: %d beads, %d planes, %d radialsteps\n", numLUTs, planes, res);
+	
 	tracker->SetZLUT(zlut->elem, numLUTs, planes, res);
 }
 
@@ -140,17 +141,23 @@ CDLL_EXPORT void qtrk_clear_results(QueuedTracker* qtrk)
 
 CDLL_EXPORT int qtrk_hasfullqueue(QueuedTracker* qtrk) 
 {
+	if (!qtrk)
+		return 0;
+
 	return qtrk->IsQueueFilled() ? 1 : 0;
 }
 
 CDLL_EXPORT int qtrk_resultcount(QueuedTracker* qtrk)
 {
+	if (!qtrk)
+		return 0;
 	return qtrk->GetResultCount();
 }
 
 CDLL_EXPORT void qtrk_flush(QueuedTracker* qtrk)
 {
-	qtrk->Flush();
+	if (qtrk)
+		qtrk->Flush();
 }
 
 static bool compareResultsByID(const LocalizationResult& a, const LocalizationResult& b) {
@@ -173,7 +180,8 @@ CDLL_EXPORT int qtrk_idle(QueuedTracker* qtrk)
 	return qtrk->IsIdle() ? 1 : 0;
 }
 
-CDLL_EXPORT void DLL_CALLCONV qtrk_generate_test_image(QueuedTracker* tracker, LVArray2D<ushort>** image, float xp, float yp, float size, float photoncount)
+CDLL_EXPORT void DLL_CALLCONV qtrk_generate_test_image(QueuedTracker* tracker, LVArray2D<ushort>** image, 
+		float xp, float yp, float size, float photoncount)
 {
 	int w=tracker->cfg.width, h =tracker->cfg.height;
 	ResizeLVArray2D(image, h,w);
@@ -184,15 +192,16 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_generate_test_image(QueuedTracker* tracker, L
 	delete[] d;
 }
 
-CDLL_EXPORT void DLL_CALLCONV qtrk_generate_image_from_lut(LVArray2D<float>** image, LVArray2D<float>** lut, float LUTradius, vector2f* position, float z, float M, float photonCountPP)
+CDLL_EXPORT void DLL_CALLCONV qtrk_generate_image_from_lut(LVArray2D<float>** image, LVArray2D<float>** lut, 
+					float *LUTradii, vector2f* position, float z, float M, float sigma_noise)
 {
 	ImageData img((*image)->elem, (*image)->dimSizes[1], (*image)->dimSizes[0]);
 	ImageData zlut((*lut)->elem, (*lut)->dimSizes[1], (*lut)->dimSizes[0]);
 
-	GenerateImageFromLUT(&img, &zlut, LUTradius, *position, z, M);
-	img.normalize();
-	if(photonCountPP>0)
-		ApplyPoissonNoise(img, photonCountPP);
+	GenerateImageFromLUT(&img, &zlut, LUTradii[0], LUTradii[1], *position, z, M);
+	//img.normalize();
+	if(sigma_noise>0)
+		ApplyGaussianNoise(img, sigma_noise);
 }
 
 

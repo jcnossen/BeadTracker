@@ -95,6 +95,7 @@ QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 
 	zluts = 0;
 	zlut_count = zlut_planes = zlut_res = 0;
+	processJobs = false;
 }
 
 QueuedCPUTracker::~QueuedCPUTracker()
@@ -119,6 +120,11 @@ QueuedCPUTracker::~QueuedCPUTracker()
 	}
 }
 
+void QueuedCPUTracker::Break(bool brk)
+{
+	processJobs = !brk;
+}
+
 
 void QueuedCPUTracker::Start()
 {
@@ -135,6 +141,8 @@ void QueuedCPUTracker::Start()
 	for (int k=0;k<threads.size();k++) {
 		threads[k].thread = Threads::Create(WorkerThreadMain, &threads[k]);
 	}
+
+	processJobs = true;
 }
 
 DWORD QueuedCPUTracker::WorkerThreadMain(void* arg)
@@ -143,7 +151,10 @@ DWORD QueuedCPUTracker::WorkerThreadMain(void* arg)
 	QueuedCPUTracker* this_ = th->manager;
 
 	while (!this_->quitWork) {
-		Job* j = this_->GetNextJob();
+		Job* j = 0;
+		if (this_->processJobs) 
+			j = this_->GetNextJob();
+
 		if (j) {
 			this_->ProcessJob(th->tracker, j);
 			this_->JobFinished(j);

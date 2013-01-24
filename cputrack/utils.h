@@ -84,8 +84,9 @@ void GenerateTestImage(ImageData img, float xp, float yp, float size, float MaxP
 float ComputeBgCorrectedCOM1D(float *data, int len, float cf=2.0f);
 void ComputeCRP(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, ImageData* src,float mean, float*crpmap=0);
 void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, ImageData* src, float mean);
-void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float zlut_radius, vector2f pos, float z, float M);
+void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float minRadius, float maxRadius, vector2f pos, float z, float M);
 void ApplyPoissonNoise(ImageData& img, float factor);
+void ApplyGaussianNoise(ImageData& img, float sigma);
 void WriteImageAsCSV(const char* file, float* d, int w,int h);
 void WriteComplexImageAsCSV(const char* file, std::complex<float>* d, int w,int h);
 

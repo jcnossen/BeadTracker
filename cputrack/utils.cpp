@@ -180,7 +180,7 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 
 inline float sq(float x) { return x*x; }
 
-void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float zlut_radius, vector2f pos, float z, float M)
+void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float lutminRadius, float lutmaxRadius, vector2f pos, float z, float M)
 {
 	// Generate the interpolated ZLUT 
 	float* zinterp; 
@@ -208,7 +208,8 @@ void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float zlut_radius, 
 	for (int y=0;y<image->h;y++)
 		for (int x=0;x<image->w;x++) 
 		{
-			float r = zlut->w * sqrtf( sq(x-pos.x) + sq(y-pos.y) )/(zlut_radius*M);
+			float pixr = sqrtf( sq(x-pos.x) + sq(y-pos.y) );
+			float r = zlut->w * ( pixr - lutminRadius ) / ( (lutmaxRadius - lutminRadius) * M);
 
 			if (r > zlut->w-1)
 				r = zlut->w-1;
@@ -227,6 +228,18 @@ void ApplyPoissonNoise(ImageData& img, float factor)
 	for (int k=0;k<img.numPixels();k++)
 		img.data[k] = rand_poisson<float>(factor*img.data[k]);
 }
+
+void ApplyGaussianNoise(ImageData& img, float sigma)
+{
+	for (int k=0;k<img.numPixels();k++) {
+		float v = img.data[k] + sigma * rand_normal<float>();
+		if (v<0.0f) v= 0.0f;
+		img.data[k]=v;
+	}
+}
+
+
+
 
 
 
