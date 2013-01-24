@@ -194,10 +194,10 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 	}
 
 	if(j->locType & LocalizeZ) {
-		result.z = trk->ComputeZ(result.pos, cfg.zlut_angularsteps, j->zlut, &boundaryHit);
+		result.z = trk->ComputeZ(result.pos, cfg.zlut_angularsteps, j->zlut, false, &boundaryHit);
 	} else if (j->locType & LocalizeBuildZLUT) {
 		float* zlut = GetZLUTByIndex(j->zlut);
-		trk->ComputeRadialProfile(&zlut[j->zlutPlane * zlut_res], zlut_res, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, result.pos, &boundaryHit);
+		trk->ComputeRadialProfile(&zlut[j->zlutPlane * zlut_res], zlut_res, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, result.pos, false, &boundaryHit);
 	}
 
 #ifdef _DEBUG

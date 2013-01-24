@@ -138,7 +138,7 @@ CDLL_EXPORT float DLL_CALLCONV compute_z(CPUTracker* tracker, float* center, int
 		ResizeLVArray(errorCurve, tracker->zlut_planes);
 	}
 
-	float z =  tracker->ComputeZ(*(vector2f*)center, angularSteps, zlut_index, &boundaryHit, profile ? (*profile)->elem : 0, (*errorCurve)->elem);
+	float z =  tracker->ComputeZ(*(vector2f*)center, angularSteps, zlut_index, false, &boundaryHit, profile ? (*profile)->elem : 0, (*errorCurve)->elem);
 	if (error)
 		*error = boundaryHit?1:0;
 	return z;
@@ -158,16 +158,30 @@ CDLL_EXPORT void DLL_CALLCONV get_debug_img_as_array(CPUTracker* tracker, LVArra
 	}
 }
 
+CDLL_EXPORT void DLL_CALLCONV compute_crp(CPUTracker* tracker, LVArray<float>** result, int radialSteps, float *radii, float* center, uint* boundaryHit, LVArray2D<float>** crpmap)
+{
+}
+
+
+CDLL_EXPORT float DLL_CALLCONV compute_asymmetry(CPUTracker* tracker, LVArray<float>** result, int radialSteps, float *radii, float* center, uint* boundaryHit)
+{
+	LVArray<float>* dst = *result;
+	bool bhit = false;
+	float asym = tracker->ComputeAsymmetry(*(vector2f*)center, radialSteps, dst->dimSize, radii[0], radii[1], dst->elem);
+	if (boundaryHit) *boundaryHit = bhit ? 1 : 0;
+	return asym;
+}
 
 
 CDLL_EXPORT void DLL_CALLCONV compute_radial_profile(CPUTracker* tracker, LVArray<float>** result, int angularSteps, float *radii, float* center, uint* boundaryHit)
 {
 	LVArray<float>* dst = *result;
 	bool bhit = false;
-	tracker->ComputeRadialProfile(&dst->elem[0], dst->dimSize, angularSteps, radii[0], radii[1], *(vector2f*)center, &bhit);
+	tracker->ComputeRadialProfile(&dst->elem[0], dst->dimSize, angularSteps, radii[0], radii[1], *(vector2f*)center, false, &bhit);
 
 	if (boundaryHit) *boundaryHit = bhit ? 1 : 0;
 }
+
 
 
 

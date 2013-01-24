@@ -165,13 +165,16 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 			sum += img->interpolate(x,y, paddingValue);
 		}
 
+		dst[i] = sum/angularSteps;
+	}
+		/*
 		dst[i] = sum/angularSteps-paddingValue;
 		totalrmssum2 += dst[i]*dst[i];
 	}
 	double invTotalrms = 1.0f/sqrt(totalrmssum2/radialSteps);
 	for (int i=0;i<radialSteps;i++) {
 		dst[i] *= invTotalrms;
-	}
+	}*/
 }
 
 
