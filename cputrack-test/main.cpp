@@ -344,14 +344,14 @@ void QTrkTest()
 	cfg.qi_maxradius = 40;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
-	cfg.numThreads = 0; // direct processing, dont use queue
+	cfg.numThreads = -1; // direct processing, dont use queue
 	//cfg.numThreads = 6;
 	QueuedCPUTracker qtrk(&cfg);
 	float *image = new float[cfg.width*cfg.height];
 
 	// Generate ZLUT
 	int radialSteps=64, zplanes=100;
-	float zmin=0.5,zmax=3;
+	float zmin=0.5,zmax=2.5;
 	qtrk.SetZLUT(0, 1, zplanes, radialSteps);
 	qtrk.Start();
 	for (int x=0;x<zplanes;x++)  {
@@ -408,9 +408,8 @@ void QTrkTest()
 	dbgprintf("Localizing on %d images...\n", NumImages*JobsPerImg);
 	double tstart = getPreciseTime();
 	int total = NumImages*JobsPerImg;
-	qtrk.Flush();
+	int rc = qtrk.GetResultCount(), displayrc=0;
 	qtrk.Break(false);
-	int rc = 0, displayrc=0;
 	do {
 		rc = qtrk.GetResultCount();
 		while (displayrc<rc) {
