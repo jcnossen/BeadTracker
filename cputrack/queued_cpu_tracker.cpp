@@ -330,3 +330,13 @@ void QueuedCPUTracker::GenerateTestImage(float* dst, float xp,float yp, float z,
 }
 
 
+void QueuedCPUTracker::BatchSchedule(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
+									LocalizeType locType, uint frame, uint zlutPlane)
+{
+	uchar* img = (uchar*)imgptr;
+	int bpp = PDT_BytesPerPixel(pdt);
+	for (int i=0;i<numROI;i++){
+		uchar *roiptr = &img[pitch * positions[i].y + positions[i].x * bpp];
+		ScheduleLocalization(roiptr, pitch, pdt, locType, frame, 0, i, zlutPlane);
+	}
+}

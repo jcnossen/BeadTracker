@@ -67,6 +67,8 @@ public:
 
 	void Start();
 	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
+	void BatchSchedule(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
+									LocalizeType locType, uint frame, uint zlutPlane);
 	void ClearResults();
 
 	// data can be zero to allocate ZLUT data.

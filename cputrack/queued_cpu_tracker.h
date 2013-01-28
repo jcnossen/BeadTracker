@@ -17,6 +17,8 @@ public:
 	void SetZLUT(float* data, int num_zluts, int planes, int res, float* zcmp);
 	float* GetZLUT(int *num_zluts, int* planes, int* res);
 	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
+	void BatchSchedule(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
+		LocalizeType locType, uint frame, uint zlutPlane);
 	int PollFinished(LocalizationResult* results, int maxResults);
 	void ClearResults();
 	void GenerateTestImage(float* dst, float xp, float yp, float z, float photoncount);

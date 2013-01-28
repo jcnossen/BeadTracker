@@ -13,10 +13,12 @@
 		<Item Name="QTrk C++ interface" Type="Folder">
 			<Item Name="QTrkClearResults.vi" Type="VI" URL="../QTrk.llb/QTrkClearResults.vi"/>
 			<Item Name="QTrkFlush.vi" Type="VI" URL="../QTrk.llb/QTrkFlush.vi"/>
+			<Item Name="QTrkGetResults.vi" Type="VI" URL="../QTrk.llb/QTrkGetResults.vi"/>
 			<Item Name="QTrkGetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkGetZLUT.vi"/>
 			<Item Name="QTrkIsIdle.vi" Type="VI" URL="../QTrk.llb/QTrkIsIdle.vi"/>
 			<Item Name="QTrkIsQueueFull.vi" Type="VI" URL="../QTrk.llb/QTrkIsQueueFull.vi"/>
 			<Item Name="QTrkQueueImageU8.vi" Type="VI" URL="../QTrk.llb/QTrkQueueImageU8.vi"/>
+			<Item Name="QTrkQueueIMAQImage.vi" Type="VI" URL="../QTrk.llb/QTrkQueueIMAQImage.vi"/>
 			<Item Name="QTrkReadJPEGFile.vi" Type="VI" URL="../QTrk.llb/QTrkReadJPEGFile.vi"/>
 			<Item Name="QTrkSelectDLLDialog.vi" Type="VI" URL="../QTrk.llb/QTrkSelectDLLDialog.vi"/>
 			<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkSetZLUT.vi"/>
@@ -30,6 +32,8 @@
 		<Item Name="LoadImageForDisplay.vi" Type="VI" URL="../OfflineQTrk.llb/LoadImageForDisplay.vi"/>
 		<Item Name="LUTInfo.ctl" Type="VI" URL="../OfflineQTrk.llb/LUTInfo.ctl"/>
 		<Item Name="OfflineQTrk.vi" Type="VI" URL="../OfflineQTrk.llb/OfflineQTrk.vi"/>
+		<Item Name="ProcessImageFile.vi" Type="VI" URL="../OfflineQTrk.llb/ProcessImageFile.vi"/>
+		<Item Name="QTrkPixelDataType.ctl" Type="VI" URL="../QTrk.llb/QTrkPixelDataType.ctl"/>
 		<Item Name="QueueSingleFrame.vi" Type="VI" URL="../OfflineQTrk.llb/QueueSingleFrame.vi"/>
 		<Item Name="ReadImageToArray.vi" Type="VI" URL="../OfflineQTrk.llb/ReadImageToArray.vi"/>
 		<Item Name="RunJob.vi" Type="VI" URL="../OfflineQTrk.llb/RunJob.vi"/>
@@ -79,6 +83,7 @@
 				<Item Name="IMAQ ArrayToImage" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ ArrayToImage"/>
 				<Item Name="IMAQ Create" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ Create"/>
 				<Item Name="IMAQ Dispose" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ Dispose"/>
+				<Item Name="IMAQ GetImagePixelPtr" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ GetImagePixelPtr"/>
 				<Item Name="IMAQ GetImageSize" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ GetImageSize"/>
 				<Item Name="IMAQ Image.ctl" Type="VI" URL="/&lt;vilib&gt;/vision/Image Controls.llb/IMAQ Image.ctl"/>
 				<Item Name="IMAQ ImageToArray" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ ImageToArray"/>
@@ -154,7 +159,6 @@
 			<Item Name="QTrkFree.vi" Type="VI" URL="../QTrk.llb/QTrkFree.vi"/>
 			<Item Name="QTrkFreeAllTrackers.vi" Type="VI" URL="../QTrk.llb/QTrkFreeAllTrackers.vi"/>
 			<Item Name="QTrkGetResultCount.vi" Type="VI" URL="../QTrk.llb/QTrkGetResultCount.vi"/>
-			<Item Name="QTrkGetResults.vi" Type="VI" URL="../QTrk.llb/QTrkGetResults.vi"/>
 			<Item Name="QTrkInstance.ctl" Type="VI" URL="../QTrk.llb/QTrkInstance.ctl"/>
 			<Item Name="QTrkLocalizationResult.ctl" Type="VI" URL="../QTrk.llb/QTrkLocalizationResult.ctl"/>
 			<Item Name="QTrkQueueImageParams.ctl" Type="VI" URL="../QTrk.llb/QTrkQueueImageParams.ctl"/>

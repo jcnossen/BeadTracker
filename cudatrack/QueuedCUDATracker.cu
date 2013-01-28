@@ -535,7 +535,7 @@ void QueuedCUDATracker::QueueCurrentBatch()
 
 	dbgprintf("Sending %d images to GPU...\n", cb->jobs.size());
 	
-	cb->images.copyToDevice(cb->hostImageBuf, true);
+/*	cb->images.copyToDevice(cb->hostImageBuf, true);
 	//cudaMemcpy2DAsync(cb->images.data, cb->images.pitch, cb->hostImageBuf,  sizeof(float)*cfg.width, cfg.width*sizeof(float), cfg.height*cb->jobs.size(), cudaMemcpyHostToDevice);
 	cb->d_jobs.copyToDevice(cb->jobs, true);
 
@@ -547,7 +547,7 @@ void QueuedCUDATracker::QueueCurrentBatch()
 //	cb->images.unbind(qi_image_texture);
 	// Copy back the results
 	cb->d_jobs.copyToHost(cb->jobs, true);
-
+*/
 	//CheckCUDAError();
 	
 	// Make sure we can query the all done signal
@@ -665,3 +665,18 @@ int QueuedCUDATracker::GetResultCount()
 	return FetchResults();
 }
 
+
+
+
+void QueuedCUDATracker::BatchSchedule(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
+									LocalizeType locType, uint frame, uint zlutPlane)
+{
+	uchar* img = (uchar*)imgptr;
+	int bpp = sizeof(float);
+	if (pdt == QTrkU8) bpp = 1;
+	else if (pdt == QTrkU16) bpp = 2;
+	for (int i=0;i<numROI;i++){
+		uchar *roiptr = &img[pitch * positions[i].y + positions[i].x * bpp];
+		ScheduleLocalization(roiptr, pitch, pdt, locType, frame, 0, i, zlutPlane);
+	}
+}

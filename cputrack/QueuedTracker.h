@@ -73,6 +73,10 @@ struct QTrkSettings {
 	int cuda_device;
 	float com_bgcorrection; // 0.0f to disable
 };
+struct ROIPosition
+{
+	int x,y; // top-left coordinates. ROI is [ x .. x+w ; y .. y+h ]
+};
 #pragma pack(pop)
 
 class QueuedTracker
@@ -86,6 +90,10 @@ public:
 	virtual int PollFinished(LocalizationResult* results, int maxResults) = 0;
 	virtual void ClearResults() = 0;
 	virtual void Flush() = 0; // stop waiting for more jobs to do, and just process the current batch
+
+	// Schedule a set of ROIs in one call
+	virtual void BatchSchedule(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
+		LocalizeType locType, uint frame, uint zlutPlane) = 0;
 	
 	// data can be zero to allocate ZLUT data. zcmp has to have 'res' elements
 	virtual void SetZLUT(float* data, int count, int planes, int res, float* zcmp=0) = 0; 
