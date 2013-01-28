@@ -39,7 +39,7 @@ void dbgprintf(const char *fmt,...) {
 	va_end(ap);
 }
 
-void GenerateTestImage(ImageData img, float xp, float yp, float size, float MaxPhotons)
+void GenerateTestImage(ImageData img, float xp, float yp, float size, float SNratio)
 {
 	float S = 1.0f/size;
 	for (int y=0;y<img.h;y++) {
@@ -52,13 +52,10 @@ void GenerateTestImage(ImageData img, float xp, float yp, float size, float MaxP
 		}
 	}
 
-	if (MaxPhotons>0) {
-		normalize(img.data,img.w,img.h);
-		for (int k=0;k<img.numPixels();k++) {
-			img.data[k] = rand_poisson(img.data[k]*MaxPhotons);
-		}
+	if (SNratio>0) {
+		ApplyGaussianNoise(img, 1.0f/SNratio);
 	}
-	normalize(img.data,img.w,img.h);
+	img.normalize();
 }
 
 

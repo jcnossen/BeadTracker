@@ -223,7 +223,7 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 	results_mutex.unlock();
 }
 
-void QueuedCPUTracker::SetZLUT(float* data, int num_zluts, int planes, int res)
+void QueuedCPUTracker::SetZLUT(float* data, int num_zluts, int planes, int res, float* zcmp)
 {
 	if (zluts) delete[] zluts;
 	int total = num_zluts*res*planes;
@@ -239,13 +239,18 @@ void QueuedCPUTracker::SetZLUT(float* data, int num_zluts, int planes, int res)
 	else
 		zluts = 0;
 
+	if (zcmp)
+		this->zcmp.assign(zcmp, zcmp+res);
+	else
+		this->zcmp.clear();
+
 	UpdateZLUTs();
 }
 
 void QueuedCPUTracker::UpdateZLUTs()
 {
 	for (int i=0;i<threads.size();i++){
-		threads[i].tracker->SetZLUT(zluts, zlut_planes, zlut_res, zlut_count, cfg.zlut_minradius, cfg.zlut_maxradius, cfg.zlut_angularsteps, false, false);
+		threads[i].tracker->SetZLUT(zluts, zlut_planes, zlut_res, zlut_count, cfg.zlut_minradius, cfg.zlut_maxradius, cfg.zlut_angularsteps, false, false, zcmp.empty() ? 0 : &zcmp[0]);
 	}
 }
 

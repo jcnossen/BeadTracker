@@ -14,12 +14,12 @@ public:
 
 	void Start();
 	void Break(bool pause);
-	void SetZLUT(float* data, int num_zluts, int planes, int res);
+	void SetZLUT(float* data, int num_zluts, int planes, int res, float* zcmp);
 	float* GetZLUT(int *num_zluts, int* planes, int* res);
 	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
 	int PollFinished(LocalizationResult* results, int maxResults);
 	void ClearResults();
-	void GenerateTestImage(float* dst, float xp,float yp, float z, float photoncount);
+	void GenerateTestImage(float* dst, float xp, float yp, float z, float photoncount);
 	void Flush() { }
 
 	bool IsQueueFilled() { return GetJobCount() >= cfg.maxQueueSize; }
@@ -62,6 +62,7 @@ private:
 	std::vector<Thread> threads;
 	float* zluts;
 	int zlut_count, zlut_planes, zlut_res;
+	std::vector<float> zcmp;
 	float* GetZLUTByIndex(int index) { return &zluts[ index * (zlut_planes*zlut_res) ]; }
 	void UpdateZLUTs();
 

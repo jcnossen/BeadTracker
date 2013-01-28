@@ -244,9 +244,9 @@ void QTrkTest()
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1;
+	cfg.com_bgcorrection = 0.0f;
 	//cfg.numThreads = 6;
-	int NumImages=10, JobsPerImg=5;
-	QueuedCUDATracker qtrk(&cfg, 64 );
+	QueuedCUDATracker qtrk(&cfg, -1);
 	float *image = new float[cfg.width*cfg.height];
 
 	// Generate ZLUT
@@ -280,63 +280,50 @@ void QTrkTest()
 	delete[] zlut; delete[] zlut_bytes;
 	
 	// Schedule images to localize on
-	dbgprintf("Generating %d images...\n", NumImages);
-	double tgen = 0.0, tschedule = 0.0;
-	std::vector<float> truepos(NumImages*3);
-	for (int n=0;n<NumImages;n++) {
-		double t1 = getPreciseTime();
-		float xp = cfg.width/2+(rand_uniform<float>() - 0.5) * 5;
-		float yp = cfg.height/2+(rand_uniform<float>() - 0.5) * 5;
-		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
-		truepos[n*3+0] = xp;
-		truepos[n*3+1] = yp;
-		truepos[n*3+2] = z;
-
-		GenerateTestImage(ImageData(image, cfg.width, cfg.height), xp, yp, z, 10000);
-		double t2 = getPreciseTime();
-		for (int k=0;k<JobsPerImg;k++)
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI|LocalizeZ), n, 0, 0, 0);
-		double t3 = getPreciseTime();
-		tgen += t2-t1;
-		tschedule += t3-t2;
+#ifdef _DEBUG
+	int total= 1000;
+#else
+	int total = 50000;
+#endif
+	dbgprintf("Benchmarking...\n", total);
+	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2+1, cfg.height/2, zmin, 30);
+	float maxv = image[0], minv =image[0];
+	for (int x=0;x<cfg.width*cfg.height;x++) {
+		maxv = std::max(maxv, image[x]);
+		minv = std::min(minv, image[x]);
 	}
-	delete[] image;
-	dbgprintf("Schedule time: %f, Generation time: %f\n", tschedule, tgen);
-
-	// Measure speed
-	dbgprintf("Localizing on %d images...\n", NumImages*JobsPerImg);
 	double tstart = getPreciseTime();
-	int total = NumImages*JobsPerImg;
-	qtrk.Flush();
 	int rc = 0, displayrc=0;
+	for (int n=0;n<total;n++) {
+		qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI|LocalizeZ), n, 0, 0, 0);
+		if (n % 10 == 0) {
+			rc = qtrk.GetResultCount();
+			while (displayrc<rc) {
+				if( displayrc%(total/10)==0) dbgprintf("Done: %d / %d\n", displayrc, total);
+				displayrc++;
+			}
+		}
+	}
+	qtrk.Flush();
 	do {
 		rc = qtrk.GetResultCount();
 		while (displayrc<rc) {
-			if( displayrc%JobsPerImg==0) dbgprintf("Done: %d / %d\n", displayrc, total);
+			if( displayrc%(total/10)==0) dbgprintf("Done: %d / %d\n", displayrc, total);
 			displayrc++;
 		}
 		Sleep(10);
 	} while (rc != total);
+	
+	// Measure speed
 	double tend = getPreciseTime();
 
-	// Wait for last jobs
-	double errX=0.0, errY=0.0, errZ=0.0;
+	delete[] image;
 
-	for (int i=0;i<total;i++) {
-		LocalizationResult result;
+	LocalizationResult r;
+	qtrk.PollFinished(&r, 1);
+	dbgprintf("Result.x: %f, Result.y: %f\n", r.pos.x, r.pos.y);
 
-		if (qtrk.PollFinished(&result, 1)) {
-			int iid = result.id;
-			float x = fabs(truepos[iid*3+0]-result.pos.x);
-			float y = fabs(truepos[iid*3+1]-result.pos.y);
-			result.z = zmin + (zmax-zmin) * result.z / (float)(zplanes-1); // transform from index scale to coordinate scale
-			float z = fabs(truepos[iid*3+2]-result.z);
-		//	dbgprintf("ID: %d. Boundary Error:%d. ErrX=%f, ErrY=%f, ErrZ=%f\n", result.id, result.error, x,y,z);
-			errX += x; errY += y; errZ += z;
-		}
-	}
 	dbgprintf("Localization Speed: %d (img/s)\n", (int)( total/(tend-tstart) ));
-	dbgprintf("ErrX: %f, ErrY: %f, ErrZ: %f\n", errX/total, errY/total,errZ/total);
 }
 
 void listDevices()

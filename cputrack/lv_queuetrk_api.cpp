@@ -5,7 +5,7 @@ Labview API for the functionality in QueuedTracker.h
 #include "utils.h"
 #include "labview.h"
 #include "QueuedTracker.h"
-
+#include "threads.h" 
 
 
 #include "lv_prolog.h"
@@ -19,6 +19,17 @@ struct QueueImageParams {
 	LocalizeType LocType()  { return (LocalizeType)locType; }
 };
 #include "lv_epilog.h"
+
+
+static Threads::Mutex trackerListMutex;
+static std::vector<QueuedTracker*> trackerList;
+
+CDLL_EXPORT void DLL_CALLCONV qtrk_free_all()
+{
+	trackerListMutex.lock();
+	DeleteAllElems(trackerList);
+	trackerListMutex.unlock();
+}
 
 
 MgErr FillErrorCluster(MgErr err, const char *message, ErrorCluster *error)
@@ -42,7 +53,7 @@ void ArgumentErrorMsg(ErrorCluster* e, const std::string& msg) {
 	FillErrorCluster(mgArgErr, msg.c_str(), e);
 }
 
-CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pZlut)
+CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pZlut, LVArray<float>** zcmpWindow, ErrorCluster* e)
 {
 	LVArray3D<float>* zlut = *pZlut;
 
@@ -51,8 +62,16 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 	int res = zlut->dimSizes[2];
 
 	dbgprintf("Setting ZLUT size: %d beads, %d planes, %d radialsteps\n", numLUTs, planes, res);
+
+	float* zcmp = 0;
+	if (zcmpWindow && (*zcmpWindow)->dimSize > 0) {
+		if ( (*zcmpWindow)->dimSize != res)
+			ArgumentErrorMsg(e, SPrintf("Z Compare window should have the same resolution as the ZLUT (%d elements)", res));
+		else
+			zcmp = (*zcmpWindow)->elem;
+	}
 	
-	tracker->SetZLUT(zlut->elem, numLUTs, planes, res);
+	tracker->SetZLUT(zlut->elem, numLUTs, planes, res, zcmp);
 }
 
 CDLL_EXPORT void DLL_CALLCONV qtrk_get_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pzlut)
@@ -65,16 +84,30 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_get_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 	delete[] zlut;
 }
 
-CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings)
+CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings, ErrorCluster* e)
 {
-	QueuedTracker* tracker = CreateQueuedTracker(settings);
-	tracker->Start();
+	QueuedTracker* tracker = 0;
+	try {
+		tracker = CreateQueuedTracker(settings);
+
+		trackerListMutex.lock();
+		trackerList.push_back(tracker);
+		trackerListMutex.unlock();
+
+		tracker->Start();
+	} catch(const std::runtime_error &exc) {
+		FillErrorCluster(kAppErrorBase, exc.what(), e );
+	}
 	return tracker;
 }
 
 
 CDLL_EXPORT void qtrk_destroy(QueuedTracker* qtrk)
 {
+	trackerListMutex.lock();
+	trackerList.erase(std::find(trackerList.begin(),trackerList.end(), qtrk));
+	trackerListMutex.unlock();
+
 	delete qtrk;
 }
 

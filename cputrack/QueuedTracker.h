@@ -53,6 +53,7 @@ struct QTrkSettings {
 		qi_angularsteps = 64;
 		qi_minradius = 5; qi_maxradius = 60;
 		cuda_device = -1;
+		com_bgcorrection = 0.0f;
 	}
 	int width, height;
 	int numThreads, maxQueueSize;
@@ -70,6 +71,7 @@ struct QTrkSettings {
 	float qi_minradius, qi_maxradius;
 
 	int cuda_device;
+	float com_bgcorrection; // 0.0f to disable
 };
 #pragma pack(pop)
 
@@ -84,8 +86,10 @@ public:
 	virtual int PollFinished(LocalizationResult* results, int maxResults) = 0;
 	virtual void ClearResults() = 0;
 	virtual void Flush() = 0; // stop waiting for more jobs to do, and just process the current batch
+	
+	// data can be zero to allocate ZLUT data. zcmp has to have 'res' elements
+	virtual void SetZLUT(float* data, int count, int planes, int res, float* zcmp=0) = 0; 
 
-	virtual void SetZLUT(float* data, int count, int planes, int res) = 0; // data can be zero to allocate ZLUT data
 	virtual float* GetZLUT(int *count=0, int* planes=0, int *res=0) = 0; // delete[] memory afterwards
 
 	// Debug stuff

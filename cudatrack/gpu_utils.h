@@ -90,12 +90,15 @@ public:
 			cudaMemcpy(&dst[0], data, sizeof(T) * size, cudaMemcpyDeviceToHost);
 	}
 	void copyToDevice(std::vector<T>& src, bool async) {
-		if (size != src.size())
-			init(src.size());
+		copyToDevice(&src[0], src.size(), async);
+	}
+	void copyToDevice(T* first, int size, bool async) {
+		if (this->size != size)
+			init(size);
 		if (async)
-			cudaMemcpyAsync(data, &src[0], sizeof(T) * size, cudaMemcpyHostToDevice);
+			cudaMemcpyAsync(data, first, sizeof(T) * size, cudaMemcpyHostToDevice);
 		else
-			cudaMemcpy(data, &src[0], sizeof(T) * size, cudaMemcpyHostToDevice);
+			cudaMemcpy(data, first, sizeof(T) * size, cudaMemcpyHostToDevice);
 	}
 	size_t size;
 	T* data;
