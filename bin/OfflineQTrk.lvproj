@@ -29,6 +29,7 @@
 		<Item Name="GetBeadImage.vi" Type="VI" URL="../OfflineQTrk.llb/GetBeadImage.vi"/>
 		<Item Name="GetFrametimes.vi" Type="VI" URL="../OfflineQTrk.llb/GetFrametimes.vi"/>
 		<Item Name="GetResultsFilename.vi" Type="VI" URL="../OfflineQTrk.llb/GetResultsFilename.vi"/>
+		<Item Name="GetTopLeftBeadPositions.vi" Type="VI" URL="../OfflineQTrk.llb/GetTopLeftBeadPositions.vi"/>
 		<Item Name="LoadImageForDisplay.vi" Type="VI" URL="../OfflineQTrk.llb/LoadImageForDisplay.vi"/>
 		<Item Name="LUTInfo.ctl" Type="VI" URL="../OfflineQTrk.llb/LUTInfo.ctl"/>
 		<Item Name="OfflineQTrk.vi" Type="VI" URL="../OfflineQTrk.llb/OfflineQTrk.vi"/>

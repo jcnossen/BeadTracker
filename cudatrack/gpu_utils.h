@@ -21,12 +21,7 @@ public:
 		data = 0;
 		size = 0;
 	}
-	device_vec(bool emulate, size_t N) { 
-		data = 0;
-		size = 0;
-		init(N);
-//dbgprintf("%p. device_vec(emulate=%s, N=%d)\n",this, emulate?"true":"false", N);
-	}
+
 	device_vec(size_t N) { 
 		data = 0;
 		size = 0;
@@ -81,13 +76,16 @@ public:
 		cudaMemcpy(data, src.data, sizeof(T)*size, cudaMemcpyDeviceToDevice);
 		return *this;
 	}
+	void copyToHost(T* dst, bool async) {
+		if (async)
+			cudaMemcpyAsync(dst, data, sizeof(T) * size, cudaMemcpyDeviceToHost);
+		else
+			cudaMemcpy(dst, data, sizeof(T) * size, cudaMemcpyDeviceToHost);
+	}
 	void copyToHost(std::vector<T>& dst ,bool async) {
 		if (dst.size() != size)
 			dst.resize(size);
-		if (async)
-			cudaMemcpyAsync(&dst[0], data, sizeof(T) * size, cudaMemcpyDeviceToHost);
-		else
-			cudaMemcpy(&dst[0], data, sizeof(T) * size, cudaMemcpyDeviceToHost);
+		copyToHost(&dst[0], async);
 	}
 	void copyToDevice(std::vector<T>& src, bool async) {
 		copyToDevice(&src[0], src.size(), async);
@@ -149,3 +147,106 @@ CUBOTH T ComputeMaxInterp(T* data, int len)
 }
 
 
+
+#if 1 //defined(_DEBUG)
+struct MeasureTime {
+	uint64_t freq, time;
+	const char* name;
+	MeasureTime(const char *name) {
+		QueryPerformanceCounter((LARGE_INTEGER*)&time);
+		QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
+		this->name=name;
+	}
+	~MeasureTime() {
+		uint64_t time1;
+		QueryPerformanceCounter((LARGE_INTEGER*)&time1);
+		double dt = (double)(time1-time) / (double)freq;
+		dbgprintf("%s: Time taken: %f ms\n", name, dt*1000);
+	}
+};
+#else
+struct MeasureTime {
+	MeasureTime(const char* name) {} 
+};
+#endif
+
+template<typename T, int flags=0>
+class cuda_host_allocator {
+public:
+	typedef typename T value_type;
+
+	typedef value_type *pointer;
+	typedef value_type &reference;
+	typedef const value_type *const_pointer;
+	typedef const value_type &const_reference;
+
+	typedef size_t size_type;
+	typedef ptrdiff_t difference_type;
+
+	pointer address(reference v) const { return &v; }
+	const_pointer address(const_reference v) const { return &v; }
+
+
+	cuda_host_allocator(){} 
+
+	
+	template<class TOther>
+	struct rebind
+	{	// convert this type to _ALLOCATOR<_Other>
+		typedef cuda_host_allocator<TOther> other;
+	};
+
+
+	void deallocate(pointer ptr, size_type s)
+	{
+		// deallocate object at _Ptr, ignore size
+		cudaFreeHost(ptr);
+	}
+
+	pointer allocate(size_type c)
+	{	
+		pointer ptr;
+		cudaMallocHost(&ptr, sizeof(T)*c, flags);
+		return ptr;
+	}
+
+	pointer allocate(size_type c, const void *) { return allocate(c); }
+
+	template<class TOther>
+	void construct(pointer ptr, T&& v)
+	{	// construct object at _Ptr with value _Val
+		::new ((void*)ptr) T(v);
+	}
+	
+	void construct(pointer ptr, const T& v)
+	{	// construct object at _Ptr with value _Val
+		::new ((void*)ptr) T(v);
+	}
+
+	void construct(pointer ptr, T&& _Val)
+	{	// construct object at _Ptr with value _Val
+		::new ((void*)ptr) T(std::forward<T>(_Val));
+	}
+
+	void destroy(pointer p)
+	{	// destroy object at _Ptr
+		p->~T();
+	}
+
+	size_t max_size() const
+	{	// estimate maximum array size
+		size_t _Count = (size_t)(-1) / sizeof (T);
+		return (0 < _Count ? _Count : 1);
+	}
+};
+
+template<typename T>
+class pinned_vector : public std::vector<T, cuda_host_allocator<T> >
+{
+public:
+	typedef std::vector<T, cuda_host_allocator<T> > base_t;
+	pinned_vector(size_t N) : base_t(N) {}
+	pinned_vector() {}
+	pinned_vector(const pinned_vector<T>& o) : base_t(o) {}
+
+};

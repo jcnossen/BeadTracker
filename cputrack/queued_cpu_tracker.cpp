@@ -336,7 +336,12 @@ void QueuedCPUTracker::BatchSchedule(uchar *imgptr, int pitch, int width, int he
 	uchar* img = (uchar*)imgptr;
 	int bpp = PDT_BytesPerPixel(pdt);
 	for (int i=0;i<numROI;i++){
-		uchar *roiptr = &img[pitch * positions[i].y + positions[i].x * bpp];
+		ROIPosition& pos = positions[i];
+
+		if (pos.x < 0 || pos.y < 0 || pos.x + cfg.width >= width || pos.y + cfg.height >= height)
+			continue;
+
+		uchar *roiptr = &img[pitch * pos.y + pos.x * bpp];
 		ScheduleLocalization(roiptr, pitch, pdt, locType, frame, 0, i, zlutPlane);
 	}
 }

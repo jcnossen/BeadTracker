@@ -115,19 +115,15 @@ void TestLocalization()
 	cfg.qi_maxradius = 30;
 	QueuedCUDATracker trk(&cfg);
 
-	auto images = cudaImageListf::alloc(80,80, NumImages, trk.UseHostEmulate());
+	auto images = cudaImageListf::alloc(80,80, NumImages);
 	ShowCUDAError();
 	std::vector<float3> positions(images.count);
-	{
-	device_vec< sfft::complex<float> > test;
-	test = trk.DeviceMem( std::vector < sfft::complex<float> > (3) );
-	}
 	for(int i=0;i<images.count;i++) {
 		float xp = images.w/2+(rand_uniform<float>() - 0.5) * 5;
 		float yp = images.h/2+(rand_uniform<float>() - 0.5) * 5;
 		positions[i] = make_float3(xp, yp, 3);
 	}
-	device_vec<float3> d_pos = trk.DeviceMem(positions);
+	device_vec<float3> d_pos(positions);
 
 	dbgprintf("Generating... %d images\n", N*images.count);
 
@@ -137,8 +133,8 @@ void TestLocalization()
 	cudaDeviceSynchronize();
 	double tgen = getPreciseTime() - t0;
 
-	auto d_com = trk.DeviceMem<float2>(positions.size());
-	auto d_qi = trk.DeviceMem<float2>(positions.size());
+	device_vec<float2> d_com (positions.size());
+	device_vec<float2> d_qi(positions.size());
 	double t1 = getPreciseTime();
 	dbgprintf("COM\n");
 	for (int i=0;i<N;i++)
@@ -338,6 +334,54 @@ void listDevices()
 
 }
 
+__global__ void SimpleKernel(int N, float* a){
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx < N) {
+		for (int x=0;x<1000;x++)
+			a[idx] = asin(a[idx]+x);
+	}
+}
+
+
+void TestAsync()
+{
+	int N =1000000;
+	int nt = 32;
+	//std::vector<float> a(N);
+	float* a = new float[N];
+	pinned_vector<float> test(N);
+//	cudaMallocHost(&a, sizeof(float)*N, 0);
+
+	device_vec<float> A(N),B(N);
+
+	cudaStream_t s0, s1;
+	cudaEvent_t done;
+
+	cudaStreamCreate(&s0);
+	cudaEventCreate(&done,0);
+
+	for (int x=0;x<N;x++)
+		a[x] = cos(x*0.01f);
+
+	for (int x=0;x<1;x++) {
+		{ MeasureTime mt("a->A"); A.copyToDevice(a, N, true); }
+		{ MeasureTime mt("func(A)"); 
+		SimpleKernel<<<dim3( (N+nt-1)/nt ), dim3(nt)>>>(N, A.data);
+		}
+		{ MeasureTime mt("A->a"); A.copyToHost(a, true); }
+	}
+	cudaEventRecord(done);
+
+	while (cudaEventQuery(done) != cudaSuccess);
+
+	std::allocator<float> x;;
+
+
+	cudaStreamDestroy(s0);
+	cudaEventDestroy(done);
+}
+
+
 int main(int argc, char *argv[])
 {
 //	testLinearArray();
@@ -347,7 +391,8 @@ int main(int argc, char *argv[])
 	//TestSimpleFFT();
 	//TestKernelFFT();
 //	TestSharedMem();
-	QTrkTest();
+	//QTrkTest();
+	TestAsync();
 
 	listDevices();
 	return 0;
