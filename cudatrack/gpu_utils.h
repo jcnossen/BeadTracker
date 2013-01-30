@@ -170,75 +170,62 @@ struct MeasureTime {
 };
 #endif
 
-template<typename T, int flags=0>
-class cuda_host_allocator {
+//http://www.codeguru.com/cpp/cpp/cpp_mfc/stl/article.php/c4079/Allocators-STL.htm
+template <class T, int flags=0> class cuda_host_allocator;
+
+// specialize for void:
+template <> class cuda_host_allocator<void> {
 public:
-	typedef typename T value_type;
-
-	typedef value_type *pointer;
-	typedef value_type &reference;
-	typedef const value_type *const_pointer;
-	typedef const value_type &const_reference;
-
-	typedef size_t size_type;
-	typedef ptrdiff_t difference_type;
-
-	pointer address(reference v) const { return &v; }
-	const_pointer address(const_reference v) const { return &v; }
-
-
-	cuda_host_allocator(){} 
-
-	
-	template<class TOther>
-	struct rebind
-	{	// convert this type to _ALLOCATOR<_Other>
-		typedef cuda_host_allocator<TOther> other;
-	};
-
-
-	void deallocate(pointer ptr, size_type s)
-	{
-		// deallocate object at _Ptr, ignore size
-		cudaFreeHost(ptr);
-	}
-
-	pointer allocate(size_type c)
-	{	
-		pointer ptr;
-		cudaMallocHost(&ptr, sizeof(T)*c, flags);
-		return ptr;
-	}
-
-	pointer allocate(size_type c, const void *) { return allocate(c); }
-
-	template<class TOther>
-	void construct(pointer ptr, T&& v)
-	{	// construct object at _Ptr with value _Val
-		::new ((void*)ptr) T(v);
-	}
-	
-	void construct(pointer ptr, const T& v)
-	{	// construct object at _Ptr with value _Val
-		::new ((void*)ptr) T(v);
-	}
-
-	void construct(pointer ptr, T&& _Val)
-	{	// construct object at _Ptr with value _Val
-		::new ((void*)ptr) T(std::forward<T>(_Val));
-	}
-
-	void destroy(pointer p)
-	{	// destroy object at _Ptr
-		p->~T();
-	}
-
-	size_t max_size() const
-	{	// estimate maximum array size
-		size_t _Count = (size_t)(-1) / sizeof (T);
-		return (0 < _Count ? _Count : 1);
-	}
+    typedef void*       pointer;
+    typedef const void* const_pointer;
+    // reference to void members are impossible.
+    typedef void value_type;
+    template <class U> struct rebind { typedef cuda_host_allocator<U>
+                                        other; };
 };
+
+template<typename T, int flags>
+class cuda_host_allocator {
+ 
+    public:
+      typedef size_t    size_type;
+      typedef ptrdiff_t difference_type;
+      typedef T*        pointer;
+      typedef const T*  const_pointer;
+      typedef T&        reference;
+      typedef const T&  const_reference;
+      typedef T         value_type;
+      template <class U> struct rebind { typedef cuda_host_allocator<U>
+                                         other; };
+ 
+      cuda_host_allocator() throw() { }
+      cuda_host_allocator(const cuda_host_allocator&) throw() {  }
+	  template <class U> cuda_host_allocator(const cuda_host_allocator<U>&) throw() {}
+	  ~cuda_host_allocator() throw() {}
+ 
+	  pointer address(reference x) const { return &x; }
+	  const_pointer address(const_reference x) const { return &x; }
+ 
+      pointer allocate(size_type n, cuda_host_allocator<void>::const_pointer hint = 0) {
+		  pointer ptr;
+		  cudaMallocHost(&ptr, sizeof(T)*n, flags);
+		  return ptr;
+	  }
+      void deallocate(pointer p, size_type n) {
+		  cudaFree(p);
+	  }
+	  size_type max_size() const throw() { return 500*1024*1024; }
+ 
+      void construct(pointer p, const T& val) {
+		new(static_cast<void*>(p)) T(val);
+	  }
+      void destroy(pointer p) {
+		  p->~T();
+	  }
+  };
+
+template <class T1, class T2> bool operator==(const cuda_host_allocator<T1>&, const cuda_host_allocator<T2>&) throw() { return true; }
+template <class T1, class T2> bool operator!=(const cuda_host_allocator<T1>&, const cuda_host_allocator<T2>&) throw() { return false; }
 
 template<typename T>
 class pinned_vector : public std::vector<T, cuda_host_allocator<T> >
