@@ -17,11 +17,14 @@
 			<Item Name="QTrkGetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkGetZLUT.vi"/>
 			<Item Name="QTrkIsIdle.vi" Type="VI" URL="../QTrk.llb/QTrkIsIdle.vi"/>
 			<Item Name="QTrkIsQueueFull.vi" Type="VI" URL="../QTrk.llb/QTrkIsQueueFull.vi"/>
+			<Item Name="QTrkPixelDataType.ctl" Type="VI" URL="../QTrk.llb/QTrkPixelDataType.ctl"/>
+			<Item Name="QTrkQueueFrame.vi" Type="VI" URL="../QTrk.llb/QTrkQueueFrame.vi"/>
+			<Item Name="QTrkQueueFrameAsync.vi" Type="VI" URL="../QTrk.llb/QTrkQueueFrameAsync.vi"/>
 			<Item Name="QTrkQueueImageU8.vi" Type="VI" URL="../QTrk.llb/QTrkQueueImageU8.vi"/>
-			<Item Name="QTrkQueueIMAQImage.vi" Type="VI" URL="../QTrk.llb/QTrkQueueIMAQImage.vi"/>
 			<Item Name="QTrkReadJPEGFile.vi" Type="VI" URL="../QTrk.llb/QTrkReadJPEGFile.vi"/>
 			<Item Name="QTrkSelectDLLDialog.vi" Type="VI" URL="../QTrk.llb/QTrkSelectDLLDialog.vi"/>
 			<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkSetZLUT.vi"/>
+			<Item Name="QTrkWaitForQueueFrame.vi" Type="VI" URL="../QTrk.llb/QTrkWaitForQueueFrame.vi"/>
 		</Item>
 		<Item Name="BeadPos.ctl" Type="VI" URL="../OfflineQTrk.llb/BeadPos.ctl"/>
 		<Item Name="BuildZLUT.vi" Type="VI" URL="../OfflineQTrk.llb/BuildZLUT.vi"/>
@@ -34,7 +37,6 @@
 		<Item Name="LUTInfo.ctl" Type="VI" URL="../OfflineQTrk.llb/LUTInfo.ctl"/>
 		<Item Name="OfflineQTrk.vi" Type="VI" URL="../OfflineQTrk.llb/OfflineQTrk.vi"/>
 		<Item Name="ProcessImageFile.vi" Type="VI" URL="../OfflineQTrk.llb/ProcessImageFile.vi"/>
-		<Item Name="QTrkPixelDataType.ctl" Type="VI" URL="../QTrk.llb/QTrkPixelDataType.ctl"/>
 		<Item Name="QueueSingleFrame.vi" Type="VI" URL="../OfflineQTrk.llb/QueueSingleFrame.vi"/>
 		<Item Name="ReadImageToArray.vi" Type="VI" URL="../OfflineQTrk.llb/ReadImageToArray.vi"/>
 		<Item Name="RunJob.vi" Type="VI" URL="../OfflineQTrk.llb/RunJob.vi"/>

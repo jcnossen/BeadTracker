@@ -79,6 +79,7 @@ struct ROIPosition
 };
 #pragma pack(pop)
 
+// Abstract tracker interface, implementated by QueuedCUDATracker and QueuedCPUTracker
 class QueuedTracker
 {
 public:
@@ -91,13 +92,13 @@ public:
 	virtual void ClearResults() = 0;
 	virtual void Flush() = 0; // stop waiting for more jobs to do, and just process the current batch
 
-	// Schedule a set of ROIs in one call
-	virtual void BatchSchedule(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
-		LocalizeType locType, uint frame, uint zlutPlane) = 0;
+	// Schedule an entire frame at once, allowing for further optimizations
+	virtual void ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
+		LocalizeType locType, uint frame, uint zlutPlane, bool async) = 0;
+	virtual void WaitForScheduleFrame(uchar* imgptr) = 0; // Wait for an asynchronous call to ScheduleFrame to be finished with the specified buffer
 	
 	// data can be zero to allocate ZLUT data. zcmp has to have 'res' elements
 	virtual void SetZLUT(float* data, int count, int planes, int res, float* zcmp=0) = 0; 
-
 	virtual float* GetZLUT(int *count=0, int* planes=0, int *res=0) = 0; // delete[] memory afterwards
 
 	// Debug stuff

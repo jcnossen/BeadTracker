@@ -168,9 +168,14 @@ CDLL_EXPORT void qtrk_queue_array(QueuedTracker* qtrk,  ErrorCluster* error,LVAr
 
 
 CDLL_EXPORT void qtrk_queue_frame(QueuedTracker* qtrk, uchar* image, int pitch, int w,int h, 
-	uint pdt, ROIPosition* pos, int numROI, uint locType, uint frame, uint zlutPlane)
+	uint pdt, ROIPosition* pos, int numROI, uint locType, uint frame, uint zlutPlane, bool async)
 {
-	qtrk->BatchSchedule(image, pitch, w,h, pos, numROI, (QTRK_PixelDataType)pdt, (LocalizeType)locType, frame, zlutPlane);
+	qtrk->ScheduleFrame(image, pitch, w,h, pos, numROI, (QTRK_PixelDataType)pdt, (LocalizeType)locType, frame, zlutPlane, async);
+}
+
+CDLL_EXPORT void qtrk_wait_for_queue_frame(QueuedTracker* qtrk, uchar* image)
+{
+	qtrk->WaitForScheduleFrame(image);
 }
 
 

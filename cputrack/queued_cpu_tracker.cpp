@@ -330,8 +330,8 @@ void QueuedCPUTracker::GenerateTestImage(float* dst, float xp,float yp, float z,
 }
 
 
-void QueuedCPUTracker::BatchSchedule(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
-									LocalizeType locType, uint frame, uint zlutPlane)
+void QueuedCPUTracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
+									LocalizeType locType, uint frame, uint zlutPlane, bool async)
 {
 	uchar* img = (uchar*)imgptr;
 	int bpp = PDT_BytesPerPixel(pdt);

@@ -2,7 +2,7 @@
 #include "threads.h"
 #include "QueuedTracker.h"
 #include <cuda_runtime_api.h>
-//#include "cudafft/cudafft.h"
+#include <cufft.h>
 #include <list>
 #include <vector>
 #include "gpu_utils.h"
@@ -67,8 +67,12 @@ public:
 
 	void Start();
 	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
-	void BatchSchedule(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
-									LocalizeType locType, uint frame, uint zlutPlane);
+	
+	// Schedule an entire frame at once, allowing for further optimizations
+	void ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
+		LocalizeType locType, uint frame, uint zlutPlane, bool async);
+	void WaitForScheduleFrame(uchar* imgptr); // Wait for an asynchronous call to ScheduleFrame to be finished with the specified buffer
+
 	void ClearResults();
 
 	// data can be zero to allocate ZLUT data.
@@ -97,7 +101,7 @@ public:
 protected:
 
 	struct Batch{
-		Batch() { hostImageBuf = 0; images.data=0; jobCount=0; }
+		Batch();
 		~Batch();
 		
 		pinned_array<CUDATrackerJob> jobs;
@@ -105,15 +109,22 @@ protected:
 		cudaImageListf images; 
 		float* hostImageBuf; // original image format pixel buffer, pinned memory with write-combined flags for fast host->device transfer
 		device_vec<CUDATrackerJob> d_jobs;
+
+		// CUDA objects
+		cudaStream_t stream; // Stream used
+		cufftHandle plan; // a CUFFT plan can be used for both forward and inverse transforms
 		cudaEvent_t localizationDone, imageBufferCopied;
 
 		// Intermediate data
-		device_vec<float> d_com;
+		device_vec<float2> d_com, d_qi;
+		device_vec<float2> d_QIprofiles;
+
+		uint localizeFlags; // Indicates whether kernels should be ran for building zlut, z computing, or QI
 	};
 	Batch* AllocBatch();
 	void CopyBatchResults(Batch* b);
 
-	enum { numThreads = 32 };
+	int numThreads;
 	int batchSize;
 
 	dim3 blocks(int workItems) {

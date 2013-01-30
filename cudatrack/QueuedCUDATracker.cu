@@ -94,26 +94,22 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	}
 
 	cudaGetDeviceProperties(&deviceProp, cfg->cuda_device);
+	numThreads = deviceProp.warpSize;
 
 	if(batchSize<0) batchSize = numThreads * deviceProp.multiProcessorCount;
 	this->batchSize = batchSize;
-	maxActiveBatches = std::min(2, (cfg->maxQueueSize + batchSize - 1) / batchSize);
+	maxActiveBatches = 4;// std::min(2, (cfg->maxQueueSize + batchSize - 1) / batchSize);
 
 	//int sharedSpacePerThread = (prop.sharedMemPerBlock-forward_fft->kparams_size*2) / numThreads;
 //	dbgprintf("2X FFT instance requires %d bytes. Space per thread: %d\n", forward_fft->kparams_size*2, sharedSpacePerThread);
 	dbgprintf("Device: %s\n", deviceProp.name);
 	dbgprintf("Shared memory space:%d bytes. Per thread: %d\n", deviceProp.sharedMemPerBlock, deviceProp.sharedMemPerBlock/numThreads);
 	dbgprintf("# of CUDA processors:%d\n", deviceProp.multiProcessorCount);
-	dbgprintf("warp size: %d\n", deviceProp.warpSize);
+	dbgprintf("warp size: %d. MaxActiveBatches: %d\n", deviceProp.warpSize, maxActiveBatches);
 
 	qiProfileLen = 1;
 	while (qiProfileLen < cfg->qi_radialsteps*2) qiProfileLen *= 2;
 
-	// See file header comment for shared memory layout
-	sharedMemSize = sizeof(float2) * 2*qiProfileLen + // twiddles
-		sizeof(float2) * 16+
-	sizeof(float2) *qiProfileLen * 32;
-		
 	fft_twiddles = sfft::fill_twiddles<float> (qiProfileLen);
 	KernelParams &p = kernelParams;
 	p.com_bgcorrection = cfg->com_bgcorrection;
@@ -403,10 +399,17 @@ __global__ void ComputeQIKernel(cudaImageListf images, KernelParams params, floa
 void QueuedCUDATracker::ComputeQI(cudaImageListf& images, float2* d_initial, float2* d_result)
 {
 	images.bind(qi_image_texture);
-	dim3 threads(32);
 
-	ComputeQIKernel<<< blocks(images.count), threads, sharedMemSize >>> (images, kernelParams, d_initial, d_result);
+	ComputeQIKernel<<< blocks(images.count), threads(), sharedMemSize >>> (images, kernelParams, d_initial, d_result);
 	images.unbind(qi_image_texture);
+}
+
+QueuedCUDATracker::Batch::Batch()
+{ 
+	hostImageBuf = 0; 
+	images.data=0; 
+	jobCount=0; 
+	stream=0;
 }
 
 QueuedCUDATracker::Batch::~Batch() 
@@ -544,20 +547,21 @@ void QueuedCUDATracker::QueueCurrentBatch()
 
 	if (cb->jobCount==0)
 		return;
-
+#ifdef _DEBUG
 	dbgprintf("Sending %d images to GPU...\n", cb->jobCount);
+#endif
 
-	cb->images.copyToDevice(cb->hostImageBuf, true);
+	{MeasureTime mt("images to device"); cb->images.copyToDevice(cb->hostImageBuf, true); }
 	//cudaMemcpy2DAsync(cb->images.data, cb->images.pitch, cb->hostImageBuf,  sizeof(float)*cfg.width, cfg.width*sizeof(float), cfg.height*cb->jobs.size(), cudaMemcpyHostToDevice);
-	cb->d_jobs.copyToDevice(cb->jobs.data(), cb->jobCount, true);
+	{MeasureTime mt("jobs to device"); cb->d_jobs.copyToDevice(cb->jobs.data(), cb->jobCount, true); }
 
 	cudaEventRecord(cb->imageBufferCopied);
 //	cb->images.bind(qi_image_texture);
 
-	LocalizeBatchKernel<<<blocks(cb->jobCount), threads() >>> (cb->jobCount, cb->images, kernelParams, cb->d_jobs.data);
+	{MeasureTime mt("LocalizeBatchKernel"); LocalizeBatchKernel<<<blocks(cb->jobCount), threads() >>> (cb->jobCount, cb->images, kernelParams, cb->d_jobs.data); }
 //	cb->images.unbind(qi_image_texture);
 	// Copy back the results
-	cb->d_jobs.copyToHost(cb->jobs.data(), true);
+	{MeasureTime mt("results to host"); cb->d_jobs.copyToHost(cb->jobs.data(), true); }
 
 	//CheckCUDAError();
 	
@@ -678,9 +682,9 @@ int QueuedCUDATracker::GetResultCount()
 
 
 
-
-void QueuedCUDATracker::BatchSchedule(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
-									LocalizeType locType, uint frame, uint zlutPlane)
+// TODO: Let GPU copy frames from frames to GPU 
+void QueuedCUDATracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
+									LocalizeType locType, uint frame, uint zlutPlane, bool async)
 {
 	uchar* img = (uchar*)imgptr;
 	int bpp = sizeof(float);
@@ -690,4 +694,7 @@ void QueuedCUDATracker::BatchSchedule(uchar *imgptr, int pitch, int width, int h
 		uchar *roiptr = &img[pitch * positions[i].y + positions[i].x * bpp];
 		ScheduleLocalization(roiptr, pitch, pdt, locType, frame, 0, i, zlutPlane);
 	}
+}
+
+void QueuedCUDATracker::WaitForScheduleFrame(uchar* imgptr) {
 }
