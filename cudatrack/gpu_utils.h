@@ -195,6 +195,7 @@ public:
 		if (src.n != n) init(src.n);
 		for(int k=0;k<src.n;k++)
 			d[k]=src[k];
+		return *this;
 	}
 	template<typename Iterator>
 	pinned_array(Iterator first, Iterator end) {
@@ -219,7 +220,7 @@ public:
 		d=0;n=0;
 	}
 	void init(int n) {
-		if (d) cudaFree(d);
+		if (d) free();
 		this->n = n;
 		cudaMallocHost(&d, sizeof(T)*n, flags);
 	}

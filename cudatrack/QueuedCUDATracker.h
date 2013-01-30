@@ -106,6 +106,9 @@ protected:
 		float* hostImageBuf; // original image format pixel buffer, pinned memory with write-combined flags for fast host->device transfer
 		device_vec<CUDATrackerJob> d_jobs;
 		cudaEvent_t localizationDone, imageBufferCopied;
+
+		// Intermediate data
+		device_vec<float> d_com;
 	};
 	Batch* AllocBatch();
 	void CopyBatchResults(Batch* b);

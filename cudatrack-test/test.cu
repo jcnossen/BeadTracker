@@ -277,17 +277,12 @@ void QTrkTest()
 	
 	// Schedule images to localize on
 #ifdef _DEBUG
-	int total= 1000;
+	int total= 100;
 #else
-	int total = 50000;
+	int total = 10000;
 #endif
 	dbgprintf("Benchmarking...\n", total);
 	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2+1, cfg.height/2, zmin, 30);
-	float maxv = image[0], minv =image[0];
-	for (int x=0;x<cfg.width*cfg.height;x++) {
-		maxv = std::max(maxv, image[x]);
-		minv = std::min(minv, image[x]);
-	}
 	double tstart = getPreciseTime();
 	int rc = 0, displayrc=0;
 	for (int n=0;n<total;n++) {
@@ -345,14 +340,13 @@ __global__ void SimpleKernel(int N, float* a){
 
 void TestAsync()
 {
-	int N =1000000;
+	int N =100000;
 	int nt = 32;
-	//std::vector<float> a(N);
-	float* a = new float[N];
-	pinned_array<float> test(123);
+
+	pinned_array<float> a(N); 
 //	cudaMallocHost(&a, sizeof(float)*N, 0);
 
-	device_vec<float> A(N),B(N);
+	device_vec<float> A(N);
 
 	cudaStream_t s0, s1;
 	cudaEvent_t done;
@@ -364,15 +358,17 @@ void TestAsync()
 		a[x] = cos(x*0.01f);
 
 	for (int x=0;x<1;x++) {
-		{ MeasureTime mt("a->A"); A.copyToDevice(a, N, true); }
+		{ MeasureTime mt("a->A"); A.copyToDevice(a.data(), N, true); }
 		{ MeasureTime mt("func(A)"); 
 		SimpleKernel<<<dim3( (N+nt-1)/nt ), dim3(nt)>>>(N, A.data);
 		}
-		{ MeasureTime mt("A->a"); A.copyToHost(a, true); }
+		{ MeasureTime mt("A->a"); A.copyToHost(a.data(), true); }
 	}
 	cudaEventRecord(done);
 
-	while (cudaEventQuery(done) != cudaSuccess);
+	{
+	MeasureTime("sync..."); while (cudaEventQuery(done) != cudaSuccess); 
+	}
 	
 	cudaStreamDestroy(s0);
 	cudaEventDestroy(done);
@@ -388,8 +384,8 @@ int main(int argc, char *argv[])
 	//TestSimpleFFT();
 	//TestKernelFFT();
 //	TestSharedMem();
-	//QTrkTest();
-	TestAsync();
+	//TestAsync();
+	QTrkTest();
 
 	listDevices();
 	return 0;
