@@ -12,7 +12,6 @@ struct cudaImageList;
 typedef cudaImageList<float> cudaImageListf;
 
 struct QIParams {
-	sfft::complex<float>* d_twiddles;
 	float minRadius, maxRadius;
 	int radialSteps, iterations, angularSteps;
 };
@@ -27,7 +26,6 @@ struct ZLUTParams {
 };
 
 struct KernelParams {
-	float2* sharedBuf, *buffer;
 	QIParams qi;
 	ZLUTParams zlut;
 	int sharedMemPerThread;
@@ -44,7 +42,7 @@ struct QIParamWrapper {
 
 struct CUDATrackerJob {
 	CUDATrackerJob () { 
-		locType=LocalizeXCor1D; id=0; zlut=0; 
+		locType=LocalizeOnlyCOM; id=0; zlut=0; 
 		initialPos.x=initialPos.y=initialPos.z=0.0f; 
 		error=0; firstGuess.x=firstGuess.y=0.0f;
 	}
@@ -65,6 +63,12 @@ public:
 	QueuedCUDATracker(QTrkSettings* cfg, int batchSize=-1);
 	~QueuedCUDATracker();
 
+// Thread-Safety:
+
+// We assume 2 threads concurrently accessing the tracker functions:
+//	- Queueing thread: ScheduleLocalization, SetZLUT, 
+//	- 
+
 	void Start();
 	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
 	
@@ -83,10 +87,7 @@ public:
 
 	// Force the current waiting batch to be processed. Useful when number of localizations is not a multiple of internal batch size (almost always)
 	void Flush();
-
-	// Debug stuff
-	float* GetDebugImage() { return 0; }
-
+	
 	bool IsQueueFilled();
 	bool IsIdle();
 	int GetResultCount();
@@ -100,19 +101,21 @@ public:
 
 protected:
 
-	struct Batch{
-		Batch();
-		~Batch();
+	struct Stream {
+		Stream();
+		~Stream();
 		
-		pinned_array<CUDATrackerJob> jobs;
-		int jobCount; // nr of jobs currently stored in jobs array
+		pinned_array<uint> localizationFlags; // tells the kernel what to do, per image in the batch
+		pinned_array<float3> results;
+		std::vector<CUDATrackerJob> jobs;
+		
+		int jobCount() { return jobs.size(); } 
 		cudaImageListf images; 
-		float* hostImageBuf; // original image format pixel buffer, pinned memory with write-combined flags for fast host->device transfer
-		device_vec<CUDATrackerJob> d_jobs;
+		pinned_array<float, cudaHostAllocWriteCombined> hostImageBuf; // original image format pixel buffer
 
 		// CUDA objects
 		cudaStream_t stream; // Stream used
-		cufftHandle plan; // a CUFFT plan can be used for both forward and inverse transforms
+		cufftHandle fftPlan; // a CUFFT plan can be used for both forward and inverse transforms
 		cudaEvent_t localizationDone, imageBufferCopied;
 
 		// Intermediate data
@@ -120,9 +123,15 @@ protected:
 		device_vec<float2> d_QIprofiles;
 
 		uint localizeFlags; // Indicates whether kernels should be ran for building zlut, z computing, or QI
+
+		enum State {
+			StreamIdle,
+			StreamExecuting,
+			StreamStoringResults
+		};
 	};
-	Batch* AllocBatch();
-	void CopyBatchResults(Batch* b);
+	Stream* CreateStream();
+	void CopyBatchResults(Stream* s);
 
 	int numThreads;
 	int batchSize;
@@ -137,21 +146,12 @@ protected:
 		return dim3(numThreads);
 	}
 
-//	cudafft<float> *forward_fft, *backward_fft;
-
-	Threads::Mutex currentBatchMutex, activeBatchMutex;
-	std::vector<Batch*> freeBatches;
-	std::list<Batch*> active;
-	Batch* currentBatch;
-	int maxActiveBatches;
-
-	Threads::Mutex resultsMutex;
+	std::vector<Stream*> streams;
+	Stream* currentStream;
 	std::vector<LocalizationResult> results;
 	
-	device_vec< sfft::complex<float> > fft_twiddles;
-	device_vec< float2 > sharedBuf; // temp space for cpu mode or in case the hardware shared space is too small.
-	device_vec< float2 > buffer; // general buffer space for computation
-	int qiProfileLen, sharedMemSize; // QI profiles need to have power-of-two dimensions. qiProfileLen stores the closest power-of-two value that is bigger than cfg.qi_radialsteps
+	// QI profiles need to have power-of-two dimensions. qiProfileLen stores the closest power-of-two value that is bigger than cfg.qi_radialsteps
+	int qiProfileLen;
 	cudaDeviceProp deviceProp;
 	KernelParams kernelParams;
 
@@ -159,12 +159,9 @@ protected:
 	cudaImageListf zlut;
 	device_vec<float> zcompareWindow;
 
-	void CallKernel_ComputeQI(cudaImageListf& images, QIParamWrapper params, uint sharedMem=0);
-	void CallKernel_BgCorrectedCOM(cudaImageListf& images, float2* d_com, uint sharedMem=0);
-	void CallKernel_MakeTestImage(cudaImageListf& images, float3* d_positions, uint sharedMem=0);
-
 	int FetchResults();
-	void QueueCurrentBatch();
+	void ExecuteBatch(Stream *s);
+	Stream* GetReadyStream(); // get a stream that not currently executing, and still has room for images
 };
 
 

@@ -88,7 +88,6 @@ public:
 
 	virtual void Start () = 0;
 	virtual bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane) = 0;
-	virtual int PollFinished(LocalizationResult* results, int maxResults) = 0;
 	virtual void ClearResults() = 0;
 	virtual void Flush() = 0; // stop waiting for more jobs to do, and just process the current batch
 
@@ -100,10 +99,8 @@ public:
 	// data can be zero to allocate ZLUT data. zcmp has to have 'res' elements
 	virtual void SetZLUT(float* data, int count, int planes, int res, float* zcmp=0) = 0; 
 	virtual float* GetZLUT(int *count=0, int* planes=0, int *res=0) = 0; // delete[] memory afterwards
-
-	// Debug stuff
-	virtual float* GetDebugImage() { return 0; }
 	virtual int GetResultCount() = 0;
+	virtual int PollFinished(LocalizationResult* results, int maxResults) = 0;
 
 	virtual bool IsQueueFilled() = 0;
 	virtual bool IsIdle() = 0;
