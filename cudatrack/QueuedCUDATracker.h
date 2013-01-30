@@ -97,12 +97,13 @@ public:
 protected:
 
 	struct Batch{
-		Batch() { hostImageBuf = 0; images.data=0; }
+		Batch() { hostImageBuf = 0; images.data=0; jobCount=0; }
 		~Batch();
 		
-		std::vector<CUDATrackerJob> jobs;
-		cudaImageListf images;
-		float* hostImageBuf; // original image format pixel buffer
+		pinned_array<CUDATrackerJob> jobs;
+		int jobCount; // nr of jobs currently stored in jobs array
+		cudaImageListf images; 
+		float* hostImageBuf; // original image format pixel buffer, pinned memory with write-combined flags for fast host->device transfer
 		device_vec<CUDATrackerJob> d_jobs;
 		cudaEvent_t localizationDone, imageBufferCopied;
 	};

@@ -426,6 +426,7 @@ QueuedCUDATracker::Batch* QueuedCUDATracker::AllocBatch()
 		cudaMallocHost(&b->hostImageBuf, hostBufSize, cudaHostAllocWriteCombined);
 		b->images = cudaImageListf::alloc(cfg.width,cfg.height,batchSize);
 		b->d_jobs.init(batchSize);
+		b->jobs.init(batchSize);
 		cudaEventCreate(&b->localizationDone);
 		cudaEventCreate(&b->imageBufferCopied);
 
@@ -493,7 +494,7 @@ __global__ void LocalizeBatchKernel(int numImages, cudaImageListf images, Kernel
 bool QueuedCUDATracker::IsIdle()
 {
 	FetchResults();
-	return active.empty () && currentBatch->jobs.empty();
+	return active.empty () && currentBatch->jobCount==0;
 }
 
 
@@ -511,17 +512,16 @@ bool QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 		Threads::Sleep(5);
 	}
 
-	CUDATrackerJob job;
-	if (initialPos) 
+	currentBatchMutex.lock();
+	Batch* cb = currentBatch;
+
+	 CUDATrackerJob& job = cb->jobs[cb->jobCount];
+	if (initialPos)
 		job.initialPos = *(float3*)initialPos;
 	job.id = id;
 	job.zlut = zlutIndex;
 	job.locType = locType;
 	job.zlutPlane = zlutPlane;
-
-	currentBatchMutex.lock();
-	Batch* cb = currentBatch;
-	cb->jobs.push_back(job);
 
 	// Copy the image to the batch image buffer (CPU side)
 	float* hostbuf = &cb->hostImageBuf[cfg.height*cfg.width* (cb->jobs.size()-1)];
@@ -529,7 +529,8 @@ bool QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 	CopyImageToFloat(data, cfg.width, cfg.height, pitch, pdt, hostbuf);
 
 	// If batch is filled, copy the image to video memory asynchronously, and start the localization
-	if (cb->jobs.size() == batchSize)
+	cb->jobCount ++;
+	if (cb->jobCount == batchSize)
 		QueueCurrentBatch();
 
 	currentBatchMutex.unlock();
@@ -542,23 +543,23 @@ void QueuedCUDATracker::QueueCurrentBatch()
 {
 	Batch* cb = currentBatch;
 
-	if (cb->jobs.empty())
+	if (cb->jobCount==0)
 		return;
 
-	dbgprintf("Sending %d images to GPU...\n", cb->jobs.size());
+	dbgprintf("Sending %d images to GPU...\n", cb->jobCount);
 
 	{ MeasureTime mt("image to device");  cb->images.copyToDevice(cb->hostImageBuf, true); }
 	//cudaMemcpy2DAsync(cb->images.data, cb->images.pitch, cb->hostImageBuf,  sizeof(float)*cfg.width, cfg.width*sizeof(float), cfg.height*cb->jobs.size(), cudaMemcpyHostToDevice);
-	{ MeasureTime mt("jobs to device");  cb->d_jobs.copyToDevice(cb->jobs, true); }
+	{ MeasureTime mt("jobs to device");  cb->d_jobs.copyToDevice(cb->jobs.data(), cb->jobCount, true); }
 
 	cudaEventRecord(cb->imageBufferCopied);
 //	cb->images.bind(qi_image_texture);
 
-	{ MeasureTime mt("LocalizeBatchKernel");  LocalizeBatchKernel<<<blocks(cb->jobs.size()), threads() >>> (cb->jobs.size(), cb->images, kernelParams, cb->d_jobs.data); }
+	{ MeasureTime mt("LocalizeBatchKernel");  LocalizeBatchKernel<<<blocks(cb->jobs.size()), threads() >>> (cb->jobCount, cb->images, kernelParams, cb->d_jobs.data); }
 //	CheckCUDAError(); synchronizes!!
 //	cb->images.unbind(qi_image_texture);
 	// Copy back the results
-	{ MeasureTime mt("jobs to host"); cb->d_jobs.copyToHost(cb->jobs, true); }
+	{ MeasureTime mt("jobs to host"); cb->d_jobs.copyToHost( cb->jobs.data(), true); }
 
 	//CheckCUDAError();
 	
@@ -605,8 +606,8 @@ int QueuedCUDATracker::FetchResults()
 
 void QueuedCUDATracker::CopyBatchResults(Batch *b)
 {
-	for (int a=0;a<b->jobs.size();a++) {
-		auto j = b->jobs[a];
+	for (int a=0;a<b->jobCount;a++) {
+		CUDATrackerJob& j = b->jobs[a];
 
 		LocalizationResult r;
 		r.error = j.error;
@@ -621,7 +622,7 @@ void QueuedCUDATracker::CopyBatchResults(Batch *b)
 		results.push_back(r);
 	}
 
-	b->jobs.clear();
+	b->jobCount=0;
 }
 
 int QueuedCUDATracker::PollFinished(LocalizationResult* dstResults, int maxResults)

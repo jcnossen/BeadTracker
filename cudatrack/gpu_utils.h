@@ -170,70 +170,63 @@ struct MeasureTime {
 };
 #endif
 
-//http://www.codeguru.com/cpp/cpp/cpp_mfc/stl/article.php/c4079/Allocators-STL.htm
-template <class T, int flags=0> class cuda_host_allocator;
 
-// specialize for void:
-template <> class cuda_host_allocator<void> {
-public:
-    typedef void*       pointer;
-    typedef const void* const_pointer;
-    // reference to void members are impossible.
-    typedef void value_type;
-    template <class U> struct rebind { typedef cuda_host_allocator<U>
-                                        other; };
-};
-
-template<typename T, int flags>
-class cuda_host_allocator {
- 
-    public:
-      typedef size_t    size_type;
-      typedef ptrdiff_t difference_type;
-      typedef T*        pointer;
-      typedef const T*  const_pointer;
-      typedef T&        reference;
-      typedef const T&  const_reference;
-      typedef T         value_type;
-      template <class U> struct rebind { typedef cuda_host_allocator<U>
-                                         other; };
- 
-      cuda_host_allocator() throw() { }
-      cuda_host_allocator(const cuda_host_allocator&) throw() {  }
-	  template <class U> cuda_host_allocator(const cuda_host_allocator<U>&) throw() {}
-	  ~cuda_host_allocator() throw() {}
- 
-	  pointer address(reference x) const { return &x; }
-	  const_pointer address(const_reference x) const { return &x; }
- 
-      pointer allocate(size_type n, cuda_host_allocator<void>::const_pointer hint = 0) {
-		  pointer ptr;
-		  cudaMallocHost(&ptr, sizeof(T)*n, flags);
-		  return ptr;
-	  }
-      void deallocate(pointer p, size_type n) {
-		  cudaFree(p);
-	  }
-	  size_type max_size() const throw() { return 500*1024*1024; }
- 
-      void construct(pointer p, const T& val) {
-		new(static_cast<void*>(p)) T(val);
-	  }
-      void destroy(pointer p) {
-		  p->~T();
-	  }
-  };
-
-template <class T1, class T2> bool operator==(const cuda_host_allocator<T1>&, const cuda_host_allocator<T2>&) throw() { return true; }
-template <class T1, class T2> bool operator!=(const cuda_host_allocator<T1>&, const cuda_host_allocator<T2>&) throw() { return false; }
-
-template<typename T>
-class pinned_vector : public std::vector<T, cuda_host_allocator<T> >
+template<typename T, int flags=0>
+class pinned_array
 {
 public:
-	typedef std::vector<T, cuda_host_allocator<T> > base_t;
-	pinned_vector(size_t N) : base_t(N) {}
-	pinned_vector() {}
-	pinned_vector(const pinned_vector<T>& o) : base_t(o) {}
+	pinned_array() {
+		d=0; n=0;
+	}
+	~pinned_array() {
+		free();
+	}
+	pinned_array(size_t n) {
+		d=0; init(n);
+	}
+	template<typename TOther, int f>
+	pinned_array(const pinned_array<TOther,f>& src) {
+		d=0;init(src.n);
+		for(int k=0;k<src.n;k++)
+			d[k]=src[k];
+	}
+	template<typename TOther, int F>
+	pinned_array& operator=(const pinned_array<TOther, F>& src) {
+		if (src.n != n) init(src.n);
+		for(int k=0;k<src.n;k++)
+			d[k]=src[k];
+	}
+	template<typename Iterator>
+	pinned_array(Iterator first, Iterator end) {
+		d=0; init(end-first);
+		for (int k = 0; first != end; ++first) {
+			d[k++] = *first;
+		}
+	}
+	template<typename T>
+	pinned_array(const device_vec<T>& src) {
+		d=0; init(src.size()); src.copyToHost(d,false);
+	}
 
+	int size() const { return n; }
+	T* begin() { return d; }
+	T* end() { return d+n; }
+	const T* begin() const { return d; }
+	const T* end() const { return d+n; }
+	T* data() { return d; }
+	void free() {
+		cudaFreeHost(d);
+		d=0;n=0;
+	}
+	void init(int n) {
+		if (d) cudaFree(d);
+		this->n = n;
+		cudaMallocHost(&d, sizeof(T)*n, flags);
+	}
+	T& operator[](int i) {  return d[i]; }
+	const T&operator[](int i) const { return d[i];}
+
+protected:
+	T* d;
+	size_t n;
 };

@@ -349,7 +349,7 @@ void TestAsync()
 	int nt = 32;
 	//std::vector<float> a(N);
 	float* a = new float[N];
-	pinned_vector<float> test(N);
+	pinned_array<float> test(123);
 //	cudaMallocHost(&a, sizeof(float)*N, 0);
 
 	device_vec<float> A(N),B(N);
@@ -373,10 +373,7 @@ void TestAsync()
 	cudaEventRecord(done);
 
 	while (cudaEventQuery(done) != cudaSuccess);
-
-	std::allocator<float> x;;
-
-
+	
 	cudaStreamDestroy(s0);
 	cudaEventDestroy(done);
 }
