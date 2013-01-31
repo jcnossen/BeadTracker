@@ -17,7 +17,7 @@
 		<Item Name="MotorDriverInterface.lvclass" Type="LVClass" URL="../BeadTracker2.llb/MotorDriverInterface.lvclass"/>
 		<Item Name="PluginConfig.ctl" Type="VI" URL="../BeadTracker2.llb/PluginConfig.ctl"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../BeadTracker2.llb/SimpleCameraTest.vi"/>
-		<Item Name="VisionExpressCamera.lvclass" Type="LVClass" URL="../VisionExpressCamera.llb/VisionExpressCamera.lvclass"/>
+		<Item Name="VisionExpressCamera.lvclass" Type="LVClass" URL="../Modules/VisionExpressCamera.llb/VisionExpressCamera.lvclass"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Image Type" Type="VI" URL="/&lt;vilib&gt;/vision/Image Controls.llb/Image Type"/>
