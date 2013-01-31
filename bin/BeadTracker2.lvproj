@@ -10,14 +10,21 @@
 		<Property Name="server.vi.callsEnabled" Type="Bool">true</Property>
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
+		<Item Name="Main" Type="Folder">
+			<Item Name="CameraViewUI.vi" Type="VI" URL="../BeadTracker2.llb/CameraViewUI.vi"/>
+			<Item Name="GlobalVar_Plugins.vi" Type="VI" URL="../BeadTracker2.llb/GlobalVar_Plugins.vi"/>
+			<Item Name="PluginConfig.ctl" Type="VI" URL="../BeadTracker2.llb/PluginConfig.ctl"/>
+		</Item>
+		<Item Name="Modules" Type="Folder">
+			<Property Name="NI.SortType" Type="Int">3</Property>
+			<Item Name="Cameras" Type="Folder">
+				<Item Name="VisionExpressCamera.lvclass" Type="LVClass" URL="../Modules/VisionExpressCamera.llb/VisionExpressCamera.lvclass"/>
+			</Item>
+			<Item Name="CameraInterface.lvclass" Type="LVClass" URL="../BeadTracker2.llb/CameraInterface.lvclass"/>
+			<Item Name="MotorDriverInterface.lvclass" Type="LVClass" URL="../BeadTracker2.llb/MotorDriverInterface.lvclass"/>
+		</Item>
 		<Item Name="BT2_PluginConfig.vi" Type="VI" URL="../BT2_PluginConfig.vi"/>
-		<Item Name="CameraInterface.lvclass" Type="LVClass" URL="../BeadTracker2.llb/CameraInterface.lvclass"/>
-		<Item Name="CameraViewUI.vi" Type="VI" URL="../BeadTracker2.llb/CameraViewUI.vi"/>
-		<Item Name="GlobalVar_Plugins.vi" Type="VI" URL="../BeadTracker2.llb/GlobalVar_Plugins.vi"/>
-		<Item Name="MotorDriverInterface.lvclass" Type="LVClass" URL="../BeadTracker2.llb/MotorDriverInterface.lvclass"/>
-		<Item Name="PluginConfig.ctl" Type="VI" URL="../BeadTracker2.llb/PluginConfig.ctl"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../BeadTracker2.llb/SimpleCameraTest.vi"/>
-		<Item Name="VisionExpressCamera.lvclass" Type="LVClass" URL="../Modules/VisionExpressCamera.llb/VisionExpressCamera.lvclass"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Image Type" Type="VI" URL="/&lt;vilib&gt;/vision/Image Controls.llb/Image Type"/>
