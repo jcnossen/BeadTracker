@@ -76,25 +76,25 @@ public:
 		cudaMemcpy(data, src.data, sizeof(T)*size, cudaMemcpyDeviceToDevice);
 		return *this;
 	}
-	void copyToHost(T* dst, bool async) {
+	void copyToHost(T* dst, bool async, cudaStream_t s=0) {
 		if (async)
-			cudaMemcpyAsync(dst, data, sizeof(T) * size, cudaMemcpyDeviceToHost);
+			cudaMemcpyAsync(dst, data, sizeof(T) * size, cudaMemcpyDeviceToHost, s);
 		else
 			cudaMemcpy(dst, data, sizeof(T) * size, cudaMemcpyDeviceToHost);
 	}
-	void copyToHost(std::vector<T>& dst ,bool async) {
+	void copyToHost(std::vector<T>& dst ,bool async, cudaStream_t s=0) {
 		if (dst.size() != size)
 			dst.resize(size);
-		copyToHost(&dst[0], async);
+		copyToHost(&dst[0], async, s);
 	}
-	void copyToDevice(std::vector<T>& src, bool async) {
-		copyToDevice(&src[0], src.size(), async);
+	void copyToDevice(std::vector<T>& src, bool async, cudaStream_t s=0) {
+		copyToDevice(&src[0], src.size(), async, s);
 	}
-	void copyToDevice(T* first, int size, bool async) {
+	void copyToDevice(T* first, int size, bool async, cudaStream_t s=0) {
 		if (this->size != size)
 			init(size);
 		if (async)
-			cudaMemcpyAsync(data, first, sizeof(T) * size, cudaMemcpyHostToDevice);
+			cudaMemcpyAsync(data, first, sizeof(T) * size, cudaMemcpyHostToDevice, s);
 		else
 			cudaMemcpy(data, first, sizeof(T) * size, cudaMemcpyHostToDevice);
 	}

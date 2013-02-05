@@ -107,7 +107,7 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	cudaGetDeviceProperties(&deviceProp, cfg->cuda_device);
 	numThreads = deviceProp.warpSize;
 
-	if(batchSize<0) batchSize = numThreads * deviceProp.multiProcessorCount;
+	if(batchSize<0) batchSize = 128;
 	this->batchSize = batchSize;
 
 	//int sharedSpacePerThread = (prop.sharedMemPerBlock-forward_fft->kparams_size*2) / numThreads;
@@ -117,8 +117,8 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	dbgprintf("# of CUDA processors:%d\n", deviceProp.multiProcessorCount);
 	dbgprintf("warp size: %d.\n", deviceProp.warpSize);
 
-	qiProfileLen = 1;
-	while (qiProfileLen < cfg->qi_radialsteps*2) qiProfileLen *= 2;
+	qi_FFT_length = 1;
+	while (qi_FFT_length < cfg->qi_radialsteps*2) qi_FFT_length *= 2;
 
 	KernelParams &p = kernelParams;
 	p.com_bgcorrection = cfg->com_bgcorrection;
@@ -145,16 +145,15 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	for (int i=0;i<streams.size();i++) {
 		streams[i] = CreateStream();
 	}
+	currentStream=streams[0];
 }
 
 QueuedCUDATracker::~QueuedCUDATracker()
 {
 	if (zlut.data)
 		zlut.free();
-
-	currentStreamMutex.lock();
+	
 	DeleteAllElems(streams);
-	currentStreamMutex.unlock();
 }
 
 static CUBOTH float2 BgCorrectedCOM(int idx, cudaImageListf images, float correctionFactor)
@@ -163,9 +162,11 @@ static CUBOTH float2 BgCorrectedCOM(int idx, cudaImageListf images, float correc
 	float sum=0, sum2=0;
 	float momentX=0;
 	float momentY=0;
+//	const float* __restrict__ imgptr = &images.data[imgsize*idx];
 
 	for (int y=0;y<images.h;y++)
 		for (int x=0;x<images.w;x++) {
+			//float v = imgptr[y*images.pitch+x];
 			float v = images.pixel(x,y,idx);
 			sum += v;
 			sum2 += v*v;
@@ -179,6 +180,7 @@ static CUBOTH float2 BgCorrectedCOM(int idx, cudaImageListf images, float correc
 	for (int y=0;y<images.h;y++)
 		for(int x=0;x<images.w;x++)
 		{
+			// float v = imgptr[y*images.pitch+x];// images.pixel(x,y,idx);
 			float v = images.pixel(x,y,idx);
 			v = fabsf(v-mean)-correctionFactor*stdev;
 			if(v<0.0f) v=0.0f;
@@ -193,32 +195,11 @@ static CUBOTH float2 BgCorrectedCOM(int idx, cudaImageListf images, float correc
 	return com;
 }
 
-__global__ void BgCorrectedCOM(cudaImageListf& images,float2* d_com, float bgCorrectionFactor) {
+__global__ void BgCorrectedCOM(cudaImageListf images,float3* d_com, float bgCorrectionFactor) {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
 	if (idx < images.count) {
-		d_com[idx] = BgCorrectedCOM(idx, images, bgCorrectionFactor);
-	}
-}
-
-void QueuedCUDATracker::ComputeBgCorrectedCOM(cudaImageListf& images, float2* d_com)
-{
-	BgCorrectedCOM<<<blocks(images.count),threads()>>>(images,d_com, cfg.com_bgcorrection);
-}
-
-
-static CUBOTH void MakeTestImage(int idx, cudaImageListf& images, float2* sharedMem, float3* d_positions)
-{
-	float3 pos = d_positions[idx];
-	
-	float S = 1.0f/pos.z;
-	for (int y=0;y<images.h;y++) {
-		for (int x=0;x<images.w;x++) {
-			float X = x - pos.x;
-			float Y = y - pos.y;
-			float r = sqrtf(X*X+Y*Y)+1;
-			float v = sinf(r/(5*S)) * expf(-r*r*S*0.01f);
-			images.pixel(x,y,idx) = v;
-		}
+		float2 com = BgCorrectedCOM(idx, images, bgCorrectionFactor);
+		d_com[idx] = make_float3(com.x,com.y,0.0f);
 	}
 }
 
@@ -249,7 +230,6 @@ static __device__ void RadialProfile(int idx, cudaImageListf& images, float *dst
 		dst[i] *= invTotalrms;
 	}
 }
-
 
 static __device__ qivalue_t QI_ComputeOffset(qicomplex_t* profile, qicomplex_t* tmpbuf1, const QIParams& params, int idx, sfft::complex<float>* s_twiddles) {
 	int nr = params.radialSteps;
@@ -311,6 +291,7 @@ static __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, f
 		total += dst[i];
 	}
 }
+
 /*
 static __device__ float2 ComputeQIPosition(int idx, cudaImageListf& images, KernelParams params, float2 initial, bool& error)
 {
@@ -385,29 +366,59 @@ QueuedCUDATracker::Stream::Stream()
 	hostImageBuf = 0; 
 	images.data=0; 
 	stream=0;
+	state = StreamIdle;
+	localizeFlags=0;
+	jobCount = 0;
 }
 
 QueuedCUDATracker::Stream::~Stream() 
 {
-	cudaStreamDestroy(&stream);
+	cudaStreamDestroy(stream);
 	cufftDestroy(fftPlan);
 
 	if(images.data) images.free();
 	cudaEventDestroy(localizationDone);
-	cudaEventDestroy(imageBufferCopied);
 }
 
+bool QueuedCUDATracker::Stream::IsExecutionDone()
+{
+	return cudaEventQuery(localizationDone) == cudaSuccess;
+}
+
+int QueuedCUDATracker::Stream::GetJobCount()
+{
+	mutex.lock();
+	int jc = jobCount;
+	mutex.unlock();
+	return jc;
+}
 
 QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream()
 {
 	Stream* s = new Stream();
 
+	cudaStreamCreate(&s->stream);
+
 	uint hostBufSize = sizeof(float)* cfg.width*cfg.height*batchSize;
 	s->hostImageBuf.init(hostBufSize);
 	s->images = cudaImageListf::alloc(cfg.width, cfg.height, batchSize);
 
+	s->jobs.init(batchSize);
+	s->results.init(batchSize);
 	s->d_com.init(batchSize);
-	s->d_qi.init(batchSize);
+	s->d_resultpos.init(batchSize);
+	s->results.init(batchSize);
+	s->d_jobs.init(batchSize);
+	s->d_QIprofiles.init(batchSize*2*qi_FFT_length);
+
+	// 2* batchSize, since X & Y both need an FFT transform
+	cufftResult_t r = cufftPlanMany(&s->fftPlan, 1, &qi_FFT_length, 
+			0, 1, qi_FFT_length, 0, 1, qi_FFT_length, CUFFT_R2C, batchSize*2);
+
+	if(r != CUFFT_SUCCESS) {
+		throw std::runtime_error( SPrintf("CUFFT plan creation failed. FFT len: %d. Batchsize: %d\n", qi_FFT_length, batchSize*2));
+	}
+	cufftSetStream(s->fftPlan, s->stream);
 
 	cudaEventCreate(&s->localizationDone);
 	return s;
@@ -416,17 +427,23 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream()
  // get a stream that not currently executing, and still has room for images
 QueuedCUDATracker::Stream* QueuedCUDATracker::GetReadyStream()
 {
-	if (currentStream && currentStream->jobCount() < batchSize) {
+	if (currentStream && currentStream->state != Stream::StreamExecuting && 
+		currentStream->GetJobCount() < batchSize) {
 		return currentStream;
 	}
 
 	// Find another stream that is ready
 	while (true) {
-
+		FetchResults();
 		for (int a=0;a<streams.size();a++) {
-
+			Stream *s = streams[a];
+			if (s->state != Stream::StreamExecuting) {
+				currentStream = s;
+				dbgprintf("Switching to stream %d\n", a);
+				return s;
+			}
 		}
-
+		Threads::Sleep(5);
 	}
 }
 
@@ -444,149 +461,184 @@ void QueuedCUDATracker::ClearResults()
 	results.clear();
 }
 
+// All streams on StreamIdle?
 bool QueuedCUDATracker::IsIdle()
 {
+	return CheckAllStreams(Stream::StreamIdle);
 }
 
+bool QueuedCUDATracker::CheckAllStreams(Stream::State s)
+{
+	FetchResults();
+	for (int a=0;a<streams.size();a++){
+		if (streams[a]->state != s)
+			return false;
+	}
+	return true;
+}
 
 bool QueuedCUDATracker::IsQueueFilled()
 {
-	
+	return CheckAllStreams(Stream::StreamExecuting);
 }
 
 bool QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane)
 {
 	Stream* s = GetReadyStream();
 
-	currentBatchMutex.lock();
-	Batch* cb = currentBatch;
+	s->lock();
 
-	int jobIndex = cb->jobCount++;
-	CUDATrackerJob& job = cb->jobs[jobIndex];
+	int jobIndex =  s->jobCount++;
+	CUDATrackerJob& job = s->jobs[jobIndex];
 	if (initialPos)
 		job.initialPos = *(float3*)initialPos;
 	job.id = id;
 	job.zlut = zlutIndex;
 	job.locType = locType;
 	job.zlutPlane = zlutPlane;
+	s->localizeFlags |= locType; // which kernels to run
 
 	// Copy the image to the batch image buffer (CPU side)
-	float* hostbuf = &cb->hostImageBuf[cfg.height*cfg.width*jobIndex];
+	float* hostbuf = &s->hostImageBuf[cfg.height*cfg.width*jobIndex];
 	uchar* srcptr = data;
 	CopyImageToFloat(data, cfg.width, cfg.height, pitch, pdt, hostbuf);
 
 	// If batch is filled, copy the image to video memory asynchronously, and start the localization
-	if (cb->jobCount == batchSize)
-		QueueCurrentBatch();
+	if (s->jobCount == batchSize)
+		ExecuteBatch(s);
 
-	currentBatchMutex.unlock();
+	s->unlock();
 
 	return true;
 }
 
-
-void QueuedCUDATracker::ExecuteBatch(
+void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s)
 {
-	Batch* cb = currentBatch;
+	int njobs = s->jobs.size();
+	int nElem = njobs * qi_FFT_length * 2; // 2 profiles of qi_FFT_length size for each job
+	//QI_ComputeProfile <<< blocks(nElem), threads(), 0, s->stream >>> (qi_FFT_length, s->
+}
 
-	if (cb->jobCount==0)
+
+__global__ void BuildZLUTKernel(int njobs, cudaImageListf images, ZLUTParams params, float3* positions, CUDATrackerJob* jobs)
+{
+	int idx = threadIdx.x + blockDim.x * blockIdx.x;
+
+	if (idx < njobs) {
+		CUDATrackerJob& j = jobs[idx];
+		if (j.locType & LocalizeBuildZLUT) {
+			bool err;
+			RadialProfile(idx, images, params.GetZLUT( j.zlut, j.zlutPlane ), params, make_float2(positions[idx].x, positions[idx].y), err);
+		}
+	}
+}
+
+void QueuedCUDATracker::ExecuteBatch(Stream *s)
+{
+	if (s->jobCount==0)
 		return;
 #ifdef _DEBUG
-	dbgprintf("Sending %d images to GPU...\n", cb->jobCount);
+	dbgprintf("Sending %d images to GPU...\n", s->jobs.size());
 #endif
 
-	{MeasureTime mt("images to device"); cb->images.copyToDevice(cb->hostImageBuf, true); }
-	//cudaMemcpy2DAsync(cb->images.data, cb->images.pitch, cb->hostImageBuf,  sizeof(float)*cfg.width, cfg.width*sizeof(float), cfg.height*cb->jobs.size(), cudaMemcpyHostToDevice);
-	{MeasureTime mt("jobs to device"); cb->d_jobs.copyToDevice(cb->jobs.data(), cb->jobCount, true); }
+/*	- Async copy host-side buffer to device
+	- Bind image
+	- Run COM kernel
+	- QI loop: {
+		- Run QI kernel: Sample from texture into quadrant profiles
+		- Run CUFFT
+		- Run QI kernel: Compute positions
+	}
+	- Async copy results to host
+	- Unbind image
+	*/
 
-	cudaEventRecord(cb->imageBufferCopied);
 //	cb->images.bind(qi_image_texture);
+	cudaMemcpy2DAsync( s->images.data, s->images.pitch, s->hostImageBuf.data(), sizeof(float)*s->images.w, s->images.w, s->images.h * s->jobs.size(), cudaMemcpyHostToDevice, s->stream);
+	s->d_jobs.copyToDevice(s->jobs.data(), s->jobCount, true, s->stream);
+	BgCorrectedCOM <<< blocks(s->jobs.size()), threads(), 0, s->stream >>> (s->images, s->d_com.data, cfg.com_bgcorrection);
 
-	{MeasureTime mt("LocalizeBatchKernel"); LocalizeBatchKernel<<<blocks(cb->jobCount), threads() >>> (cb->jobCount, cb->images, kernelParams, cb->d_jobs.data); }
-//	cb->images.unbind(qi_image_texture);
-	// Copy back the results
-	{MeasureTime mt("results to host"); cb->d_jobs.copyToHost(cb->jobs.data(), true); }
+	device_vec<float3> *curpos = &s->d_com;
+	for (int a=0;a<cfg.qi_iterations;a++) {
+		QI_Iterate(curpos, &s->d_resultpos, s);
+		curpos = &s->d_resultpos;
+	}
 
+	if (s->localizeFlags & LocalizeBuildZLUT) {
+		BuildZLUTKernel <<< blocks(s->jobs.size()), threads(), 0, s->stream >>> (s->jobCount, s->images, kernelParams.zlut, curpos->data, s->d_jobs.data);
+	}
+	
+	curpos->copyToHost(s->results.data(), true, s->stream);
+	
+//	cb->images.bind(qi_image_texture);
 	//CheckCUDAError();
 	
 	// Make sure we can query the all done signal
-	cudaEventRecord(currentBatch->localizationDone);
+	cudaEventRecord(s->localizationDone);
 
-	activeBatchMutex.lock();
-	active.push_back(currentBatch);
-	activeBatchMutex.unlock();
-	currentBatch = AllocBatch();
+	s->state = Stream::StreamExecuting;
 }
 
 void QueuedCUDATracker::Flush()
 {
-	QueueCurrentBatch();
+	if (currentStream) {
+		currentStream->lock();
+		ExecuteBatch(currentStream);
+		currentStream->unlock();
+	}
 }
 
 int QueuedCUDATracker::FetchResults()
 {
 	// Labview can call from multiple threads
-	activeBatchMutex.lock();
-	auto i = active.begin();
-	
-	while (i != active.end())
-	{
-		auto cur = i++;
-		Batch* b = *cur;
-
-		cudaError_t result = cudaEventQuery(b->localizationDone);
-		if (result == cudaSuccess) {
-			resultsMutex.lock();
-			CopyBatchResults(b);
-			resultsMutex.unlock();
-		
-			active.erase(cur);
-			freeBatches.push_back(b);
+	for (int a=0;a<streams.size();a++) {
+		Stream* s = streams[a];
+		if (s->state == Stream::StreamExecuting && s->IsExecutionDone()) {
+			s->lock();
+			CopyStreamResults(s);
+			s->state = Stream::StreamIdle;
+			s->unlock();
 		}
 	}
-	activeBatchMutex.unlock();
 	return results.size();
 }
 
-void QueuedCUDATracker::CopyBatchResults(Batch *b)
+void QueuedCUDATracker::CopyStreamResults(Stream *s)
 {
-	for (int a=0;a<b->jobCount;a++) {
-		CUDATrackerJob& j = b->jobs[a];
+	for (int a=0;a<s->jobCount;a++) {
+		CUDATrackerJob& j = s->jobs[a];
 
 		LocalizationResult r;
 		r.error = j.error;
 		r.id = j.id;
-		r.firstGuess.x = j.firstGuess.x; r.firstGuess.y = j.firstGuess.y;
+		r.firstGuess = vector2f();
 		r.locType = j.locType;
 		r.zlutIndex = j.zlut;
-		r.pos.x = j.resultPos.x;
-		r.pos.y = j.resultPos.y;
-		r.z = j.resultPos.z;
+		r.pos.x = s->results[a].x;
+		r.pos.y = s->results[a].y;
+		r.z = s->results[a].z;
 
 		results.push_back(r);
 	}
-
-	b->jobCount=0;
+	s->jobCount=0;
+	s->localizeFlags = 0; // reset this for the next batch
 }
 
 int QueuedCUDATracker::PollFinished(LocalizationResult* dstResults, int maxResults)
 {
 	FetchResults();
 
-	resultsMutex.lock();
 	int numResults = 0;
 	while (numResults < maxResults && !results.empty()) {
 		dstResults[numResults++] = results.back();
 		results.pop_back();
 	}
-	resultsMutex.unlock();
 	return numResults;
 }
 
 // data can be zero to allocate ZLUT data
 void QueuedCUDATracker::SetZLUT(float* data,  int numLUTs, int planes, int res, float* zcmp) 
 {
-	currentBatchMutex.lock(); // cannot launch batches while the ZLUT configuration is being changed
 	zlut_planes = planes;
 	zlut_count = numLUTs;
 	zlut_res = res;
@@ -599,7 +651,6 @@ void QueuedCUDATracker::SetZLUT(float* data,  int numLUTs, int planes, int res, 
 	zlut = cudaImageListf::alloc(res, planes, numLUTs);
 	if (data) zlut.copyToDevice(data, false);
 	kernelParams.zlut.img = zlut;
-	currentBatchMutex.unlock();
 }
 
 // delete[] memory afterwards

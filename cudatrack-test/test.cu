@@ -105,73 +105,6 @@ void TestJobPassing()
 	testJobPassing<<<dim3(),dim3()>>>(job, device_vec<CUDATrackerJob> (jobs).data);
 }
 
-void TestLocalization()
-{
-	const int NumImages=480;
-	int N = 10;
-	QTrkSettings cfg;
-	cfg.numThreads = -1;
-	cfg.qi_iterations = 2;
-	cfg.qi_maxradius = 30;
-	QueuedCUDATracker trk(&cfg);
-
-	auto images = cudaImageListf::alloc(80,80, NumImages);
-	ShowCUDAError();
-	std::vector<float3> positions(images.count);
-	for(int i=0;i<images.count;i++) {
-		float xp = images.w/2+(rand_uniform<float>() - 0.5) * 5;
-		float yp = images.h/2+(rand_uniform<float>() - 0.5) * 5;
-		positions[i] = make_float3(xp, yp, 3);
-	}
-	device_vec<float3> d_pos(positions);
-
-	dbgprintf("Generating... %d images\n", N*images.count);
-
-	double t0 = getPreciseTime();
-	for (int i=0;i<N;i++)
-		trk.GenerateImages(images, d_pos.data);
-	cudaDeviceSynchronize();
-	double tgen = getPreciseTime() - t0;
-
-	device_vec<float2> d_com (positions.size());
-	device_vec<float2> d_qi(positions.size());
-	double t1 = getPreciseTime();
-	dbgprintf("COM\n");
-	for (int i=0;i<N;i++)
-		trk.ComputeBgCorrectedCOM(images, d_com.data);
-	cudaDeviceSynchronize();
-	double t2 = getPreciseTime();
-	double tcom = t2 - t1;
-
-	dbgprintf("QI\n");
-	for (int i=0;i<N;i++)
-		trk.ComputeQI(images, d_com.data, d_qi.data);
-	cudaDeviceSynchronize();
-	double tqi = getPreciseTime() - t2;
-
-	std::vector<float2> com(d_com), qi(d_qi);
-	double comErrX=0, comErrY=0;
-	double qiErrX=0, qiErrY=0;
-
-	for (int i=0;i<images.count;i++) {
-		dbgprintf("[%d] true pos=( %.4f, %.4f ).  COM error=( %.4f, %.4f ).  QI error=( %.4f, %.4f ) \n", i, 
-			positions[i].x, positions[i].y, com[i].x - positions[i].x, com[i].y - positions[i].y, qi[i].x - positions[i].x, qi[i].y - positions[i].y );
-
-		qiErrX += fabsf(positions[i].x-qi[i].x);
-		qiErrY += fabsf(positions[i].y-qi[i].y);
-		comErrX += fabsf(positions[i].x-com[i].x);
-		comErrY += fabsf(positions[i].y-com[i].y);
-	}
-
-	dbgprintf("Errors: COM.x: %f, COM.y: %f, QI.x=%f, QI.y=%f\n", comErrX/images.count, comErrY/images.count, qiErrX/images.count, qiErrY/images.count);
-	N *= images.count;
-	dbgprintf("Image generating: %f img/s. COM: %f img/s. QI: %f img/s\n", N/tgen, N/tcom, N/tqi);
-
-	ShowCUDAError();
-	images.free();
-}
-
-
 __shared__ float cudaSharedMem[];
 
 __device__ float compute(int idx, float* buf, int s)
@@ -235,14 +168,14 @@ void QTrkTest()
 {
 	QTrkSettings cfg;
 	cfg.width = cfg.height = 60;
-	cfg.qi_iterations = 4;
+	cfg.qi_iterations = 0;
 	cfg.qi_maxradius = 50;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
 	//cfg.numThreads = 6;
-	QueuedCUDATracker qtrk(&cfg, -1);
+	QueuedCUDATracker qtrk(&cfg, 8);
 	float *image = new float[cfg.width*cfg.height];
 
 	// Generate ZLUT
@@ -277,7 +210,7 @@ void QTrkTest()
 	
 	// Schedule images to localize on
 #ifdef _DEBUG
-	int total= 100;
+	int total= 10;
 #else
 	int total = 10000;
 #endif

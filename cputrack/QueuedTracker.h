@@ -105,8 +105,6 @@ public:
 	virtual bool IsQueueFilled() = 0;
 	virtual bool IsIdle() = 0;
 
-	virtual void GenerateTestImage(float* dstImg, float xp, float yp, float size, float photoncount) = 0;
-
 	QTrkSettings cfg;
 };
 

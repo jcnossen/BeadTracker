@@ -1,6 +1,14 @@
+// CUDA implementation of QueuedTracker interface
+
+// Thread-Safety:
+
+// We assume 2 threads concurrently accessing the tracker functions:
+//	- Queueing thread: ScheduleLocalization, SetZLUT, GetZLUT, Flush, IsQueueFilled, IsIdle
+//	- Fetching thread: PollFinished, GetResultCount, ClearResults
+
 #pragma once
-#include "threads.h"
 #include "QueuedTracker.h"
+#include "threads.h"
 #include <cuda_runtime_api.h>
 #include <cufft.h>
 #include <list>
@@ -63,12 +71,6 @@ public:
 	QueuedCUDATracker(QTrkSettings* cfg, int batchSize=-1);
 	~QueuedCUDATracker();
 
-// Thread-Safety:
-
-// We assume 2 threads concurrently accessing the tracker functions:
-//	- Queueing thread: ScheduleLocalization, SetZLUT, 
-//	- 
-
 	void Start();
 	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
 	
@@ -83,7 +85,6 @@ public:
 	void SetZLUT(float* data,  int numLUTs, int planes, int res, float* zcmp=0); 
 	float* GetZLUT(int *count=0, int* planes=0, int *res=0); // delete[] memory afterwards
 	int PollFinished(LocalizationResult* results, int maxResults);
-	void GenerateTestImage(float* dst, float xp,float yp, float z, float photoncount);
 
 	// Force the current waiting batch to be processed. Useful when number of localizations is not a multiple of internal batch size (almost always)
 	void Flush();
@@ -92,46 +93,46 @@ public:
 	bool IsIdle();
 	int GetResultCount();
 
-	// Direct kernel wrappers
-	void GenerateImages(cudaImageListf& imgList, float3 *d_positions);
-	void ComputeBgCorrectedCOM(cudaImageListf& imgList, float2* d_com);
-	void Compute1DXCor(cudaImageListf& images, float2* d_initial, float2* d_result);
-	void ComputeQI(cudaImageListf& images, float2* d_initial, float2* d_result);
-	void Compute1DXCorProfiles(cudaImageListf& images, float* d_profiles);
-
 protected:
 
 	struct Stream {
 		Stream();
 		~Stream();
+		bool IsExecutionDone();
 		
-		pinned_array<uint> localizationFlags; // tells the kernel what to do, per image in the batch
 		pinned_array<float3> results;
-		std::vector<CUDATrackerJob> jobs;
+		pinned_array<CUDATrackerJob> jobs;
+		device_vec<CUDATrackerJob> d_jobs;
+		int jobCount;
 		
-		int jobCount() { return jobs.size(); } 
+		int GetJobCount();
 		cudaImageListf images; 
 		pinned_array<float, cudaHostAllocWriteCombined> hostImageBuf; // original image format pixel buffer
 
 		// CUDA objects
 		cudaStream_t stream; // Stream used
 		cufftHandle fftPlan; // a CUFFT plan can be used for both forward and inverse transforms
-		cudaEvent_t localizationDone, imageBufferCopied;
+		cudaEvent_t localizationDone;
 
 		// Intermediate data
-		device_vec<float2> d_com, d_qi;
+		device_vec<float3> d_resultpos;
+		device_vec<float3> d_com; // z is zero
 		device_vec<float2> d_QIprofiles;
 
 		uint localizeFlags; // Indicates whether kernels should be ran for building zlut, z computing, or QI
 
+		Threads::Mutex mutex; // Mutex to lock when queing jobs or copying results
+		void lock() { mutex.lock(); }
+		void unlock() { mutex.unlock(); }
+
 		enum State {
 			StreamIdle,
-			StreamExecuting,
-			StreamStoringResults
+			StreamExecuting
 		};
+		volatile State state; // I'm assuming this variable is atomic
 	};
 	Stream* CreateStream();
-	void CopyBatchResults(Stream* s);
+	void CopyStreamResults(Stream* s);
 
 	int numThreads;
 	int batchSize;
@@ -151,7 +152,7 @@ protected:
 	std::vector<LocalizationResult> results;
 	
 	// QI profiles need to have power-of-two dimensions. qiProfileLen stores the closest power-of-two value that is bigger than cfg.qi_radialsteps
-	int qiProfileLen;
+	int qi_FFT_length ;
 	cudaDeviceProp deviceProp;
 	KernelParams kernelParams;
 
@@ -162,6 +163,8 @@ protected:
 	int FetchResults();
 	void ExecuteBatch(Stream *s);
 	Stream* GetReadyStream(); // get a stream that not currently executing, and still has room for images
+	void QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s);
+	bool CheckAllStreams(Stream::State state);
 };
 
 

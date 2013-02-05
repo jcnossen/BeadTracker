@@ -226,18 +226,6 @@ CDLL_EXPORT int qtrk_idle(QueuedTracker* qtrk)
 	return qtrk->IsIdle() ? 1 : 0;
 }
 
-CDLL_EXPORT void DLL_CALLCONV qtrk_generate_test_image(QueuedTracker* tracker, LVArray2D<ushort>** image, 
-		float xp, float yp, float size, float photoncount)
-{
-	int w=tracker->cfg.width, h =tracker->cfg.height;
-	ResizeLVArray2D(image, h,w);
-	
-	float *d = new float[w*h];
-	tracker->GenerateTestImage(d, xp, yp, size, photoncount );
-	floatToNormalizedInt((*image)->elem, d, w,h, (ushort)((1<<16)-1));
-	delete[] d;
-}
-
 CDLL_EXPORT void DLL_CALLCONV qtrk_generate_image_from_lut(LVArray2D<float>** image, LVArray2D<float>** lut, 
 					float *LUTradii, vector2f* position, float z, float M, float sigma_noise)
 {
@@ -249,10 +237,6 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_generate_image_from_lut(LVArray2D<float>** im
 	if(sigma_noise>0)
 		ApplyGaussianNoise(img, sigma_noise);
 }
-
-
-
-
 
 
 CDLL_EXPORT void qtrk_dump_memleaks()
