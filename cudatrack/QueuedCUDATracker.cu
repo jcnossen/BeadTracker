@@ -195,9 +195,9 @@ static CUBOTH float2 BgCorrectedCOM(int idx, cudaImageListf images, float correc
 	return com;
 }
 
-__global__ void BgCorrectedCOM(cudaImageListf images,float3* d_com, float bgCorrectionFactor) {
+__global__ void BgCorrectedCOM(int count, cudaImageListf images,float3* d_com, float bgCorrectionFactor) {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
-	if (idx < images.count) {
+	if (idx < count) {
 		float2 com = BgCorrectedCOM(idx, images, bgCorrectionFactor);
 		d_com[idx] = make_float3(com.x,com.y,0.0f);
 	}
@@ -554,9 +554,9 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	*/
 
 //	cb->images.bind(qi_image_texture);
-	cudaMemcpy2DAsync( s->images.data, s->images.pitch, s->hostImageBuf.data(), sizeof(float)*s->images.w, s->images.w, s->images.h * s->jobs.size(), cudaMemcpyHostToDevice, s->stream);
+	cudaMemcpy2DAsync( s->images.data, s->images.pitch, s->hostImageBuf.data(), sizeof(float)*s->images.w, s->images.w*sizeof(float), s->images.h * s->jobCount, cudaMemcpyHostToDevice, s->stream);
 	s->d_jobs.copyToDevice(s->jobs.data(), s->jobCount, true, s->stream);
-	BgCorrectedCOM <<< blocks(s->jobs.size()), threads(), 0, s->stream >>> (s->images, s->d_com.data, cfg.com_bgcorrection);
+	BgCorrectedCOM <<< blocks(s->jobCount), threads(), 0, s->stream >>> (s->jobCount, s->images, s->d_com.data, cfg.com_bgcorrection);
 
 	device_vec<float3> *curpos = &s->d_com;
 	for (int a=0;a<cfg.qi_iterations;a++) {

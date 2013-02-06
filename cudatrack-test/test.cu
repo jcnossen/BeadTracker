@@ -175,7 +175,7 @@ void QTrkTest()
 	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
 	//cfg.numThreads = 6;
-	QueuedCUDATracker qtrk(&cfg, 8);
+	QueuedCUDATracker qtrk(&cfg, 1024);
 	float *image = new float[cfg.width*cfg.height];
 
 	// Generate ZLUT
@@ -212,7 +212,7 @@ void QTrkTest()
 #ifdef _DEBUG
 	int total= 10;
 #else
-	int total = 10000;
+	int total = 30000;
 #endif
 	dbgprintf("Benchmarking...\n", total);
 	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2+1, cfg.height/2, zmin, 30);
