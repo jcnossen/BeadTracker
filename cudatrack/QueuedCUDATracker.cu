@@ -40,7 +40,7 @@ typedef sfft::complex<qivalue_t> qicomplex_t;
 
 // According to this, textures bindings can be switched after the asynchronous kernel is launched
 // https://devtalk.nvidia.com/default/topic/392245/texture-binding-and-stream/
-texture<float, cudaTextureType2D, cudaReadModeElementType> qi_image_texture(0, cudaFilterModeLinear);
+texture<float, cudaTextureType2D, cudaReadModeElementType> qi_image_texture(0,  cudaFilterModeLinear); // Un-normalized
 
 
 __shared__ float2 cudaSharedMemory[];
@@ -156,18 +156,17 @@ QueuedCUDATracker::~QueuedCUDATracker()
 	DeleteAllElems(streams);
 }
 
-static CUBOTH float2 BgCorrectedCOM(int idx, cudaImageListf images, float correctionFactor)
+static __device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float correctionFactor)
 {
 	int imgsize = images.w*images.h;
 	float sum=0, sum2=0;
 	float momentX=0;
 	float momentY=0;
-//	const float* __restrict__ imgptr = &images.data[imgsize*idx];
 
 	for (int y=0;y<images.h;y++)
 		for (int x=0;x<images.w;x++) {
-			//float v = imgptr[y*images.pitch+x];
-			float v = images.pixel(x,y,idx);
+			float v = tex2D(qi_image_texture, x, y + idx*images.h);
+			//float v = images.pixel(x,y,idx);
 			sum += v;
 			sum2 += v*v;
 		}
@@ -180,13 +179,13 @@ static CUBOTH float2 BgCorrectedCOM(int idx, cudaImageListf images, float correc
 	for (int y=0;y<images.h;y++)
 		for(int x=0;x<images.w;x++)
 		{
-			// float v = imgptr[y*images.pitch+x];// images.pixel(x,y,idx);
-			float v = images.pixel(x,y,idx);
+			float v = tex2D(qi_image_texture, x, y + idx*images.h);
+			//float v = images.pixel(x,y,idx);
 			v = fabsf(v-mean)-correctionFactor*stdev;
 			if(v<0.0f) v=0.0f;
 			sum += v;
-			momentX += x*v;
-			momentY += y*v;
+			momentX += (x+0.5f)*v;
+			momentY += (y+0.5f)*v;
 		}
 
 	float2 com;
@@ -443,7 +442,7 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::GetReadyStream()
 				return s;
 			}
 		}
-		Threads::Sleep(5);
+		Threads::Sleep(1);
 	}
 }
 
@@ -500,8 +499,11 @@ bool QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 
 	// Copy the image to the batch image buffer (CPU side)
 	float* hostbuf = &s->hostImageBuf[cfg.height*cfg.width*jobIndex];
-	uchar* srcptr = data;
 	CopyImageToFloat(data, cfg.width, cfg.height, pitch, pdt, hostbuf);
+
+//	tmp = floatToNormalizedInt( (float*)hostbuf, cfg.width,cfg.height,(uchar)255);
+//	WriteJPEGFile(tmp, cfg.width,cfg.height, "writehostbuf2.jpg", 99);
+//	delete[] tmp;
 
 	// If batch is filled, copy the image to video memory asynchronously, and start the localization
 	if (s->jobCount == batchSize)
@@ -533,6 +535,32 @@ __global__ void BuildZLUTKernel(int njobs, cudaImageListf images, ZLUTParams par
 	}
 }
 
+__global__ void TestSampleImage(cudaImageListf images, int idx, float* dst)
+{
+	int x = threadIdx.x + blockDim.x * blockIdx.x;
+	int y = threadIdx.y + blockDim.y * blockIdx.y;
+
+	if (x < images.w && y < images.h) {
+
+		float p = tex2D( qi_image_texture, x, y);
+		//float& p = images.pixel(x, y, idx);
+		dst [y*images.w+x] = p;
+	}
+}
+
+void TestCopyImage( cudaImageListf& images, int idx, const char* file)
+{
+	device_vec<float> ddst (images.w*images.h);
+	int nt=32;
+	cudaDeviceSynchronize();
+	TestSampleImage <<< dim3((images.w+nt-1)/nt, (images.h+nt-1)/nt), dim3(nt,nt) >>> (images, idx, ddst.data);
+
+	std::vector<float> dst = ddst;
+	uchar* norm = floatToNormalizedInt(&dst[0], images.w,images.h, (uchar)255);
+	WriteJPEGFile(norm, images.w,images.h, file, 99);
+	delete[] norm;
+}
+
 void QueuedCUDATracker::ExecuteBatch(Stream *s)
 {
 	if (s->jobCount==0)
@@ -553,9 +581,9 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	- Unbind image
 	*/
 
-//	cb->images.bind(qi_image_texture);
 	cudaMemcpy2DAsync( s->images.data, s->images.pitch, s->hostImageBuf.data(), sizeof(float)*s->images.w, s->images.w*sizeof(float), s->images.h * s->jobCount, cudaMemcpyHostToDevice, s->stream);
 	s->d_jobs.copyToDevice(s->jobs.data(), s->jobCount, true, s->stream);
+	s->images.bind(qi_image_texture);
 	BgCorrectedCOM <<< blocks(s->jobCount), threads(), 0, s->stream >>> (s->jobCount, s->images, s->d_com.data, cfg.com_bgcorrection);
 
 	device_vec<float3> *curpos = &s->d_com;
@@ -566,11 +594,12 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 
 	if (s->localizeFlags & LocalizeBuildZLUT) {
 		BuildZLUTKernel <<< blocks(s->jobs.size()), threads(), 0, s->stream >>> (s->jobCount, s->images, kernelParams.zlut, curpos->data, s->d_jobs.data);
+		TestCopyImage( s->images, 0, "qtrktestimg0.jpg");
 	}
 	
 	curpos->copyToHost(s->results.data(), true, s->stream);
 	
-//	cb->images.bind(qi_image_texture);
+	s->images.unbind(qi_image_texture);
 	//CheckCUDAError();
 	
 	// Make sure we can query the all done signal

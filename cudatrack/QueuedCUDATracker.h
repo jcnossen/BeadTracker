@@ -107,7 +107,8 @@ protected:
 		
 		int GetJobCount();
 		cudaImageListf images; 
-		pinned_array<float, cudaHostAllocWriteCombined> hostImageBuf; // original image format pixel buffer
+		//pinned_array<float, cudaHostAllocWriteCombined> hostImageBuf; // original image format pixel buffer
+		pinned_array<float> hostImageBuf; // original image format pixel buffer
 
 		// CUDA objects
 		cudaStream_t stream; // Stream used

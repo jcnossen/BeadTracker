@@ -174,8 +174,16 @@ void QTrkTest()
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
-	//cfg.numThreads = 6;
-	QueuedCUDATracker qtrk(&cfg, 1024);
+	cfg.numThreads = 4;
+#ifdef _DEBUG
+	int total= 10;
+	int batchSize = 8;
+#else
+	int total = 30000;
+	int batchSize = 1024;
+#endif
+
+	QueuedCUDATracker qtrk(&cfg, batchSize);
 	float *image = new float[cfg.width*cfg.height];
 
 	// Generate ZLUT
@@ -209,13 +217,8 @@ void QTrkTest()
 	delete[] zlut; delete[] zlut_bytes;
 	
 	// Schedule images to localize on
-#ifdef _DEBUG
-	int total= 10;
-#else
-	int total = 30000;
-#endif
 	dbgprintf("Benchmarking...\n", total);
-	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2+1, cfg.height/2, zmin, 30);
+	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2+1, cfg.height/2, zmin, 0);
 	double tstart = getPreciseTime();
 	int rc = 0, displayrc=0;
 	for (int n=0;n<total;n++) {

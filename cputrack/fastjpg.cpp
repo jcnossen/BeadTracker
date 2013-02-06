@@ -86,7 +86,7 @@ int ReadJPEGFile(uchar* srcbuf, int srclen, uchar** data, int* width, int*height
 }
 
 
-void WriteJPEGFile(uchar* data,int w,int h, char * filename, int quality)
+void WriteJPEGFile(uchar* data,int w,int h, const char * filename, int quality)
 {
   /* This struct contains the JPEG compression parameters and pointers to
    * working space (which is allocated as needed by the JPEG library).

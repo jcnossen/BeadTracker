@@ -311,8 +311,9 @@ void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelD
 		}
  	} else {
 		for (int y=0;y<height;y++) {
+			float* fsrc = (float*)data;
 			for( int x=0;x<width;x++)
-				dst[x] = data[x];
+				dst[x] = fsrc[x];
 			data += pitch;
 			dst += width;
 		}
