@@ -98,6 +98,7 @@ public:
 		else
 			cudaMemcpy(data, first, sizeof(T) * size, cudaMemcpyHostToDevice);
 	}
+	size_t memsize() { return size*sizeof(T); }
 	size_t size;
 	T* data;
 };
@@ -226,6 +227,7 @@ public:
 	}
 	T& operator[](int i) {  return d[i]; }
 	const T&operator[](int i) const { return d[i];}
+	size_t memsize() { return n*sizeof(T); }
 
 protected:
 	T* d;

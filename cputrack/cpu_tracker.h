@@ -53,7 +53,7 @@ public:
 	
 	std::vector<vector2f> quadrantDirs; // single quadrant
 	int qi_radialsteps;
-	typedef double qi_t;
+	typedef float qi_t;
 	typedef std::complex<qi_t> qic_t;
 	kissfft<qi_t> *qi_fft_forward, *qi_fft_backward;
 

@@ -22,6 +22,7 @@ typedef cudaImageList<float> cudaImageListf;
 struct QIParams {
 	float minRadius, maxRadius;
 	int radialSteps, iterations, angularSteps;
+	float2* radialgrid;
 };
 
 struct ZLUTParams {
@@ -105,6 +106,7 @@ protected:
 		device_vec<CUDATrackerJob> d_jobs;
 		int jobCount;
 		
+		int CalcMemoryUse();
 		int GetJobCount();
 		cudaImageListf images; 
 		//pinned_array<float, cudaHostAllocWriteCombined> hostImageBuf; // original image format pixel buffer
@@ -119,6 +121,8 @@ protected:
 		device_vec<float3> d_resultpos;
 		device_vec<float3> d_com; // z is zero
 		device_vec<float2> d_QIprofiles;
+		float2* d_QIprofiles_reverse;
+		device_vec<float> d_quadrants;
 
 		uint localizeFlags; // Indicates whether kernels should be ran for building zlut, z computing, or QI
 
@@ -150,7 +154,7 @@ protected:
 
 	std::vector<Stream*> streams;
 	Stream* currentStream;
-	std::vector<LocalizationResult> results;
+	std::list<LocalizationResult> results;
 	
 	// QI profiles need to have power-of-two dimensions. qiProfileLen stores the closest power-of-two value that is bigger than cfg.qi_radialsteps
 	int qi_FFT_length ;
@@ -160,6 +164,7 @@ protected:
 	int zlut_count, zlut_planes, zlut_res;
 	cudaImageListf zlut;
 	device_vec<float> zcompareWindow;
+	device_vec<float2> d_qiradialgrid;
 
 	int FetchResults();
 	void ExecuteBatch(Stream *s);

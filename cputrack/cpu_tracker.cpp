@@ -304,18 +304,23 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 			concat1[r] = q0[r]+q3[r];
 		}
 
+		std::vector<std::complex<float> > tmp(nr*4);
+		std::copy(concat0, concat0+nr*2,tmp.begin());
+		
 		float offsetX = QI_ComputeOffset(concat0, nr);
 
 		// Build Iy = [ qB(-r)  qT(r) ]
 		// qT = q0 + q1
 		// qB = q2 + q3
 		for(int r=0;r<nr;r++) {
-			concat0[r] = q0[r]+q1[r];
-			concat1[nr-r-1] = q2[r]+q3[r];
+			concat1[r] = q0[r]+q1[r];
+			concat0[nr-r-1] = q2[r]+q3[r];
 		}
 		float offsetY = QI_ComputeOffset(concat0, nr);
 
-		//dbgprintf("[%d] OffsetX: %f, OffsetY: %f\n", k, offsetX, offsetY);
+		std::copy(concat0, concat0+nr*2,tmp.begin()+nr*2);
+		WriteComplexImageAsCSV("cpuprofxy.txt", &tmp[0], nr*4, 1);
+//dbgprintf("[%d] OffsetX: %f, OffsetY: %f\n", k, offsetX, offsetY);
 
 		center.x += offsetX * pixelsPerProfLen;
 		center.y += offsetY * pixelsPerProfLen;
@@ -346,12 +351,17 @@ CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr
 	for(int x=0;x<nr*2;x++)
 		reverse[x] = profile[nr*2-1-x];
 
+	WriteComplexImageAsCSV("qiprofile.txt", profile, nr*2, 1);
+	WriteComplexImageAsCSV("qiprofilerev.txt", reverse, nr*2, 1);
 	qi_fft_forward->transform(profile, fft_out);
 	qi_fft_forward->transform(reverse, fft_out2); // fft_out2 contains fourier-domain version of reverse profile
+	WriteComplexImageAsCSV("qiprofilefft.txt", fft_out, nr*2, 1);
 
 	// multiply with conjugate
 	for(int x=0;x<nr*2;x++)
 		fft_out[x] *= conjugate(fft_out2[x]);
+
+	WriteComplexImageAsCSV("qifftmul.txt", fft_out, nr*2, 1);
 
 	qi_fft_backward->transform(fft_out, fft_out2);
 
@@ -361,6 +371,8 @@ CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr
 	for(int x=0;x<nr*2;x++)  {
 		autoconv[x] = fft_out2[(x+nr)%(nr*2)].real();
 	}
+
+	WriteImageAsCSV("qiautoconv.txt", autoconv, nr*2, 1);
 
 	float maxPos = ComputeMaxInterp(autoconv, nr*2);
 	return (maxPos - nr) / (3.141593 * 0.5);

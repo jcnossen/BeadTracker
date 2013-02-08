@@ -65,14 +65,32 @@ void TestSimpleFFT()
 		data[x].y = 6*cos(x*0.2f-2)+3;
 	}
 
+	device_vec< cudafft<double>::cpx_type> d_data = data, d_result (N);
+
 	std::vector<sfft::complex<double> > twiddles = sfft::fill_twiddles<double>(N);
 
 	fft.host_transform(&data[0], &cpu_result[0]);
-	sfft::fft_forward(N, (sfft::complex<double>*)&data[0], &twiddles[0]);
+	//sfft::fft_forward(N, (sfft::complex<double>*)&data[0], &twiddles[0]);
 	
 	for (int k=0;k<N;k++) {
-		dbgprintf("[%d] kissfft: %f+%fi, sfft: %f+%fi. diff=%f+%fi\n", k, cpu_result[k].x, cpu_result[k].y, data[k].x,data[k].y, cpu_result[k].x - data[k].x,cpu_result[k].y - data[k].y);
+//		dbgprintf("[%d] kissfft: %f+%fi, sfft: %f+%fi. diff=%f+%fi\n", k, cpu_result[k].x, cpu_result[k].y, data[k].x,data[k].y, cpu_result[k].x - data[k].x,cpu_result[k].y - data[k].y);
 	}
+
+	cufftHandle plan;
+	cufftPlan1d(&plan, N, CUFFT_Z2Z, 1);
+	//cufftPlanMany(&plan, 1, &N, 0, 0, N, 0, 0, N, CUFFT_Z2Z, 1);
+	cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE);
+
+	cufftExecZ2Z(plan, (cufftDoubleComplex*) d_data.data,(cufftDoubleComplex*) d_result.data, CUFFT_FORWARD);
+	cudaDeviceSynchronize();
+	result = d_result;
+
+	for (int k=0;k<N;k++)
+	{
+		dbgprintf("CUFFT: [%d] = %f+%fi.  True: %f+%fi\n" ,k, result[k].x, result[k].y, cpu_result[k].x, cpu_result[k].y);
+	}
+
+	cufftDestroy(plan);
 }
 
 
@@ -168,17 +186,21 @@ void QTrkTest()
 {
 	QTrkSettings cfg;
 	cfg.width = cfg.height = 60;
-	cfg.qi_iterations = 0;
-	cfg.qi_maxradius = 50;
+	cfg.qi_iterations = 3;
+	cfg.qi_maxradius = 28;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
-	cfg.numThreads = 4;
+	bool haveZLUT = true;
 #ifdef _DEBUG
-	int total= 10;
-	int batchSize = 8;
+	cfg.qi_radialsteps=8;
+	cfg.numThreads = 2;
+	int total= 100;
+	int batchSize = 2;
+	haveZLUT=false;
 #else
+	cfg.numThreads = 8;
 	int total = 30000;
 	int batchSize = 1024;
 #endif
@@ -187,7 +209,6 @@ void QTrkTest()
 	float *image = new float[cfg.width*cfg.height];
 
 	// Generate ZLUT
-	bool haveZLUT = true;
 	int radialSteps=64, zplanes=100;
 	float zmin=0.5,zmax=3;
 	qtrk.SetZLUT(0, 1, zplanes, radialSteps);
@@ -218,7 +239,7 @@ void QTrkTest()
 	
 	// Schedule images to localize on
 	dbgprintf("Benchmarking...\n", total);
-	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2+1, cfg.height/2, zmin, 0);
+	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2, cfg.height/2, zmin, 0);
 	double tstart = getPreciseTime();
 	int rc = 0, displayrc=0;
 	for (int n=0;n<total;n++) {
@@ -246,9 +267,11 @@ void QTrkTest()
 
 	delete[] image;
 
-	LocalizationResult r;
-	qtrk.PollFinished(&r, 1);
-	dbgprintf("Result.x: %f, Result.y: %f\n", r.pos.x, r.pos.y);
+	for (int i=0;i<std::min(20,total);i++) {
+		LocalizationResult r;
+		qtrk.PollFinished(&r, 1);
+		dbgprintf("[%d] Result.x: %f, Result.y: %f\n", i,r.pos.x, r.pos.y);
+	}
 
 	dbgprintf("Localization Speed: %d (img/s)\n", (int)( total/(tend-tstart) ));
 }
@@ -317,7 +340,7 @@ int main(int argc, char *argv[])
 
 	//TestJobPassing();
 	//TestLocalization();
-	//TestSimpleFFT();
+//	TestSimpleFFT();
 	//TestKernelFFT();
 //	TestSharedMem();
 	//TestAsync();

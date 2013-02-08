@@ -265,7 +265,8 @@ void WriteComplexImageAsCSV(const char* file, std::complex<float>* d, int w,int 
 	for (int y=0;y<h;y++) {
 		for (int x=0;x<w;x++)
 		{
-			fprintf(f, "%f+%fi", d[y*w+x].real(), d[y*w+x].imag());
+			float i=d[y*w+x].imag();
+			fprintf(f, "%f%+fi", d[y*w+x].real(), i);
 			if(x<w-1) fputs("\t", f); 
 		}
 		fprintf(f, "\n");

@@ -352,27 +352,31 @@ void QTrkTest()
 	// Generate ZLUT
 	int radialSteps=64, zplanes=100;
 	float zmin=0.5,zmax=2.5;
-	qtrk.SetZLUT(0, 1, zplanes, radialSteps);
+	bool haveZLUT = false;
 	qtrk.Start();
-	for (int x=0;x<zplanes;x++)  {
-		vector2f center = { cfg.width/2, cfg.height/2 };
-		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
-		GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
-		qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, (LocalizeType)(LocalizeBuildZLUT|LocalizeQI), x, 0, 0, x);
+	qtrk.SetZLUT(0, 1, zplanes, radialSteps, 0);
+	if (haveZLUT) {
+		for (int x=0;x<zplanes;x++)  {
+			vector2f center = { cfg.width/2, cfg.height/2 };
+			float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
+			GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, (LocalizeType)(LocalizeBuildZLUT|LocalizeQI), x, 0, 0, x);
+		}
+		// wait to finish ZLUT
+		while(true) {
+			int rc = qtrk.GetResultCount();
+			if (rc == zplanes) break;
+			Sleep(100);
+			dbgprintf(".");
+		}
+		float* zlut = qtrk.GetZLUT(0,0,0);
+		qtrk.ClearResults();
+		uchar* zlut_bytes = floatToNormalizedInt(zlut, radialSteps, zplanes, (uchar)255);
+		WriteJPEGFile(zlut_bytes, radialSteps, zplanes, "qtrkzlut.jpg", 99);
+		delete[] zlut; delete[] zlut_bytes;
+		qtrk.Break(true);
 	}
-	// wait to finish ZLUT
-	while(true) {
-		int rc = qtrk.GetResultCount();
-		if (rc == zplanes) break;
-		Sleep(100);
-		dbgprintf(".");
-	}
-	float* zlut = qtrk.GetZLUT(0,0,0);
-	qtrk.ClearResults();
-	uchar* zlut_bytes = floatToNormalizedInt(zlut, radialSteps, zplanes, (uchar)255);
-	WriteJPEGFile(zlut_bytes, radialSteps, zplanes, "qtrkzlut.jpg", 99);
-	delete[] zlut; delete[] zlut_bytes;
-	
+
 	// Schedule images to localize on
 #ifdef _DEBUG
 	int NumImages=10, JobsPerImg=10;
@@ -396,7 +400,7 @@ void QTrkTest()
 		GenerateTestImage(ImageData(image, cfg.width, cfg.height), xp, yp, z, 10000);
 		double t2 = getPreciseTime();
 		for (int k=0;k<JobsPerImg;k++)
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI|LocalizeZ), n, 0, 0, 0);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI| (haveZLUT ? LocalizeZ : 0)), n, 0, 0, 0);
 		double t3 = getPreciseTime();
 		tgen += t2-t1;
 		tschedule += t3-t2;
