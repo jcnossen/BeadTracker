@@ -1,7 +1,5 @@
 #include "../cputrack/std_incl.h"
 #include "../cputrack/cpu_tracker.h"
-#include <Windows.h>
-#include <stdint.h>
 #include "../cputrack/random_distr.h"
 #include "../cputrack/queued_cpu_tracker.h"
 
@@ -569,6 +567,8 @@ int main()
 	float* x = new float[10];
 
 	delete[] x;
+
+	MemDbgListAllocations();
 
 	//SpeedTest();
 	//SmallImageTest();

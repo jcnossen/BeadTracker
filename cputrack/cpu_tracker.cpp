@@ -5,6 +5,8 @@ CPU only tracker
 */
 
 
+#include <exception>
+
 #include "std_incl.h"
 
 #pragma warning(disable: 4996) // Function call with parameters that may be unsafe
@@ -12,7 +14,6 @@ CPU only tracker
 #include "cpu_tracker.h"
 #include "LsqQuadraticFit.h"
 #include "random_distr.h"
-#include <exception>
 
 #define SFFT_BOTH 
 #include "../cudatrack/simplefft.h"

@@ -2,17 +2,6 @@
 
 #include "std_incl.h" 
 
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <cstdio>
-#include <stdexcept>
-#include <cassert>
-#include <cmath>
-#include <cstdlib>
-#include <cstddef>
-#include <complex>
-
 template<typename T> bool isNAN(const T& v) { 
 	return !(v == v); 
 }

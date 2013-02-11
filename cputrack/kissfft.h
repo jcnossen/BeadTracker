@@ -1,6 +1,4 @@
 #ifndef KISSFFT_CLASS_HH
-#include <complex>
-#include <vector>
 #include "utils.h"
 
 namespace kissfft_utils {

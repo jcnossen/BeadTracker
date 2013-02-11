@@ -1,5 +1,18 @@
 #pragma once
 
+#include <stdint.h>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <cstdio>
+#include <stdexcept>
+#include <cassert>
+#include <cmath>
+#include <cstdlib>
+#include <cstddef>
+#include <complex>
+
+
 #ifdef USE_MEMDBG
 // CRT memory leak debugging is not straightforward to get working. Read comments in 
 // http://msdn.microsoft.com/en-us/library/e5ewb1h3(v=vs.80).aspx for details.
@@ -14,14 +27,27 @@
 	#endif
 	*/
 
-	#define new new(__FILE__, __LINE__)
+	void MemDbgListAllocations();
+	void MemDbgUnregister(void *p);
 
 	void* operator new(size_t s, const char* file, int line);
-	void operator delete(void* p);
-	void operator delete[](void* p);
+	void* operator new[](size_t s, const char* file, int line);
 
-	void MemDbgListAllocations();
+	inline void operator delete(void* p)
+	{
+		MemDbgUnregister(p);
+		free(p);
+	}
 
+	inline void operator delete[](void* p)
+	{
+		MemDbgUnregister(p);
+		free(p);
+	}
+
+	#define new new(__FILE__, __LINE__)
+	#pragma warning(disable: 4291) // no matching operator delete found; memory will not be freed if initialization throws an exception
+	
 #endif
 
 #pragma pack(push, 4)

@@ -1,8 +1,5 @@
 
 #pragma once
-#include <cstdlib>
-#include <cmath>
-
 template<typename T>
 T rand_uniform()
 {

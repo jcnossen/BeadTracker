@@ -40,7 +40,6 @@ struct Threads
 
 #else
 
-#include <stdexcept>
 #include <Windows.h>
 #undef AddJob
 #undef Sleep

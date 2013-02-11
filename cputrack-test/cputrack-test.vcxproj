@@ -91,7 +91,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_CRTMAP_MAP_ALLOC;USE_MEMDBG;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_MEMDBG;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>../libs/libjpeg-turbo/include;../libs/pthreads/include;../libs/fftw;../libs/math</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -134,6 +134,7 @@
   <ItemGroup>
     <ClCompile Include="..\cputrack\cpu_tracker.cpp" />
     <ClCompile Include="..\cputrack\fastjpg.cpp" />
+    <ClCompile Include="..\cputrack\memdbg.cpp" />
     <ClCompile Include="..\cputrack\queued_cpu_tracker.cpp" />
     <ClCompile Include="..\cputrack\TeLibJpeg\jmemdst.c" />
     <ClCompile Include="..\cputrack\TeLibJpeg\jmemsrc.c" />
