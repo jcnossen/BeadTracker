@@ -476,13 +476,16 @@ bool QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 	return true;
 }
 
+
 /*
+		q0: xprof[r], yprof[r]
 		q1: xprof[len-r-1], yprof[r]
 		q2: xprof[len-r-1], yprof[len-r-1]
 		q3: xprof[r], yprof[len-r-1]
-		q0: xprof[r], yprof[r]
+
+	kernel gets called with dim3(images.count, radialsteps*4) elements
 */
-static __device__ void QI_ComputeProfile2(cudaImageListf& images, int idx, float* dst, const QIParams& params, int quadrant, float2 center)
+static __device__ void QI_ComputeProfile2(cudaImageListf& images, float* dst, const QIParams& params, int quadrant, float2 center)
 {
 	const int qmat[] = {
 		1, 1,
@@ -492,9 +495,10 @@ static __device__ void QI_ComputeProfile2(cudaImageListf& images, int idx, float
 	int mx = qmat[2*quadrant+0];
 	int my = qmat[2*quadrant+1];
 
-	for (int i=0;i<params.radialSteps;i++)
-		dst[i]=0.0f;
-	
+	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
+	int rIdx = threadIdx.y + blockIdx.y * blockDim.y;
+
+
 	double total = 0.0f;
 	float rstep = (params.maxRadius - params.minRadius) / params.radialSteps;
 	for (int i=0;i<params.radialSteps; i++) {

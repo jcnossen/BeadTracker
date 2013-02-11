@@ -4,16 +4,25 @@
 // CRT memory leak debugging is not straightforward to get working. Read comments in 
 // http://msdn.microsoft.com/en-us/library/e5ewb1h3(v=vs.80).aspx for details.
 //	#define _CRTDBG_MAP_ALLOC needs to be defined in preprocessor options for some reason?
-	#include <stdlib.h>
+
+/*	#include <stdlib.h>
 	#include <crtdbg.h>
 
 	#ifndef DEBUG_NEW
 	#define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
 	#define new DEBUG_NEW
 	#endif
+	*/
+
+	#define new new(__FILE__, __LINE__)
+
+	void* operator new(size_t s, const char* file, int line);
+	void operator delete(void* p);
+	void operator delete[](void* p);
+
+	void MemDbgListAllocations();
+
 #endif
-
-
 
 #pragma pack(push, 4)
 struct vector2f {

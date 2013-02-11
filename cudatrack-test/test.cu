@@ -186,7 +186,7 @@ void QTrkTest()
 {
 	QTrkSettings cfg;
 	cfg.width = cfg.height = 60;
-	cfg.qi_iterations = 3;
+	cfg.qi_iterations = 4;
 	cfg.qi_maxradius = 28;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;

@@ -1,3 +1,4 @@
+#include "../cputrack/std_incl.h"
 #include "../cputrack/cpu_tracker.h"
 #include <Windows.h>
 #include <stdint.h>
@@ -560,20 +561,29 @@ void CorrectedRadialProfileTest()
 }
 
 
+
+
+
 int main()
 {
+	float* x = new float[10];
+
+	delete[] x;
+
 	//SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
-	QTrkTest();
+//	QTrkTest();
 	//for (int i=1;i<8;i++)
 //		BuildConvergenceMap(i);
 
 
 	//CorrectedRadialProfileTest();
+
+
 
 	return 0;
 }
