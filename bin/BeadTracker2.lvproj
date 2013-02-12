@@ -10,29 +10,26 @@
 		<Property Name="server.vi.callsEnabled" Type="Bool">true</Property>
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
-		<Item Name="Main" Type="Folder">
-			<Item Name="GlobalState.vi" Type="VI" URL="../BeadTracker2.llb/GlobalState.vi"/>
-			<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
-			<Item Name="PluginConfig.ctl" Type="VI" URL="../BeadTracker2.llb/PluginConfig.ctl"/>
+		<Item Name="BeadTracker2.llb" Type="Folder" URL="../BeadTracker2.llb">
+			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
 		<Item Name="Modules" Type="Folder">
 			<Property Name="NI.SortType" Type="Int">3</Property>
 			<Item Name="Cameras" Type="Folder">
-				<Item Name="VisionExpressCamera.lvclass" Type="LVClass" URL="../Modules/VisionExpressCamera.llb/VisionExpressCamera.lvclass"/>
+				<Item Name="VisionExpressCamera.llb" Type="Folder" URL="../Modules/VisionExpressCamera.llb">
+					<Property Name="NI.DISK" Type="Bool">true</Property>
+				</Item>
 			</Item>
 			<Item Name="MotorControl" Type="Folder">
-				<Item Name="PI_M126_E816Piezo.lvclass" Type="LVClass" URL="../Modules/PI_M126_E816Piezo.llb/PI_M126_E816Piezo.lvclass"/>
-			</Item>
-			<Item Name="Abstract interfaces" Type="Folder">
-				<Item Name="CameraInterface.lvclass" Type="LVClass" URL="../BeadTracker2.llb/CameraInterface.lvclass"/>
-				<Item Name="MotorDriverInterface.lvclass" Type="LVClass" URL="../BeadTracker2.llb/MotorDriverInterface.lvclass"/>
+				<Item Name="PI_M126_E816Piezo.llb" Type="Folder" URL="../Modules/PI_M126_E816Piezo.llb">
+					<Property Name="NI.DISK" Type="Bool">true</Property>
+				</Item>
 			</Item>
 		</Item>
 		<Item Name="Setups" Type="Folder" URL="../Setups">
 			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
-		<Item Name="MotorUI.vi" Type="VI" URL="../BeadTracker2.llb/MotorUI.vi"/>
-		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../BeadTracker2.llb/SimpleCameraTest.vi"/>
+		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Image Type" Type="VI" URL="/&lt;vilib&gt;/vision/Image Controls.llb/Image Type"/>
@@ -93,7 +90,14 @@
 			<Item Name="Build command substring.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Support.llb/Build command substring.vi"/>
 			<Item Name="Build query command substring.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Support.llb/Build query command substring.vi"/>
 			<Item Name="C843_Configuration_Setup.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/C843_Configuration_Setup.vi"/>
+			<Item Name="CameraInterface.lvclass" Type="LVClass" URL="../BeadTracker2.llb/CameraInterface.lvclass"/>
 			<Item Name="Close connection if open.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Communication.llb/Close connection if open.vi"/>
+			<Item Name="CmdType_CameraIn.ctl" Type="VI" URL="/C/Documents and Settings/jcnossen1/Local Settings/Temp/tarc38916960_1.llb/CmdType_CameraIn.ctl"/>
+			<Item Name="CmdType_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_CameraIn.ctl"/>
+			<Item Name="CmdType_CameraOut.ctl" Type="VI" URL="/C/Documents and Settings/jcnossen1/Local Settings/Temp/tarc38916960_1.llb/CmdType_CameraOut.ctl"/>
+			<Item Name="CmdType_CameraOut.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_CameraOut.ctl"/>
+			<Item Name="CmdType_MotorIn.ctl" Type="VI" URL="/C/Documents and Settings/jcnossen1/Local Settings/Temp/tarc38916960_1.llb/CmdType_MotorIn.ctl"/>
+			<Item Name="CmdType_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_MotorIn.ctl"/>
 			<Item Name="Commanded axes connected?.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Support.llb/Commanded axes connected?.vi"/>
 			<Item Name="Commanded stage name available?.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Support.llb/Commanded stage name available?.vi"/>
 			<Item Name="Controller names.ctl" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/General command.llb/Controller names.ctl"/>
@@ -117,6 +121,8 @@
 			<Item Name="Global DaisyChain.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Communication.llb/Global DaisyChain.vi"/>
 			<Item Name="Global1.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Communication.llb/Global1.vi"/>
 			<Item Name="Global2 (Array).vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/General command.llb/Global2 (Array).vi"/>
+			<Item Name="GlobalVariables.vi" Type="VI" URL="/C/Documents and Settings/jcnossen1/Local Settings/Temp/tarc38916960_1.llb/GlobalVariables.vi"/>
+			<Item Name="GlobalVariables.vi" Type="VI" URL="../BeadTracker2.llb/GlobalVariables.vi"/>
 			<Item Name="imaq.dll" Type="Document" URL="imaq.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
@@ -126,7 +132,9 @@
 			<Item Name="Is DaisyChain open.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Communication.llb/Is DaisyChain open.vi"/>
 			<Item Name="LIM?.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Limits.llb/LIM?.vi"/>
 			<Item Name="Longlasting one-axis command.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Support.llb/Longlasting one-axis command.vi"/>
+			<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 			<Item Name="MNL.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Limits.llb/MNL.vi"/>
+			<Item Name="MotorDriverInterface.lvclass" Type="LVClass" URL="../BeadTracker2.llb/MotorDriverInterface.lvclass"/>
 			<Item Name="MOV.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/General command.llb/MOV.vi"/>
 			<Item Name="MOV?.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/General command.llb/MOV?.vi"/>
 			<Item Name="MPL.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Limits.llb/MPL.vi"/>
@@ -138,7 +146,10 @@
 			<Item Name="PI Receive String.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Communication.llb/PI Receive String.vi"/>
 			<Item Name="PI Send String.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Communication.llb/PI Send String.vi"/>
 			<Item Name="PI VISA Receive Characters.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Communication.llb/PI VISA Receive Characters.vi"/>
+			<Item Name="PluginConfig.ctl" Type="VI" URL="../BeadTracker2.llb/PluginConfig.ctl"/>
 			<Item Name="POS?.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/General command.llb/POS?.vi"/>
+			<Item Name="QueueListType.ctl" Type="VI" URL="/C/Documents and Settings/jcnossen1/Local Settings/Temp/tarc38916960_1.llb/QueueListType.ctl"/>
+			<Item Name="QueueListType.ctl" Type="VI" URL="../BeadTracker2.llb/QueueListType.ctl"/>
 			<Item Name="REF.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Limits.llb/REF.vi"/>
 			<Item Name="REF?.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Limits.llb/REF?.vi"/>
 			<Item Name="Return space.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Support.llb/Return space.vi"/>
@@ -158,6 +169,7 @@
 			<Item Name="TMX?.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Limits.llb/TMX?.vi"/>
 			<Item Name="TPC?.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Special command.llb/TPC?.vi"/>
 			<Item Name="TSC?.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Optical or Analog Input.llb/TSC?.vi"/>
+			<Item Name="VisionExpressCamera.lvclass" Type="LVClass" URL="../Modules/VisionExpressCamera.llb/VisionExpressCamera.lvclass"/>
 			<Item Name="VOL?.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/PZT voltage.llb/VOL?.vi"/>
 			<Item Name="VST?.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Special command.llb/VST?.vi"/>
 			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="/C/Program Files/PI/Merged_GCS_LabVIEW/Low Level/Support.llb/Wait for answer of longlasting command.vi"/>
