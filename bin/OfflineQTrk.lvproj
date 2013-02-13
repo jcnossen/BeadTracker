@@ -46,6 +46,7 @@
 		<Item Name="SaveOrLoadQTrkSettings.vi" Type="VI" URL="../OfflineQTrk.llb/SaveOrLoadQTrkSettings.vi"/>
 		<Item Name="SaveResults.vi" Type="VI" URL="../OfflineQTrk.llb/SaveResults.vi"/>
 		<Item Name="ScalePixelsToMicrons.vi" Type="VI" URL="../OfflineQTrk.llb/ScalePixelsToMicrons.vi"/>
+		<Item Name="SelectBeads.vi" Type="VI" URL="../OfflineQTrk.llb/SelectBeads.vi"/>
 		<Item Name="XYZf.ctl" Type="VI" URL="../QTrk.llb/XYZf.ctl"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
@@ -145,7 +146,6 @@
 			<Item Name="kernel32.dll" Type="Document" URL="kernel32.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
-			<Item Name="LoadOneImageviaPath.vi" Type="VI" URL="../AutoBeadFinder.llb/LoadOneImageviaPath.vi"/>
 			<Item Name="lvanlys.dll" Type="Document" URL="/C/Program Files (x86)/National Instruments/LabVIEW 2011/resource/lvanlys.dll"/>
 			<Item Name="MakeBigTemplate (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/MakeBigTemplate (SubVI).vi"/>
 			<Item Name="MakeImagePath.vi" Type="VI" URL="../OfflineQTrk.llb/MakeImagePath.vi"/>
