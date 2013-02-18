@@ -18,12 +18,13 @@
 			<Item Name="CmdType_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_CameraIn.ctl"/>
 			<Item Name="CmdType_CameraOut.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_CameraOut.ctl"/>
 			<Item Name="CmdType_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_MotorIn.ctl"/>
-			<Item Name="CreateQueues.vi" Type="VI" URL="../BeadTracker2.llb/CreateQueues.vi"/>
+			<Item Name="GetQueues.vi" Type="VI" URL="../BeadTracker2.llb/GetQueues.vi"/>
 			<Item Name="GlobalVariables.vi" Type="VI" URL="../BeadTracker2.llb/GlobalVariables.vi"/>
 			<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 			<Item Name="MeasureConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/MeasureConfigType.ctl"/>
 			<Item Name="MotorStateType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorStateType.ctl"/>
 			<Item Name="MotorUI.vi" Type="VI" URL="../BeadTracker2.llb/MotorUI.vi"/>
+			<Item Name="MoveMotorAxis.vi" Type="VI" URL="../BeadTracker2.llb/MoveMotorAxis.vi"/>
 			<Item Name="QueueListType.ctl" Type="VI" URL="../BeadTracker2.llb/QueueListType.ctl"/>
 			<Item Name="SendCameraCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendCameraCmd.vi"/>
 			<Item Name="SendMotorCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorCmd.vi"/>
@@ -38,8 +39,7 @@
 			<Item Name="MotorControl" Type="Folder">
 				<Item Name="PI_M126_E816Piezo.llb" Type="Folder">
 					<Item Name="MeasureCurrentPos.vi" Type="VI" URL="../Modules/PI_M126_E816Piezo.llb/MeasureCurrentPos.vi"/>
-					<Item Name="MoveMotorAxis.vi" Type="VI" URL="../BeadTracker2.llb/MoveMotorAxis.vi"/>
-					<Item Name="MoveToPosition.vi" Type="VI" URL="../Modules/PI_M126_E816Piezo.llb/MoveToPosition.vi"/>
+					<Item Name="Cmd_SetPosition.vi" Type="VI" URL="../Modules/PI_M126_E816Piezo.llb/Cmd_SetPosition.vi"/>
 					<Item Name="PI_Stages_Main.vi" Type="VI" URL="../Modules/PI_M126_E816Piezo.llb/PI_Stages_Main.vi"/>
 				</Item>
 				<Item Name="PI Stage Control" Type="Folder">
@@ -86,7 +86,13 @@
 			<Item Name="Setup_D012_L.vi" Type="VI" URL="../Setups/Setup_D012_L.vi"/>
 			<Item Name="Setup_D012_R.vi" Type="VI" URL="../Setups/Setup_D012_R.vi"/>
 		</Item>
+		<Item Name="MotorMoveFlagsType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorMoveFlagsType.ctl"/>
+		<Item Name="MotorPosType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorPosType.ctl"/>
+		<Item Name="QueueTest.vi" Type="VI" URL="../QueueTest.vi"/>
+		<Item Name="SendMotorMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorMoveCmd.vi"/>
+		<Item Name="SetSingleAxisPos.vi" Type="VI" URL="../Modules/PI_M126_E816Piezo.llb/SetSingleAxisPos.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
+		<Item Name="XYf.ctl" Type="VI" URL="../BeadTracker2.llb/XYf.ctl"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Bytes At Serial Port.vi" Type="VI" URL="/&lt;vilib&gt;/Instr/serial.llb/Bytes At Serial Port.vi"/>
