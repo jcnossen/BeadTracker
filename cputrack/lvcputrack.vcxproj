@@ -200,6 +200,7 @@
     <ClInclude Include="cpu_tracker.h" />
     <ClInclude Include="labview.h" />
     <ClInclude Include="LsqQuadraticFit.h" />
+    <ClInclude Include="memdbg.h" />
     <ClInclude Include="QueuedTracker.h" />
     <ClInclude Include="queued_cpu_tracker.h" />
     <ClInclude Include="random_distr.h" />

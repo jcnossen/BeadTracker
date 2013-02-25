@@ -273,35 +273,6 @@ static __device__ void RadialProfile(int idx, cudaImageListf& images, float *dst
 	}
 }
 
-static __device__ qivalue_t QI_ComputeOffset(qicomplex_t* profile, qicomplex_t* tmpbuf1, const QIParams& params, int idx, sfft::complex<float>* s_twiddles) {
-	int nr = params.radialSteps;
-
-	qicomplex_t* reverse = tmpbuf1;
-
-	for(int x=0;x<nr*2;x++)
-		reverse[x] = profile[nr*2-1-x];
-
-//	std::vector< sfft::complex<float> > tw = sfft::fill_twiddles<float> (nr*2);
-	sfft::fft_forward(nr*2, profile, s_twiddles);
-	sfft::fft_forward(nr*2, reverse, s_twiddles);
-
-	// multiply with conjugate
-	for(int x=0;x<nr*2;x++)
-		profile[x] = profile[x] * reverse[x].conjugate();
-
-	sfft::fft_inverse(nr*2, profile, s_twiddles);
-	// fft_out2 now contains the autoconvolution
-	// convert it to float
-	qivalue_t* autoconv = (qivalue_t*)reverse;
-	for(int x=0;x<nr*2;x++)  {
-		autoconv[x] = profile[(x+nr)%(nr*2)].real();
-	}
-
-	float maxPos = ComputeMaxInterp<qivalue_t,7>(autoconv, nr*2);
-	//free(reverse);
-	return (maxPos - nr) / (3.14159265359f * 0.5f);
-}
-
 
 __global__ void ComputeQIKernel(cudaImageListf images, KernelParams params, float2* d_initial, float2* d_result)
 {
@@ -498,6 +469,7 @@ static __device__ void QI_ComputeProfile2(cudaImageListf& images, float* dst, co
 	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
 	int rIdx = threadIdx.y + blockIdx.y * blockDim.y;
 
+	/*
 
 	double total = 0.0f;
 	float rstep = (params.maxRadius - params.minRadius) / params.radialSteps;
@@ -513,7 +485,7 @@ static __device__ void QI_ComputeProfile2(cudaImageListf& images, float* dst, co
 		}
 		dst[i] = sum/params.angularSteps-images.borderValue;
 		total += dst[i];
-	}
+	}*/
 }
 
 

@@ -109,10 +109,6 @@ CDLL_EXPORT void qtrk_destroy(QueuedTracker* qtrk)
 	trackerListMutex.unlock();
 
 	delete qtrk;
-
-#ifdef USE_MEMDBG
-	MemDbgListAllocations();
-#endif
 }
 
 template<typename T>

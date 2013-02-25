@@ -564,19 +564,13 @@ void CorrectedRadialProfileTest()
 
 int main()
 {
-	float* x = new float[10];
-
-	delete[] x;
-
-	MemDbgListAllocations();
-
 	//SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
-//	QTrkTest();
+	QTrkTest();
 	//for (int i=1;i<8;i++)
 //		BuildConvergenceMap(i);
 

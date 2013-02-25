@@ -1,5 +1,6 @@
 #pragma once
 
+#define _STDINT_H
 // WOW, including this causes a labview crash on DLL unloading!!
 // #include "nivision.h"
 #include "extcode.h"
