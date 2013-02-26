@@ -10,11 +10,32 @@
 		<Property Name="server.vi.callsEnabled" Type="Bool">true</Property>
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
+		<Item Name="AutoBeadFinder" Type="Folder">
+			<Item Name="CleanIT (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/CleanIT (SubVI).vi"/>
+			<Item Name="CleanROIs (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/CleanROIs (SubVI).vi"/>
+			<Item Name="draw rectangles.vi" Type="VI" URL="../AutoBeadFinder.llb/draw rectangles.vi"/>
+			<Item Name="LoadOneImageviaPath.vi" Type="VI" URL="../AutoBeadFinder.llb/LoadOneImageviaPath.vi"/>
+			<Item Name="MakeBigTemplate (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/MakeBigTemplate (SubVI).vi"/>
+			<Item Name="MinusMean2D (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/MinusMean2D (SubVI).vi"/>
+			<Item Name="RECenterROI (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/RECenterROI (SubVI).vi"/>
+			<Item Name="RemovenearestROI.vi" Type="VI" URL="../AutoBeadFinder.llb/RemovenearestROI.vi"/>
+			<Item Name="roi2xy.vi" Type="VI" URL="../AutoBeadFinder.llb/roi2xy.vi"/>
+			<Item Name="ROIAutoSearch.vi" Type="VI" URL="../AutoBeadFinder.llb/ROIAutoSearch.vi"/>
+			<Item Name="ROICenter2LTRB.vi" Type="VI" URL="../AutoBeadFinder.llb/ROICenter2LTRB.vi"/>
+			<Item Name="ROIlistautofill.vi" Type="VI" URL="../AutoBeadFinder.llb/ROIlistautofill.vi"/>
+			<Item Name="Select Bests (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/Select Bests (SubVI).vi"/>
+			<Item Name="SortOnKey (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/SortOnKey (SubVI).vi"/>
+			<Item Name="Swapit2D (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/Swapit2D (SubVI).vi"/>
+			<Item Name="Xcorimages (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/Xcorimages (SubVI).vi"/>
+			<Item Name="xy2roi.vi" Type="VI" URL="../AutoBeadFinder.llb/xy2roi.vi"/>
+			<Item Name="XY_GetCenterOfMass.vi" Type="VI" URL="../AutoBeadFinder.llb/XY_GetCenterOfMass.vi"/>
+		</Item>
 		<Item Name="BeadTracker2.llb" Type="Folder">
 			<Item Name="Typedefs" Type="Folder">
 				<Item Name="CameraStateType.ctl" Type="VI" URL="../BeadTracker2.llb/CameraStateType.ctl"/>
 				<Item Name="CmdData_NewFrame.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_NewFrame.ctl"/>
 				<Item Name="CmdData_SetMotorPos.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_SetMotorPos.ctl"/>
+				<Item Name="CmdEnum_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraIn.ctl"/>
 				<Item Name="CmdEnum_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_MotorIn.ctl"/>
 				<Item Name="CmdType_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_CameraIn.ctl"/>
 				<Item Name="CmdType_CameraOut.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_CameraOut.ctl"/>
@@ -42,9 +63,19 @@
 		</Item>
 		<Item Name="MessageQueue" Type="Folder">
 			<Item Name="ListenerType.ctl" Type="VI" URL="../MessageQueue.llb/ListenerType.ctl"/>
+			<Item Name="MessageQueue.ctl" Type="VI" URL="../MessageQueue.llb/MessageQueue.ctl"/>
 			<Item Name="MessageQueueExample.vi" Type="VI" URL="../MessageQueue.llb/MessageQueueExample.vi"/>
+			<Item Name="MessageQueueExample_TestDRV.vi" Type="VI" URL="../MessageQueue.llb/MessageQueueExample_TestDRV.vi"/>
 			<Item Name="MessageType.ctl" Type="VI" URL="../MessageQueue.llb/MessageType.ctl"/>
-			<Item Name="MsgQueue_AddListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_AddListener.vi"/>
+			<Item Name="MsgQueue_Create.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_Create.vi"/>
+			<Item Name="MsgQueue_Delete.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_Delete.vi"/>
+			<Item Name="MsgQueue_Flush.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_Flush.vi"/>
+			<Item Name="MsgQueue_GetNumListeners.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_GetNumListeners.vi"/>
+			<Item Name="MsgQueue_ReadMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_ReadMsg.vi"/>
+			<Item Name="MsgQueue_RegisterListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_RegisterListener.vi"/>
+			<Item Name="MsgQueue_RemoveListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_RemoveListener.vi"/>
+			<Item Name="MsgQueue_SendMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_SendMsg.vi"/>
+			<Item Name="MsgQueueRef.ctl" Type="VI" URL="../MessageQueue.llb/MsgQueueRef.ctl"/>
 		</Item>
 		<Item Name="Modules" Type="Folder">
 			<Property Name="NI.SortType" Type="Int">3</Property>
@@ -104,15 +135,10 @@
 			<Item Name="Setup_D012_L.vi" Type="VI" URL="../Setups/Setup_D012_L.vi"/>
 			<Item Name="Setup_D012_R.vi" Type="VI" URL="../Setups/Setup_D012_R.vi"/>
 		</Item>
-		<Item Name="CreateMsgQueue.vi" Type="VI" URL="../MessageQueue.llb/CreateMsgQueue.vi"/>
-		<Item Name="DeleteMsgQueue.vi" Type="VI" URL="../MessageQueue.llb/DeleteMsgQueue.vi"/>
 		<Item Name="GetBeadCornerPos.vi" Type="VI" URL="../BeadTracker2.llb/GetBeadCornerPos.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
-		<Item Name="MsgQueue_RemoveListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_RemoveListener.vi"/>
-		<Item Name="MsgQueueRef.ctl" Type="VI" URL="../MessageQueue.llb/MsgQueueRef.ctl"/>
-		<Item Name="QTrkCheckForDLL.vi" Type="VI" URL="../QTrk.llb/QTrkCheckForDLL.vi"/>
-		<Item Name="QueueTest.vi" Type="VI" URL="../QueueTest.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
+		<Item Name="TestGetQueues.vi" Type="VI" URL="../TestGetQueues.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
@@ -154,6 +180,7 @@
 				<Item Name="IMAQ Image.ctl" Type="VI" URL="/&lt;vilib&gt;/vision/Image Controls.llb/IMAQ Image.ctl"/>
 				<Item Name="IMAQ ImageToArray" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ ImageToArray"/>
 				<Item Name="IMAQ Init.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqhl.llb/IMAQ Init.vi"/>
+				<Item Name="IMAQ ReadFile" Type="VI" URL="/&lt;vilib&gt;/vision/Files.llb/IMAQ ReadFile"/>
 				<Item Name="IMAQ Start.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Start.vi"/>
 				<Item Name="IMAQRegisterSession.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/IMAQRegisterSession.vi"/>
 				<Item Name="IMAQUnregisterSession.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/IMAQUnregisterSession.vi"/>
@@ -217,9 +244,6 @@
 				<Item Name="Write To Spreadsheet File.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Write To Spreadsheet File.vi"/>
 			</Item>
 			<Item Name="AccurateTickCount.vi" Type="VI" URL="../AccurateTickCount.vi"/>
-			<Item Name="CleanIT (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/CleanIT (SubVI).vi"/>
-			<Item Name="CleanROIs (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/CleanROIs (SubVI).vi"/>
-			<Item Name="draw rectangles.vi" Type="VI" URL="../AutoBeadFinder.llb/draw rectangles.vi"/>
 			<Item Name="GCSTranslator.dll" Type="Document" URL="../Modules/GCSTranslator.dll"/>
 			<Item Name="imaq.dll" Type="Document" URL="imaq.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
@@ -228,23 +252,19 @@
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
 			<Item Name="lvanlys.dll" Type="Document" URL="/C/Program Files (x86)/National Instruments/LabVIEW 2011/resource/lvanlys.dll"/>
-			<Item Name="MakeBigTemplate (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/MakeBigTemplate (SubVI).vi"/>
-			<Item Name="MessageQueue.ctl" Type="VI" URL="../MessageQueue.llb/MessageQueue.ctl"/>
-			<Item Name="MessageQueue.ctl" Type="VI" URL="../MessageQueue.llb/MessageQueue.lvclass/MessageQueue.ctl"/>
-			<Item Name="MessageQueue.lvclass" Type="LVClass" URL="../MessageQueue.llb/MessageQueue.lvclass"/>
-			<Item Name="MinusMean2D (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/MinusMean2D (SubVI).vi"/>
-			<Item Name="MsgQueue_SendMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_SendMsg.vi"/>
 			<Item Name="nivision.dll" Type="Document" URL="nivision.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
 			<Item Name="nivissvc.dll" Type="Document" URL="nivissvc.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
+			<Item Name="QTrkCheckForDLL.vi" Type="VI" URL="../QTrk.llb/QTrkCheckForDLL.vi"/>
 			<Item Name="QTrkCreate.vi" Type="VI" URL="../QTrk.llb/QTrkCreate.vi"/>
 			<Item Name="QTrkDLL.vi" Type="VI" URL="../QTrk.llb/QTrkDLL.vi"/>
 			<Item Name="QTrkFlush.vi" Type="VI" URL="../QTrk.llb/QTrkFlush.vi"/>
 			<Item Name="QTrkFree.vi" Type="VI" URL="../QTrk.llb/QTrkFree.vi"/>
 			<Item Name="QTrkFreeAllTrackers.vi" Type="VI" URL="../QTrk.llb/QTrkFreeAllTrackers.vi"/>
+			<Item Name="QTrkGetResultCount.vi" Type="VI" URL="../QTrk.llb/QTrkGetResultCount.vi"/>
 			<Item Name="QTrkGetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkGetZLUT.vi"/>
 			<Item Name="QTrkInstance.ctl" Type="VI" URL="../QTrk.llb/QTrkInstance.ctl"/>
 			<Item Name="QTrkIsIdle.vi" Type="VI" URL="../QTrk.llb/QTrkIsIdle.vi"/>
@@ -253,19 +273,7 @@
 			<Item Name="QTrkSelectDLLDialog.vi" Type="VI" URL="../QTrk.llb/QTrkSelectDLLDialog.vi"/>
 			<Item Name="QTrkSettings.ctl" Type="VI" URL="../QTrk.llb/QTrkSettings.ctl"/>
 			<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkSetZLUT.vi"/>
-			<Item Name="RECenterROI (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/RECenterROI (SubVI).vi"/>
-			<Item Name="RemovenearestROI.vi" Type="VI" URL="../AutoBeadFinder.llb/RemovenearestROI.vi"/>
-			<Item Name="roi2xy.vi" Type="VI" URL="../AutoBeadFinder.llb/roi2xy.vi"/>
-			<Item Name="ROIAutoSearch.vi" Type="VI" URL="../AutoBeadFinder.llb/ROIAutoSearch.vi"/>
-			<Item Name="ROICenter2LTRB.vi" Type="VI" URL="../AutoBeadFinder.llb/ROICenter2LTRB.vi"/>
-			<Item Name="ROIlistautofill.vi" Type="VI" URL="../AutoBeadFinder.llb/ROIlistautofill.vi"/>
-			<Item Name="Select Bests (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/Select Bests (SubVI).vi"/>
 			<Item Name="SelectBeads.vi" Type="VI" URL="../BeadTracker2.llb/SelectBeads.vi"/>
-			<Item Name="SortOnKey (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/SortOnKey (SubVI).vi"/>
-			<Item Name="Swapit2D (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/Swapit2D (SubVI).vi"/>
-			<Item Name="Xcorimages (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/Xcorimages (SubVI).vi"/>
-			<Item Name="xy2roi.vi" Type="VI" URL="../AutoBeadFinder.llb/xy2roi.vi"/>
-			<Item Name="XY_GetCenterOfMass.vi" Type="VI" URL="../AutoBeadFinder.llb/XY_GetCenterOfMass.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
