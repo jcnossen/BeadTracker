@@ -196,6 +196,7 @@ void QTrkTest()
 #ifdef _DEBUG
 	cfg.qi_radialsteps=8;
 	cfg.numThreads = 2;
+	cfg.qi_iterations=1;
 	int total= 100;
 	int batchSize = 2;
 	haveZLUT=false;
@@ -333,10 +334,17 @@ void TestAsync()
 	cudaEventDestroy(done);
 }
 
+__global__ void emptyKernel()
+{
+
+}
+
 
 int main(int argc, char *argv[])
 {
 //	testLinearArray();
+
+	emptyKernel<<<dim3(10,1,1), dim3() >>> ();
 
 	//TestJobPassing();
 	//TestLocalization();
