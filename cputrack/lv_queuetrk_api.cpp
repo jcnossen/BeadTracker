@@ -53,35 +53,50 @@ void ArgumentErrorMsg(ErrorCluster* e, const std::string& msg) {
 	FillErrorCluster(mgArgErr, msg.c_str(), e);
 }
 
+bool ValidateTracker(QueuedTracker* tracker, ErrorCluster* e, const char *funcname)
+{
+	if (std::find(trackerList.begin(), trackerList.end(), tracker)==trackerList.end()) {
+		ArgumentErrorMsg(e, SPrintf("QTrk C++ function %s called with invalid tracker pointer: %p", funcname, tracker));
+		return false;
+	}
+	return true;
+}
+
 CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pZlut, LVArray<float>** zcmpWindow, ErrorCluster* e)
 {
 	LVArray3D<float>* zlut = *pZlut;
 
-	int numLUTs = zlut->dimSizes[0];
-	int planes = zlut->dimSizes[1];
-	int res = zlut->dimSizes[2];
+	if (ValidateTracker(tracker,e, "set ZLUT")) {
 
-	dbgprintf("Setting ZLUT size: %d beads, %d planes, %d radialsteps\n", numLUTs, planes, res);
+		int numLUTs = zlut->dimSizes[0];
+		int planes = zlut->dimSizes[1];
+		int res = zlut->dimSizes[2];
 
-	float* zcmp = 0;
-	if (zcmpWindow && (*zcmpWindow)->dimSize > 0) {
-		if ( (*zcmpWindow)->dimSize != res)
-			ArgumentErrorMsg(e, SPrintf("Z Compare window should have the same resolution as the ZLUT (%d elements)", res));
-		else
-			zcmp = (*zcmpWindow)->elem;
-	}
+		dbgprintf("Setting ZLUT size: %d beads, %d planes, %d radialsteps\n", numLUTs, planes, res);
+
+		float* zcmp = 0;
+		if (zcmpWindow && (*zcmpWindow)->dimSize > 0) {
+			if ( (*zcmpWindow)->dimSize != res)
+				ArgumentErrorMsg(e, SPrintf("Z Compare window should have the same resolution as the ZLUT (%d elements)", res));
+			else
+				zcmp = (*zcmpWindow)->elem;
+		}
 	
-	tracker->SetZLUT(zlut->elem, numLUTs, planes, res, zcmp);
+		tracker->SetZLUT(zlut->elem, numLUTs, planes, res, zcmp);
+	}
 }
 
-CDLL_EXPORT void DLL_CALLCONV qtrk_get_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pzlut)
+CDLL_EXPORT void DLL_CALLCONV qtrk_get_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pzlut, ErrorCluster* e)
 {
-	int dims[3];
-
-	float* zlut = tracker->GetZLUT(&dims[0], &dims[1], &dims[2]);
-	ResizeLVArray3D(pzlut, dims[0], dims[1], dims[2]);
-	memcpy((*pzlut)->elem, zlut, sizeof(float)*(*pzlut)->numElem());
-	delete[] zlut;
+	if (ValidateTracker(tracker, e, "get ZLUT")) {
+		int dims[3];
+		float* zlut = tracker->GetZLUT(&dims[0], &dims[1], &dims[2]);
+		if (zlut) {
+			ResizeLVArray3D(pzlut, dims[0], dims[1], dims[2]);
+			memcpy((*pzlut)->elem, zlut, sizeof(float)*(*pzlut)->numElem());
+			delete[] zlut;
+		}
+	}
 }
 
 CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings, ErrorCluster* e)
@@ -102,13 +117,21 @@ CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings, ErrorCluster* e)
 }
 
 
-CDLL_EXPORT void qtrk_destroy(QueuedTracker* qtrk)
+CDLL_EXPORT void qtrk_destroy(QueuedTracker* qtrk, ErrorCluster* error)
 {
 	trackerListMutex.lock();
-	trackerList.erase(std::find(trackerList.begin(),trackerList.end(), qtrk));
+
+	auto pos = std::find(trackerList.begin(),trackerList.end(),qtrk);
+	if (pos == trackerList.end()) {
+		ArgumentErrorMsg(error, SPrintf( "Trying to call qtrk_destroy with invalid qtrk pointer %p", qtrk));
+		qtrk = 0;
+	}
+	else
+		trackerList.erase(pos);
+
 	trackerListMutex.unlock();
 
-	delete qtrk;
+	if(qtrk) delete qtrk;
 }
 
 template<typename T>
@@ -193,17 +216,21 @@ CDLL_EXPORT int qtrk_hasfullqueue(QueuedTracker* qtrk)
 	return qtrk->IsQueueFilled() ? 1 : 0;
 }
 
-CDLL_EXPORT int qtrk_resultcount(QueuedTracker* qtrk)
+CDLL_EXPORT int qtrk_resultcount(QueuedTracker* qtrk, ErrorCluster* e)
 {
-	if (!qtrk)
-		return 0;
-	return qtrk->GetResultCount();
+	if (ValidateTracker(qtrk, e, "resultcount")) {
+		if (!qtrk)
+			return 0;
+		return qtrk->GetResultCount();
+	} 
+	return 0;
 }
 
-CDLL_EXPORT void qtrk_flush(QueuedTracker* qtrk)
+CDLL_EXPORT void qtrk_flush(QueuedTracker* qtrk, ErrorCluster* e)
 {
-	if (qtrk)
+	if (ValidateTracker(qtrk, e, "flush")) {
 		qtrk->Flush();
+	}
 }
 
 static bool compareResultsByID(const LocalizationResult& a, const LocalizationResult& b) {

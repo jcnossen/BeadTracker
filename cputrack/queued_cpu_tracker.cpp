@@ -225,6 +225,9 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 
 void QueuedCPUTracker::SetZLUT(float* data, int num_zluts, int planes, int res, float* zcmp)
 {
+	jobs_mutex.lock();
+	results_mutex.lock();
+
 	if (zluts) delete[] zluts;
 	int total = num_zluts*res*planes;
 	if (total > 0) {
@@ -245,12 +248,14 @@ void QueuedCPUTracker::SetZLUT(float* data, int num_zluts, int planes, int res, 
 		this->zcmp.clear();
 
 	UpdateZLUTs();
+	results_mutex.unlock();
+	jobs_mutex.unlock();
 }
 
 void QueuedCPUTracker::UpdateZLUTs()
 {
 	for (int i=0;i<threads.size();i++){
-		threads[i].tracker->SetZLUT(zluts, zlut_planes, zlut_res, zlut_count, cfg.zlut_minradius, cfg.zlut_maxradius, cfg.zlut_angularsteps, false, false, zcmp.empty() ? 0 : &zcmp[0]);
+		threads[i].tracker->SetZLUT(zluts, zlut_planes, zlut_res, zlut_count, cfg.zlut_minradius, cfg.zlut_maxradius, cfg.zlut_angularsteps, true, false, zcmp.empty() ? 0 : &zcmp[0]);
 	}
 }
 
@@ -258,8 +263,13 @@ void QueuedCPUTracker::UpdateZLUTs()
 
 float* QueuedCPUTracker::GetZLUT(int *count, int* planes,int *res)
 {
-	float* cp = new float [zlut_planes*zlut_res*zlut_count];
-	std::copy(zluts, zluts+(zlut_planes*zlut_res*zlut_count), cp);
+	float* cp = 0;
+	if (zlut_planes*zlut_res*zlut_count>0) {
+		results_mutex.lock();
+		cp = new float [zlut_planes*zlut_res*zlut_count];
+		std::copy(zluts, zluts+(zlut_planes*zlut_res*zlut_count), cp);
+		results_mutex.unlock();
+	}
 
 	if(count) *count = zlut_count;
 	if(planes) *planes = zlut_planes;
