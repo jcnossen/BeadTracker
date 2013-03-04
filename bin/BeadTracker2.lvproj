@@ -31,6 +31,12 @@
 			<Item Name="XY_GetCenterOfMass.vi" Type="VI" URL="../AutoBeadFinder.llb/XY_GetCenterOfMass.vi"/>
 		</Item>
 		<Item Name="BeadTracker2.llb" Type="Folder">
+			<Item Name="MATLAB" Type="Folder">
+				<Item Name="Matlab_GetMatrixOrArray.vi" Type="VI" URL="../BeadTracker2.llb/Matlab_GetMatrixOrArray.vi"/>
+				<Item Name="Matlab_GetScalar.vi" Type="VI" URL="../BeadTracker2.llb/Matlab_GetScalar.vi"/>
+				<Item Name="Matlab_SetArray.vi" Type="VI" URL="../BeadTracker2.llb/Matlab_SetArray.vi"/>
+				<Item Name="Matlab_SetScalar.vi" Type="VI" URL="../BeadTracker2.llb/Matlab_SetScalar.vi"/>
+			</Item>
 			<Item Name="Typedefs" Type="Folder">
 				<Item Name="CameraStateType.ctl" Type="VI" URL="../BeadTracker2.llb/CameraStateType.ctl"/>
 				<Item Name="CmdData_NewFrame.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_NewFrame.ctl"/>
@@ -51,6 +57,9 @@
 			<Item Name="AskForCreateNewDir.vi" Type="VI" URL="../BeadTracker2.llb/AskForCreateNewDir.vi"/>
 			<Item Name="BuildZLUT.vi" Type="VI" URL="../BeadTracker2.llb/BuildZLUT.vi"/>
 			<Item Name="EditQTrkSettingsDialog.vi" Type="VI" URL="../BeadTracker2.llb/EditQTrkSettingsDialog.vi"/>
+			<Item Name="ExecuteExperimentScript.vi" Type="VI" URL="../BeadTracker2.llb/ExecuteExperimentScript.vi"/>
+			<Item Name="ExperimentProgramUI.vi" Type="VI" URL="../BeadTracker2.llb/ExperimentProgramUI.vi"/>
+			<Item Name="GetBeadCornerPos.vi" Type="VI" URL="../BeadTracker2.llb/GetBeadCornerPos.vi"/>
 			<Item Name="GetExperimentPaths.vi" Type="VI" URL="../BeadTracker2.llb/GetExperimentPaths.vi"/>
 			<Item Name="GetQueues.vi" Type="VI" URL="../BeadTracker2.llb/GetQueues.vi"/>
 			<Item Name="GlobalVariables.vi" Type="VI" URL="../BeadTracker2.llb/GlobalVariables.vi"/>
@@ -132,14 +141,7 @@
 				</Item>
 			</Item>
 		</Item>
-		<Item Name="ExecuteExperimentScript.vi" Type="VI" URL="../BeadTracker2.llb/ExecuteExperimentScript.vi"/>
-		<Item Name="ExperimentProgramUI.vi" Type="VI" URL="../BeadTracker2.llb/ExperimentProgramUI.vi"/>
-		<Item Name="GetBeadCornerPos.vi" Type="VI" URL="../BeadTracker2.llb/GetBeadCornerPos.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
-		<Item Name="Matlab_GetMatrixOrArray.vi" Type="VI" URL="../BeadTracker2.llb/Matlab_GetMatrixOrArray.vi"/>
-		<Item Name="Matlab_GetScalar.vi" Type="VI" URL="../BeadTracker2.llb/Matlab_GetScalar.vi"/>
-		<Item Name="Matlab_SetArray.vi" Type="VI" URL="../BeadTracker2.llb/Matlab_SetArray.vi"/>
-		<Item Name="Matlab_SetScalar.vi" Type="VI" URL="../BeadTracker2.llb/Matlab_SetScalar.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="TestGetQueues.vi" Type="VI" URL="../TestGetQueues.vi"/>
