@@ -225,8 +225,8 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 
 void QueuedCPUTracker::SetZLUT(float* data, int num_zluts, int planes, float* zcmp)
 {
-	jobs_mutex.lock();
-	results_mutex.lock();
+//	jobs_mutex.lock();
+//	results_mutex.lock();
 
 	if (zluts) delete[] zluts;
 	int res = cfg.zlut_radialsteps;
@@ -248,14 +248,14 @@ void QueuedCPUTracker::SetZLUT(float* data, int num_zluts, int planes, float* zc
 		this->zcmp.clear();
 
 	UpdateZLUTs();
-	results_mutex.unlock();
-	jobs_mutex.unlock();
+//	results_mutex.unlock();
+//	jobs_mutex.unlock();
 }
 
 void QueuedCPUTracker::UpdateZLUTs()
 {
 	for (int i=0;i<threads.size();i++){
-		threads[i].tracker->SetZLUT(zluts, zlut_planes, zlut_res, zlut_count, cfg.zlut_minradius, cfg.zlut_maxradius, cfg.zlut_angularsteps, true, false, zcmp.empty() ? 0 : &zcmp[0]);
+		threads[i].tracker->SetZLUT(zluts, zlut_planes, zlut_res, zlut_count, cfg.zlut_minradius, cfg.zlut_maxradius, cfg.zlut_angularsteps, false, false, zcmp.empty() ? 0 : &zcmp[0]);
 	}
 }
 
