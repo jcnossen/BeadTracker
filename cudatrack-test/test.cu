@@ -186,8 +186,8 @@ void QTrkTest()
 {
 	QTrkSettings cfg;
 	cfg.width = cfg.height = 60;
-	cfg.qi_iterations = 4;
-	cfg.qi_maxradius = 28;
+	cfg.qi_iterations = 1;
+	cfg.qi_maxradius = 50;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1;
@@ -240,7 +240,7 @@ void QTrkTest()
 	
 	// Schedule images to localize on
 	dbgprintf("Benchmarking...\n", total);
-	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2, cfg.height/2, zmin, 0);
+	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2+2, cfg.height/2, zmin, 0);
 	double tstart = getPreciseTime();
 	int rc = 0, displayrc=0;
 	for (int n=0;n<total;n++) {
@@ -271,7 +271,7 @@ void QTrkTest()
 	for (int i=0;i<std::min(20,total);i++) {
 		LocalizationResult r;
 		qtrk.PollFinished(&r, 1);
-		dbgprintf("[%d] Result.x: %f, Result.y: %f\n", i,r.pos.x, r.pos.y);
+		dbgprintf("[%d] Result.x: %f, Result.y: %f. COM: %f, %f\n", i,r.pos.x, r.pos.y, r.firstGuess.x, r.firstGuess.y);
 	}
 
 	dbgprintf("Localization Speed: %d (img/s)\n", (int)( total/(tend-tstart) ));

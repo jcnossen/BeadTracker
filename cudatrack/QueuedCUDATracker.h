@@ -69,7 +69,7 @@ struct CUDATrackerJob {
 
 class QueuedCUDATracker : public QueuedTracker {
 public:
-	QueuedCUDATracker(QTrkSettings* cfg, int batchSize=-1);
+	QueuedCUDATracker(QTrkSettings* cfg, int batchSize=-1, bool debugStream=false);
 	~QueuedCUDATracker();
 
 	void Start();
@@ -102,6 +102,7 @@ protected:
 		bool IsExecutionDone();
 		
 		pinned_array<float3> results;
+		pinned_array<float3> com;
 		pinned_array<CUDATrackerJob> jobs;
 		device_vec<CUDATrackerJob> d_jobs;
 		int jobCount;
@@ -124,6 +125,8 @@ protected:
 		float2* d_QIprofiles_reverse;
 		device_vec<float> d_quadrants;
 
+		device_vec<float> d_radialprofiles;//for Z computation
+
 		uint localizeFlags; // Indicates whether kernels should be ran for building zlut, z computing, or QI
 
 		Threads::Mutex mutex; // Mutex to lock when queing jobs or copying results
@@ -139,6 +142,7 @@ protected:
 	Stream* CreateStream();
 	void CopyStreamResults(Stream* s);
 
+	bool debugStream;
 	int numThreads;
 	int batchSize;
 

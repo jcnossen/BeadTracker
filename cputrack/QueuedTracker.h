@@ -72,6 +72,7 @@ struct QTrkSettings {
 
 	int cuda_device;
 	float com_bgcorrection; // 0.0f to disable
+	int zlut_radialsteps;
 };
 struct ROIPosition
 {

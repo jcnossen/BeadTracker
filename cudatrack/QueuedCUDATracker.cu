@@ -78,7 +78,7 @@ void CheckCUDAError()
 	}
 }
 
-QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
+QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize, bool debugStream)
 {
 	this->cfg = *cfg;
 
@@ -154,6 +154,10 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	kernelParams.zlut.img = zlut;
 
 //	results.reserve(50000);
+
+	if (debugStream) {
+		this->debugStream = debugStream;
+	}
 	
 	streams.resize(cfg->numThreads);
 	for (int i=0;i<streams.size();i++) {
@@ -245,35 +249,6 @@ __global__ void BgCorrectedCOM(int count, cudaImageListf images,float3* d_com, f
 	}
 }
 
-static __device__ void RadialProfile(int idx, cudaImageListf& images, float *dst, const ZLUTParams zlut, float2 center, bool& error)
-{
-	int radialSteps = zlut.img.w;
-	for (int i=0;i<zlut.img.w;i++)
-		dst[i]=0.0f;
-
-	float totalrmssum2 = 0.0f;
-	float rstep = (zlut.maxRadius-zlut.minRadius) / radialSteps;
-	for (int i=0;i<radialSteps; i++) {
-		float sum = 0.0f;
-
-		float r = zlut.minRadius+rstep*i;
-		for (int a=0;a<zlut.angularSteps;a++) {
-			float ang = 2*3.141593f*a/(float)zlut.angularSteps;
-			float x = center.x + __cosf(ang) * r;
-			float y = center.y + __sinf(ang) * r;
-			sum += images.interpolate(x,y, idx);
-		}
-
-		dst[i] = sum/zlut.angularSteps-images.borderValue;
-		totalrmssum2 += dst[i]*dst[i];
-	}
-	double invTotalrms = 1.0f/sqrt(totalrmssum2/radialSteps);
-	for (int i=0;i<radialSteps;i++) {
-		dst[i] *= invTotalrms;
-	}
-}
-
-
 __global__ void ComputeQIKernel(cudaImageListf images, KernelParams params, float2* d_initial, float2* d_result)
 {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
@@ -297,7 +272,9 @@ QueuedCUDATracker::Stream::Stream()
 
 QueuedCUDATracker::Stream::~Stream() 
 {
-	cudaStreamDestroy(stream);
+	if (stream)
+		cudaStreamDestroy(stream); // stream can be zero if in debugStream mode.
+
 	cufftDestroy(fftPlan);
 
 	if(images.data) images.free();
@@ -326,7 +303,10 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream()
 {
 	Stream* s = new Stream();
 
-	cudaStreamCreate(&s->stream);
+	if (debugStream)
+		s->stream = 0;
+	else
+		cudaStreamCreate(&s->stream);
 
 	uint hostBufSize = sizeof(float)* cfg.width*cfg.height*batchSize;
 	s->hostImageBuf.init(hostBufSize);
@@ -334,6 +314,7 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream()
 
 	s->jobs.init(batchSize);
 	s->results.init(batchSize);
+	s->com.init(batchSize);
 	s->d_com.init(batchSize);
 	s->d_resultpos.init(batchSize);
 	s->results.init(batchSize);
@@ -341,6 +322,7 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream()
 	s->d_quadrants.init(qi_FFT_length*batchSize*2);
 	s->d_QIprofiles.init(batchSize*4*qi_FFT_length); // (2 axis) * (2 radialsteps) * (rev/forw) = 8 * nr = 4 * qi_FFT_length
 	s->d_QIprofiles_reverse = s->d_QIprofiles.data + batchSize*2*qi_FFT_length;
+	s->d_radialprofiles.init(cfg.zlut_radialsteps*batchSize);
 	
 	// 2* batchSize, since X & Y both need an FFT transform
 	//cufftResult_t r = cufftPlanMany(&s->fftPlan, 1, &qi_FFT_length, 0, 1, qi_FFT_length, 0, 1, qi_FFT_length, CUFFT_C2C, batchSize*4);
@@ -417,10 +399,9 @@ bool QueuedCUDATracker::IsQueueFilled()
 bool QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane)
 {
 	Stream* s = GetReadyStream();
-
 	s->lock();
 
-	int jobIndex =  s->jobCount++;
+	int jobIndex = s->jobCount++;
 	CUDATrackerJob& job = s->jobs[jobIndex];
 	if (initialPos)
 		job.initialPos = *(float3*)initialPos;
@@ -604,47 +585,47 @@ __global__ void QI_OffsetPositions(int njobs, float3* current, float3* dst, cuff
 
 	kernel gets called with dim3(images.count, radialsteps*4) elements
 */
-static __global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* positions, float* dst_quadrants, const QIParams params)
+__global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* positions, float* dst_quadrants, const QIParams params)
 {
 	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
 	int rIdx = threadIdx.y + blockIdx.y * blockDim.y;
 
-	if (jobIdx < njobs || rIdx < 4*params.radialSteps)
-		return;
+	if (jobIdx < njobs && rIdx < 4*params.radialSteps) {
 
-	const int qmat[] = {
-		1, 1,
-		-1, 1,
-		-1, -1,
-		1, -1 };
+		const int qmat[] = {
+			1, 1,
+			-1, 1,
+			-1, -1,
+			1, -1 };
 
-	int quadrant = rIdx & 3;
-	int mx = qmat[2*quadrant+0];
-	int my = qmat[2*quadrant+1];
-	float* qdr = &dst_quadrants[ (jobIdx * 4 + quadrant) * params.radialSteps ];
+		int quadrant = rIdx & 3;
+		int mx = qmat[2*quadrant+0];
+		int my = qmat[2*quadrant+1];
+		float* qdr = &dst_quadrants[ (jobIdx * 4 + quadrant) * params.radialSteps ];
 
-	float rstep = (params.maxRadius - params.minRadius) / params.radialSteps;
-	double sum = 0.0f;
-	float r = params.minRadius + rstep * rIdx;
-	float3 pos = positions[jobIdx];
+		float rstep = (params.maxRadius - params.minRadius) / params.radialSteps;
+		double sum = 0.0f;
+		float r = params.minRadius + rstep * rIdx;
+		float3 pos = positions[jobIdx];
 
-	for (int a=0;a<params.angularSteps;a++) {
-		float ang = 0.5f*3.141593f*a/(float)params.angularSteps;
-		float x = pos.x + mx*params.radialgrid[a].x * r;
-		float y = pos.y + my*params.radialgrid[a].y * r;
-		//sum += images.interpolate(x, y, jobIdx);
-			
-		float v;
-		if (x < 0 || x > images.w-1 || y < 0 || y > images.h-1)
-			v = 0.0f;
-		else 
-			v = tex2D(qi_image_texture, x,y + jobIdx*images.h);
-		sum += v;
+		for (int a=0;a<params.angularSteps;a++) {
+			float ang = 0.5f*3.141593f*a/(float)params.angularSteps;
+			float x = pos.x + mx*params.radialgrid[a].x * r;
+			float y = pos.y + my*params.radialgrid[a].y * r;
+			sum += images.interpolate(x, y, jobIdx);
+			/*
+			float v;
+			if (x < 0 || x > images.w-1 || y < 0 || y > images.h-1)
+				v = 0.0f;
+			else 
+				v = tex2D(qi_image_texture, x,y + jobIdx*images.h);
+			sum += v;*/
+		}
+		qdr[rIdx] = sum/params.angularSteps-images.borderValue;
 	}
-	qdr[rIdx] = sum/params.angularSteps-images.borderValue;
 }
 
-static __global__ void QI_QuadrantsToProfiles(int njobs, cudaImageListf images, float* quadrants, float2* profiles, float2* reverseProfiles,  const QIParams params)
+__global__ void QI_QuadrantsToProfiles(int njobs, cudaImageListf images, float* quadrants, float2* profiles, float2* reverseProfiles,  const QIParams params)
 {
 //ComputeQuadrantProfile(cudaImageListf& images, int idx, float* dst, const QIParams& params, int quadrant, float2 center)
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
@@ -733,14 +714,18 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 
 	int njobs = s->jobCount;
 	dim3 qdrThreads(16, 64);
-	QI_ComputeQuadrants <<< dim3( (njobs + qdrThreads.x - 1) / qdrThreads.x, (4*cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y ), qdrThreads, 0, s->stream >>> 
-		(njobs, s->images, initial->data, s->d_quadrants.data, kernelParams.qi);
 
-	QI_QuadrantsToProfiles <<< blocks(njobs), threads(), 0, s->stream >>> 
-		(njobs, s->images, s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse, kernelParams.qi);
-	//QI_ComputeProfile <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
-	//	s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse, kernelParams.qi);
+	if (1) {
+		QI_ComputeQuadrants <<< dim3( (njobs + qdrThreads.x - 1) / qdrThreads.x, (4*cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y ), qdrThreads, 0, s->stream >>> 
+			(njobs, s->images, initial->data, s->d_quadrants.data, kernelParams.qi);
 
+		QI_QuadrantsToProfiles <<< blocks(njobs), threads(), 0, s->stream >>> 
+			(njobs, s->images, s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse, kernelParams.qi);
+	} 
+	else {
+		QI_ComputeProfile <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
+			s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse, kernelParams.qi);
+	}
 	checksum(s->d_quadrants.data, qi_FFT_length * 2, njobs, "quadrant");
 	checksum(s->d_QIprofiles.data, qi_FFT_length * 2, njobs, "prof");
 	checksum(s->d_QIprofiles_reverse, qi_FFT_length * 2, njobs, "revprof");
@@ -786,6 +771,36 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 }
 
 
+
+static __device__ void RadialProfile(int idx, cudaImageListf& images, float *dst, const ZLUTParams zlut, float2 center, bool& error)
+{
+	int radialSteps = zlut.img.w;
+	for (int i=0;i<zlut.img.w;i++)
+		dst[i]=0.0f;
+
+	float totalrmssum2 = 0.0f;
+	float rstep = (zlut.maxRadius-zlut.minRadius) / radialSteps;
+	for (int i=0;i<radialSteps; i++) {
+		float sum = 0.0f;
+
+		float r = zlut.minRadius+rstep*i;
+		for (int a=0;a<zlut.angularSteps;a++) {
+			float ang = 2*3.141593f*a/(float)zlut.angularSteps;
+			float x = center.x + __cosf(ang) * r;
+			float y = center.y + __sinf(ang) * r;
+			sum += images.interpolate(x,y, idx);
+		}
+
+		dst[i] = sum/zlut.angularSteps-images.borderValue;
+		totalrmssum2 += dst[i]*dst[i];
+	}
+	double invTotalrms = 1.0f/sqrt(totalrmssum2/radialSteps);
+	for (int i=0;i<radialSteps;i++) {
+		dst[i] *= invTotalrms;
+	}
+}
+
+
 __global__ void BuildZLUTKernel(int njobs, cudaImageListf images, ZLUTParams params, float3* positions, CUDATrackerJob* jobs)
 {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
@@ -798,6 +813,8 @@ __global__ void BuildZLUTKernel(int njobs, cudaImageListf images, ZLUTParams par
 		}
 	}
 }
+
+
 
 
 void QueuedCUDATracker::ExecuteBatch(Stream *s)
@@ -827,15 +844,28 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 
 	checksum(s->d_com.data, 1, s->jobCount, "com");
 
+	s->d_com.copyToHost(s->com.data(), true, s->stream);
+
 	device_vec<float3> *curpos = &s->d_com;
-	for (int a=0;a<cfg.qi_iterations;a++) {
-		QI_Iterate(curpos, &s->d_resultpos, s);
-		curpos = &s->d_resultpos;
+	if (s->localizeFlags & LocalizeQI) {
+		for (int a=0;a<cfg.qi_iterations;a++) {
+			QI_Iterate(curpos, &s->d_resultpos, s);
+			curpos = &s->d_resultpos;
+		}
 	}
 
+	// Compute radial profiles
+	if (s->localizeFlags & (LocalizeZ | LocalizeBuildZLUT)) {
+
+	}
+	// Store profile in LUT
 	if (s->localizeFlags & LocalizeBuildZLUT) {
 		BuildZLUTKernel <<< blocks(s->jobs.size()), threads(), 0, s->stream >>> (s->jobCount, s->images, kernelParams.zlut, curpos->data, s->d_jobs.data);
 	//	TestCopyImage( s->images, 0, "qtrktestimg0.jpg");
+	}
+	// Compute Z 
+	if (s->localizeFlags & LocalizeZ) {
+
 	}
 	
 	curpos->copyToHost(s->results.data(), true, s->stream);
@@ -881,7 +911,8 @@ void QueuedCUDATracker::CopyStreamResults(Stream *s)
 		LocalizationResult r;
 		r.error = j.error;
 		r.id = j.id;
-		r.firstGuess = vector2f();
+		r.firstGuess.x = s->com[a].x;
+		r.firstGuess.y = s->com[a].y;
 		r.locType = j.locType;
 		r.zlutIndex = j.zlut;
 		r.pos.x = s->results[a].x;

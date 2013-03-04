@@ -66,9 +66,9 @@ private:
 
 	std::vector<Thread> threads;
 	float* zluts;
-	int zlut_count, zlut_planes, zlut_res;
+	int zlut_count, zlut_planes;
 	std::vector<float> zcmp;
-	float* GetZLUTByIndex(int index) { return &zluts[ index * (zlut_planes*zlut_res) ]; }
+	float* GetZLUTByIndex(int index) { return &zluts[ index * (zlut_planes*cfg.zlut_radialsteps) ]; }
 	void UpdateZLUTs();
 
 	// signal threads to stop their work
