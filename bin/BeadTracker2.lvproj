@@ -41,6 +41,8 @@
 				<Item Name="CmdType_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_CameraIn.ctl"/>
 				<Item Name="CmdType_CameraOut.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_CameraOut.ctl"/>
 				<Item Name="CmdType_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_MotorIn.ctl"/>
+				<Item Name="ExProgCommandEnumType.ctl" Type="VI" URL="../BeadTracker2.llb/ExProgCommandEnumType.ctl"/>
+				<Item Name="ExProgCommandType.ctl" Type="VI" URL="../BeadTracker2.llb/ExProgCommandType.ctl"/>
 				<Item Name="MeasureConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/MeasureConfigType.ctl"/>
 				<Item Name="MotorMoveFlagsType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorMoveFlagsType.ctl"/>
 				<Item Name="MotorPosType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorPosType.ctl"/>
@@ -133,12 +135,14 @@
 				</Item>
 			</Item>
 		</Item>
-		<Item Name="ExecExperimentMathScript.vi" Type="VI" URL="../BeadTracker2.llb/ExecExperimentMathScript.vi"/>
 		<Item Name="ExperimentProgramUI.vi" Type="VI" URL="../BeadTracker2.llb/ExperimentProgramUI.vi"/>
+		<Item Name="ExpProgExecutionState.ctl" Type="VI" URL="../BeadTracker2.llb/ExpProgExecutionState.ctl"/>
+		<Item Name="ExProg_Execute.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_Execute.vi"/>
+		<Item Name="ExProg_ParseFromScript.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_ParseFromScript.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
-		<Item Name="TestGetQueues.vi" Type="VI" URL="../TestGetQueues.vi"/>
+		<Item Name="SplitStringIntoArray.vi" Type="VI" URL="../BeadTracker2.llb/SplitStringIntoArray.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
