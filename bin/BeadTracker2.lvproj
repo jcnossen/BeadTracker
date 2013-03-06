@@ -31,6 +31,14 @@
 			<Item Name="XY_GetCenterOfMass.vi" Type="VI" URL="../AutoBeadFinder.llb/XY_GetCenterOfMass.vi"/>
 		</Item>
 		<Item Name="BeadTracker2.llb" Type="Folder">
+			<Item Name="ExperimentProgram" Type="Folder">
+				<Item Name="ExperimentProgramUI.vi" Type="VI" URL="../BeadTracker2.llb/ExperimentProgramUI.vi"/>
+				<Item Name="ExpProgExecutionState.ctl" Type="VI" URL="../BeadTracker2.llb/ExpProgExecutionState.ctl"/>
+				<Item Name="ExProg_Execute.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_Execute.vi"/>
+				<Item Name="ExProg_ParseFromScript.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_ParseFromScript.vi"/>
+				<Item Name="IsMotorPosWithinRange.vi" Type="VI" URL="../BeadTracker2.llb/IsMotorPosWithinRange.vi"/>
+				<Item Name="SplitStringIntoArray.vi" Type="VI" URL="../BeadTracker2.llb/SplitStringIntoArray.vi"/>
+			</Item>
 			<Item Name="Typedefs" Type="Folder">
 				<Item Name="CameraStateType.ctl" Type="VI" URL="../BeadTracker2.llb/CameraStateType.ctl"/>
 				<Item Name="CmdData_NewFrame.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_NewFrame.ctl"/>
@@ -136,15 +144,9 @@
 				</Item>
 			</Item>
 		</Item>
-		<Item Name="ExperimentProgramUI.vi" Type="VI" URL="../BeadTracker2.llb/ExperimentProgramUI.vi"/>
-		<Item Name="ExpProgExecutionState.ctl" Type="VI" URL="../BeadTracker2.llb/ExpProgExecutionState.ctl"/>
-		<Item Name="ExProg_Execute.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_Execute.vi"/>
-		<Item Name="ExProg_ParseFromScript.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_ParseFromScript.vi"/>
-		<Item Name="IsMotorPosWithinRange.vi" Type="VI" URL="../BeadTracker2.llb/IsMotorPosWithinRange.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
-		<Item Name="SplitStringIntoArray.vi" Type="VI" URL="../BeadTracker2.llb/SplitStringIntoArray.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
