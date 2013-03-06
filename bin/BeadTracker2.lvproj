@@ -144,6 +144,8 @@
 				</Item>
 			</Item>
 		</Item>
+		<Item Name="ExProg_ExecMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_ExecMoveCmd.vi"/>
+		<Item Name="ExProg_SetMotorAxisByName.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_SetMotorAxisByName.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
