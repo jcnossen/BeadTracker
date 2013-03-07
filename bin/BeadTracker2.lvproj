@@ -32,11 +32,15 @@
 		</Item>
 		<Item Name="BeadTracker2.llb" Type="Folder">
 			<Item Name="ExperimentProgram" Type="Folder">
+				<Item Name="ConvertProgrammedMovesCode.vi" Type="VI" URL="../BeadTracker2.llb/ConvertProgrammedMovesCode.vi"/>
+				<Item Name="ConvertProgrammedMovesDialog.vi" Type="VI" URL="../BeadTracker2.llb/ConvertProgrammedMovesDialog.vi"/>
 				<Item Name="ExperimentProgramUI.vi" Type="VI" URL="../BeadTracker2.llb/ExperimentProgramUI.vi"/>
 				<Item Name="ExpProgExecutionState.ctl" Type="VI" URL="../BeadTracker2.llb/ExpProgExecutionState.ctl"/>
 				<Item Name="ExProg_Execute.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_Execute.vi"/>
 				<Item Name="ExProg_ParseFromScript.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_ParseFromScript.vi"/>
+				<Item Name="GetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/GetMotorAxisValue.vi"/>
 				<Item Name="IsMotorPosWithinRange.vi" Type="VI" URL="../BeadTracker2.llb/IsMotorPosWithinRange.vi"/>
+				<Item Name="MotorAxisEnum.ctl" Type="VI" URL="../BeadTracker2.llb/MotorAxisEnum.ctl"/>
 				<Item Name="RemoveCommentsFromStringArray.vi" Type="VI" URL="../BeadTracker2.llb/RemoveCommentsFromStringArray.vi"/>
 				<Item Name="SetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/SetMotorAxisValue.vi"/>
 				<Item Name="SplitStringIntoArray.vi" Type="VI" URL="../BeadTracker2.llb/SplitStringIntoArray.vi"/>
@@ -48,9 +52,6 @@
 				<Item Name="CmdEnum_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraIn.ctl"/>
 				<Item Name="CmdEnum_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_MotorIn.ctl"/>
 				<Item Name="CmdEnum_UserInterfaceCmd.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_UserInterfaceCmd.ctl"/>
-				<Item Name="CmdType_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_CameraIn.ctl"/>
-				<Item Name="CmdType_CameraOut.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_CameraOut.ctl"/>
-				<Item Name="CmdType_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdType_MotorIn.ctl"/>
 				<Item Name="ExperimentProgramType.ctl" Type="VI" URL="../BeadTracker2.llb/ExperimentProgramType.ctl"/>
 				<Item Name="ExProgCommandEnumType.ctl" Type="VI" URL="../BeadTracker2.llb/ExProgCommandEnumType.ctl"/>
 				<Item Name="ExProgCommandType.ctl" Type="VI" URL="../BeadTracker2.llb/ExProgCommandType.ctl"/>
@@ -145,12 +146,8 @@
 				</Item>
 			</Item>
 		</Item>
-		<Item Name="ConvertProgrammedMovesCode.vi" Type="VI" URL="../BeadTracker2.llb/ConvertProgrammedMovesCode.vi"/>
-		<Item Name="ConvertProgrammedMovesDialog.vi" Type="VI" URL="../BeadTracker2.llb/ConvertProgrammedMovesDialog.vi"/>
 		<Item Name="ExProg_ExecMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_ExecMoveCmd.vi"/>
-		<Item Name="GetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/GetMotorAxisValue.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
-		<Item Name="MotorAxisEnum.ctl" Type="VI" URL="../BeadTracker2.llb/MotorAxisEnum.ctl"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
