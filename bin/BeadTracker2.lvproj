@@ -36,8 +36,9 @@
 				<Item Name="ExpProgExecutionState.ctl" Type="VI" URL="../BeadTracker2.llb/ExpProgExecutionState.ctl"/>
 				<Item Name="ExProg_Execute.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_Execute.vi"/>
 				<Item Name="ExProg_ParseFromScript.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_ParseFromScript.vi"/>
-				<Item Name="ExProg_SetMotorAxisByName.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_SetMotorAxisByName.vi"/>
 				<Item Name="IsMotorPosWithinRange.vi" Type="VI" URL="../BeadTracker2.llb/IsMotorPosWithinRange.vi"/>
+				<Item Name="RemoveCommentsFromStringArray.vi" Type="VI" URL="../BeadTracker2.llb/RemoveCommentsFromStringArray.vi"/>
+				<Item Name="SetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/SetMotorAxisValue.vi"/>
 				<Item Name="SplitStringIntoArray.vi" Type="VI" URL="../BeadTracker2.llb/SplitStringIntoArray.vi"/>
 			</Item>
 			<Item Name="Typedefs" Type="Folder">
@@ -144,9 +145,12 @@
 				</Item>
 			</Item>
 		</Item>
+		<Item Name="ConvertProgrammedMovesCode.vi" Type="VI" URL="../BeadTracker2.llb/ConvertProgrammedMovesCode.vi"/>
+		<Item Name="ConvertProgrammedMovesDialog.vi" Type="VI" URL="../BeadTracker2.llb/ConvertProgrammedMovesDialog.vi"/>
 		<Item Name="ExProg_ExecMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_ExecMoveCmd.vi"/>
+		<Item Name="GetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/GetMotorAxisValue.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
-		<Item Name="RemoveCommentsFromStringArray.vi" Type="VI" URL="../BeadTracker2.llb/RemoveCommentsFromStringArray.vi"/>
+		<Item Name="MotorAxisEnum.ctl" Type="VI" URL="../BeadTracker2.llb/MotorAxisEnum.ctl"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
