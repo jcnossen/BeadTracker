@@ -75,6 +75,7 @@
 			<Item Name="SaveOrLoadBeadlist.vi" Type="VI" URL="../BeadTracker2.llb/SaveOrLoadBeadlist.vi"/>
 			<Item Name="SendMotorCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorCmd.vi"/>
 			<Item Name="SendMotorMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorMoveCmd.vi"/>
+			<Item Name="TrackingUI.vi" Type="VI" URL="../BeadTracker2.llb/TrackingUI.vi"/>
 		</Item>
 		<Item Name="MessageQueue" Type="Folder">
 			<Item Name="ListenerType.ctl" Type="VI" URL="../MessageQueue.llb/ListenerType.ctl"/>
@@ -146,6 +147,7 @@
 				</Item>
 			</Item>
 		</Item>
+		<Item Name="CreateQTrkInstance.vi" Type="VI" URL="../BeadTracker2.llb/CreateQTrkInstance.vi"/>
 		<Item Name="ExProg_ExecMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_ExecMoveCmd.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>

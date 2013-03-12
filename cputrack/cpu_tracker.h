@@ -66,6 +66,7 @@ public:
 	bool CheckBoundaries(vector2f center, float radius);
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth, bool& boundaryHit);
 	vector2f ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQuadrant, float minRadius, float maxRadius, bool& boundaryHit);
+	vector2f Compute2DGaussianMLE(vector2f initial ,int iterations);
 
 	qi_t QI_ComputeOffset(qic_t* qi_profile, int nr);
 	float ComputeAsymmetry(vector2f center, int radialSteps, int angularSteps, float minRadius, float maxRadius, float *dstAngProf=0);

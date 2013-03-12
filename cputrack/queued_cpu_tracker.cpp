@@ -202,6 +202,9 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 		result.firstGuess = com;
 		result.pos = trk->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
 		break;
+	case LocalizeGaussian2D:
+		result.firstGuess = com;
+		result.pos = trk->Compute2DGaussianMLE(com, cfg.gauss2D_iterations);
 	}
 
 	if(j->locType & LocalizeZ) {

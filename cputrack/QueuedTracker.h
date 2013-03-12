@@ -11,8 +11,9 @@ enum LocalizeType {
 	LocalizeXCor1D = 1, // COM+XCor1D
 	LocalizeQI = 2, // COM+QI
 	LocalizeXCor2D = 3,   // XCor2D
+	LocalizeGaussian2D = 4, // 2D Gaussian localization
 
-	Localize2DMask = 7,
+	Localize2DMask = 15,
 	LocalizeZ = 16,
 	LocalizeBuildZLUT = 32,
 	Force32Bit = 0xffffffff
@@ -48,12 +49,15 @@ struct QTrkSettings {
 		xc1_iterations = 2;
 		zlut_minradius = 5.0f; zlut_maxradius = 60;
 		zlut_angularsteps = 64;
+		zlut_radialsteps = 32;
 		qi_iterations = 2;
 		qi_radialsteps = 32; 
 		qi_angularsteps = 64;
 		qi_minradius = 5; qi_maxradius = 60;
 		cuda_device = -1;
 		com_bgcorrection = 0.0f;
+		gauss2D_iterations = 3;
+		gauss2D_sigma = 0;
 	}
 	int width, height;
 	int numThreads, maxQueueSize;
@@ -73,6 +77,8 @@ struct QTrkSettings {
 	int cuda_device;
 	float com_bgcorrection; // 0.0f to disable
 	int zlut_radialsteps;
+	int gauss2D_iterations;
+	float gauss2D_sigma;
 };
 struct ROIPosition
 {
