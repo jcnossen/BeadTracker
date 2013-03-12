@@ -148,8 +148,11 @@
 			</Item>
 		</Item>
 		<Item Name="CreateQTrkInstance.vi" Type="VI" URL="../BeadTracker2.llb/CreateQTrkInstance.vi"/>
+		<Item Name="DiscardBead.vi" Type="VI" URL="../BeadTracker2.llb/DiscardBead.vi"/>
 		<Item Name="ExProg_ExecMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_ExecMoveCmd.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
+		<Item Name="ResultsCollectionType.ctl" Type="VI" URL="../BeadTracker2.llb/ResultsCollectionType.ctl"/>
+		<Item Name="ResultsToXYZGraphData.vi" Type="VI" URL="../BeadTracker2.llb/ResultsToXYZGraphData.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
@@ -287,6 +290,7 @@
 			<Item Name="QTrkSettings.ctl" Type="VI" URL="../QTrk.llb/QTrkSettings.ctl"/>
 			<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkSetZLUT.vi"/>
 			<Item Name="SelectBeads.vi" Type="VI" URL="../BeadTracker2.llb/SelectBeads.vi"/>
+			<Item Name="XYZf.ctl" Type="VI" URL="../QTrk.llb/XYZf.ctl"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
