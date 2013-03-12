@@ -57,7 +57,6 @@ struct QTrkSettings {
 		cuda_device = -1;
 		com_bgcorrection = 0.0f;
 		gauss2D_iterations = 3;
-		gauss2D_sigma = 0;
 	}
 	int width, height;
 	int numThreads, maxQueueSize;
@@ -78,7 +77,6 @@ struct QTrkSettings {
 	float com_bgcorrection; // 0.0f to disable
 	int zlut_radialsteps;
 	int gauss2D_iterations;
-	float gauss2D_sigma;
 };
 struct ROIPosition
 {
@@ -104,8 +102,8 @@ public:
 	virtual void WaitForScheduleFrame(uchar* imgptr) = 0; // Wait for an asynchronous call to ScheduleFrame to be finished with the specified buffer
 	
 	// data can be zero to allocate ZLUT data. zcmp has to have 'res' elements
-	virtual void SetZLUT(float* data, int count, int planes, int res, float* zcmp=0) = 0; 
-	virtual float* GetZLUT(int *count=0, int* planes=0, int *res=0) = 0; // delete[] memory afterwards
+	virtual void SetZLUT(float* data, int count, int planes, float* zcmp=0) = 0; 
+	virtual float* GetZLUT(int *count=0, int* planes=0) = 0; // delete[] memory afterwards
 	virtual int GetResultCount() = 0;
 	virtual int PollFinished(LocalizationResult* results, int maxResults) = 0;
 

@@ -379,6 +379,11 @@ CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr
 	return (maxPos - nr) / (3.141593 * 0.5);
 }
 
+vector2f CPUTracker::Compute2DGaussianMLE(vector2f initial, int iterations)
+{
+	return vector2f();
+}
+
 
 float CPUTracker::ComputeAsymmetry(vector2f center, int radialSteps, int angularSteps, 
 						float minRadius, float maxRadius, float *dstAngProf)

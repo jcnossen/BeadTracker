@@ -86,7 +86,7 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 			ArgumentErrorMsg(e, SPrintf("set_ZLUT: 3rd dimension should have size of zlut_radialsteps (%d instead of %d)", tracker->cfg.zlut_radialsteps, res));
 		}
 		else {
-			tracker->SetZLUT(zlut->elem, numLUTs, planes, res, zcmp);
+			tracker->SetZLUT(zlut->elem, numLUTs, planes, zcmp);
 		}
 	}
 }
@@ -95,7 +95,8 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_get_ZLUT(QueuedTracker* tracker, LVArray3D<fl
 {
 	if (ValidateTracker(tracker, e, "get ZLUT")) {
 		int dims[3];
-		float* zlut = tracker->GetZLUT(&dims[0], &dims[1], &dims[2]);
+		dims[2] = tracker->cfg.zlut_radialsteps;
+		float* zlut = tracker->GetZLUT(&dims[0], &dims[1]);
 		if (zlut) {
 			ResizeLVArray3D(pzlut, dims[0], dims[1], dims[2]);
 			memcpy((*pzlut)->elem, zlut, sizeof(float)*(*pzlut)->numElem());

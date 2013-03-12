@@ -94,7 +94,7 @@ QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 	resultCount = 0;
 
 	zluts = 0;
-	zlut_count = zlut_planes = zlut_res = 0;
+	zlut_count = zlut_planes = 0;
 	processJobs = false;
 }
 
@@ -211,7 +211,7 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 		result.z = trk->ComputeZ(result.pos, cfg.zlut_angularsteps, j->zlut, false, &boundaryHit);
 	} else if (j->locType & LocalizeBuildZLUT) {
 		float* zlut = GetZLUTByIndex(j->zlut);
-		trk->ComputeRadialProfile(&zlut[j->zlutPlane * zlut_res], zlut_res, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, result.pos, false, &boundaryHit);
+		trk->ComputeRadialProfile(&zlut[j->zlutPlane * cfg.zlut_radialsteps], cfg.zlut_radialsteps, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, result.pos, false, &boundaryHit);
 	}
 
 #ifdef _DEBUG
@@ -258,25 +258,24 @@ void QueuedCPUTracker::SetZLUT(float* data, int num_zluts, int planes, float* zc
 void QueuedCPUTracker::UpdateZLUTs()
 {
 	for (int i=0;i<threads.size();i++){
-		threads[i].tracker->SetZLUT(zluts, zlut_planes, zlut_res, zlut_count, cfg.zlut_minradius, cfg.zlut_maxradius, cfg.zlut_angularsteps, false, false, zcmp.empty() ? 0 : &zcmp[0]);
+		threads[i].tracker->SetZLUT(zluts, zlut_planes, cfg.zlut_radialsteps, zlut_count, cfg.zlut_minradius, cfg.zlut_maxradius, cfg.zlut_angularsteps, false, false, zcmp.empty() ? 0 : &zcmp[0]);
 	}
 }
 
 
 
-float* QueuedCPUTracker::GetZLUT(int *count, int* planes,int *res)
+float* QueuedCPUTracker::GetZLUT(int *count, int* planes)
 {
 	float* cp = 0;
-	if (zlut_planes*zlut_res*zlut_count>0) {
+	if (zlut_planes*cfg.zlut_radialsteps*zlut_count>0) {
 		results_mutex.lock();
-		cp = new float [zlut_planes*zlut_res*zlut_count];
-		std::copy(zluts, zluts+(zlut_planes*zlut_res*zlut_count), cp);
+		cp = new float [zlut_planes*cfg.zlut_radialsteps*zlut_count];
+		std::copy(zluts, zluts+(zlut_planes*cfg.zlut_radialsteps*zlut_count), cp);
 		results_mutex.unlock();
 	}
 
 	if(count) *count = zlut_count;
 	if(planes) *planes = zlut_planes;
-	if(res) *res = zlut_res;
 
 	return cp;
 }

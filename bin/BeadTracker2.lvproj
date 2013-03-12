@@ -60,10 +60,13 @@
 				<Item Name="MotorPosType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorPosType.ctl"/>
 				<Item Name="MotorStateType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorStateType.ctl"/>
 				<Item Name="QueueListType.ctl" Type="VI" URL="../BeadTracker2.llb/QueueListType.ctl"/>
+				<Item Name="ResultsCollectionType.ctl" Type="VI" URL="../BeadTracker2.llb/ResultsCollectionType.ctl"/>
 				<Item Name="XYf.ctl" Type="VI" URL="../BeadTracker2.llb/XYf.ctl"/>
 			</Item>
 			<Item Name="AskForCreateNewDir.vi" Type="VI" URL="../BeadTracker2.llb/AskForCreateNewDir.vi"/>
 			<Item Name="BuildZLUT.vi" Type="VI" URL="../BeadTracker2.llb/BuildZLUT.vi"/>
+			<Item Name="CreateQTrkInstance.vi" Type="VI" URL="../BeadTracker2.llb/CreateQTrkInstance.vi"/>
+			<Item Name="DiscardBead.vi" Type="VI" URL="../BeadTracker2.llb/DiscardBead.vi"/>
 			<Item Name="EditQTrkSettingsDialog.vi" Type="VI" URL="../BeadTracker2.llb/EditQTrkSettingsDialog.vi"/>
 			<Item Name="GetBeadCornerPos.vi" Type="VI" URL="../BeadTracker2.llb/GetBeadCornerPos.vi"/>
 			<Item Name="GetExperimentPaths.vi" Type="VI" URL="../BeadTracker2.llb/GetExperimentPaths.vi"/>
@@ -72,6 +75,7 @@
 			<Item Name="GrabImageFromQueue.vi" Type="VI" URL="../BeadTracker2.llb/GrabImageFromQueue.vi"/>
 			<Item Name="MotorUI.vi" Type="VI" URL="../BeadTracker2.llb/MotorUI.vi"/>
 			<Item Name="MoveMotorAxis.vi" Type="VI" URL="../BeadTracker2.llb/MoveMotorAxis.vi"/>
+			<Item Name="ResultsToXYZGraphData.vi" Type="VI" URL="../BeadTracker2.llb/ResultsToXYZGraphData.vi"/>
 			<Item Name="SaveOrLoadBeadlist.vi" Type="VI" URL="../BeadTracker2.llb/SaveOrLoadBeadlist.vi"/>
 			<Item Name="SendMotorCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorCmd.vi"/>
 			<Item Name="SendMotorMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorMoveCmd.vi"/>
@@ -147,12 +151,7 @@
 				</Item>
 			</Item>
 		</Item>
-		<Item Name="CreateQTrkInstance.vi" Type="VI" URL="../BeadTracker2.llb/CreateQTrkInstance.vi"/>
-		<Item Name="DiscardBead.vi" Type="VI" URL="../BeadTracker2.llb/DiscardBead.vi"/>
-		<Item Name="ExProg_ExecMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_ExecMoveCmd.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
-		<Item Name="ResultsCollectionType.ctl" Type="VI" URL="../BeadTracker2.llb/ResultsCollectionType.ctl"/>
-		<Item Name="ResultsToXYZGraphData.vi" Type="VI" URL="../BeadTracker2.llb/ResultsToXYZGraphData.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
