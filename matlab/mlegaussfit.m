@@ -11,7 +11,7 @@ function mlegaussfit()
     
     
     % Localize
-    N = 100;
+    N = 0;
     iterations = 1;
     for k = 1 : N
         P = Pcenter+(rand(1,5)-.5).*[5 5 1 300 5 ];
@@ -86,8 +86,8 @@ function [img, imgcv] = makesample(Size, P)
     imgcv = poissrnd(imgcv);
     
     % Expected values
-    DeltaX = 0.5 * erf( (X-Sx + .5) / (sqrt(2)*Sigma) ) - 0.5 * erf((X-Sx - .5) / (sqrt(2)*Sigma));
-    DeltaY = 0.5 * erf( (Y-Sy + .5) / (sqrt(2)*Sigma) ) - 0.5 * erf((Y-Sy - .5) / (sqrt(2)*Sigma));
+    DeltaX = 0.5 * erf( (X-Sx + .5) / (2*Sigma^2) ) - 0.5 * erf((X-Sx - .5) / (2*Sigma^2));
+    DeltaY = 0.5 * erf( (Y-Sy + .5) / (2*Sigma^2) ) - 0.5 * erf((Y-Sy - .5) / (2*Sigma^2));
     img = Ibg + I0 * DeltaX .* DeltaY;
     
     img = poissrnd(img);

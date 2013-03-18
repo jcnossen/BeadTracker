@@ -182,6 +182,7 @@
       <AdditionalIncludeDirectories>../libs/libjpeg-turbo/include;../libs/math;../libs/labview/cintools;../libs/labview/vision/Include;../libs/labview/imaq/Include;../libs/pthreads/include</AdditionalIncludeDirectories>
       <Optimization>MaxSpeed</Optimization>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
