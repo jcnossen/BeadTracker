@@ -82,6 +82,7 @@
 			<Item Name="RunExperimentUI.vi" Type="VI" URL="../BeadTracker2.llb/RunExperimentUI.vi"/>
 			<Item Name="SaveOrLoadBeadlist.vi" Type="VI" URL="../BeadTracker2.llb/SaveOrLoadBeadlist.vi"/>
 			<Item Name="SaveTrackingResults.vi" Type="VI" URL="../BeadTracker2.llb/SaveTrackingResults.vi"/>
+			<Item Name="SendCameraCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendCameraCmd.vi"/>
 			<Item Name="SendMotorCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorCmd.vi"/>
 			<Item Name="SendMotorMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorMoveCmd.vi"/>
 		</Item>
@@ -95,10 +96,13 @@
 			<Item Name="MsgQueue_Delete.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_Delete.vi"/>
 			<Item Name="MsgQueue_Flush.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_Flush.vi"/>
 			<Item Name="MsgQueue_GetNumListeners.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_GetNumListeners.vi"/>
+			<Item Name="MsgQueue_GetQueueLengths.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_GetQueueLengths.vi"/>
+			<Item Name="MsgQueue_ListenerStatus.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_ListenerStatus.vi"/>
 			<Item Name="MsgQueue_ReadMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_ReadMsg.vi"/>
 			<Item Name="MsgQueue_RegisterListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_RegisterListener.vi"/>
 			<Item Name="MsgQueue_RemoveListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_RemoveListener.vi"/>
 			<Item Name="MsgQueue_SendMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_SendMsg.vi"/>
+			<Item Name="MsgQueue_WaitForListeners.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_WaitForListeners.vi"/>
 			<Item Name="MsgQueueRef.ctl" Type="VI" URL="../MessageQueue.llb/MsgQueueRef.ctl"/>
 		</Item>
 		<Item Name="Modules" Type="Folder">
@@ -106,6 +110,13 @@
 			<Item Name="Cameras" Type="Folder">
 				<Item Name="VisionExpressCamera.llb" Type="Folder">
 					<Item Name="VisionExpressCamera.vi" Type="VI" URL="../Modules/VisionExpressCamera.llb/VisionExpressCamera.vi"/>
+				</Item>
+				<Item Name="DalsaCamera" Type="Folder">
+					<Item Name="DalsaSettings.ctl" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaSettings.ctl"/>
+					<Item Name="ConfigureDalsa.vi" Type="VI" URL="../Modules/DalsaCamera.llb/ConfigureDalsa.vi"/>
+					<Item Name="DalsaTest.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaTest.vi"/>
+					<Item Name="ShowSettingsDialog.vi" Type="VI" URL="../Modules/DalsaCamera.llb/ShowSettingsDialog.vi"/>
+					<Item Name="DalsaModule.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaModule.vi"/>
 				</Item>
 			</Item>
 			<Item Name="MotorControl" Type="Folder">
@@ -156,7 +167,6 @@
 			</Item>
 		</Item>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
-		<Item Name="SendCameraCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendCameraCmd.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
@@ -270,8 +280,6 @@
 			</Item>
 			<Item Name="AccurateTickCount.vi" Type="VI" URL="../BeadTracker2.llb/AccurateTickCount.vi"/>
 			<Item Name="CmdEnum_CameraOut.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraOut.ctl"/>
-			<Item Name="ConfigureDalsa.vi" Type="VI" URL="../Modules/DalsaCamera.llb/ConfigureDalsa.vi"/>
-			<Item Name="DalsaModule.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaModule.vi"/>
 			<Item Name="GCSTranslator.dll" Type="Document" URL="../Modules/GCSTranslator.dll"/>
 			<Item Name="GetSetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/GetSetMotorAxisValue.vi"/>
 			<Item Name="imaq.dll" Type="Document" URL="imaq.dll">
