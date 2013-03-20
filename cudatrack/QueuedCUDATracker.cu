@@ -34,6 +34,9 @@ Issues:
 #include "simplefft.h"
 #include "gpu_utils.h"
 
+//#define QI_DBG_EXPORT
+#define ZLUT_DBG_EXPORT
+
 #define LSQFIT_FUNC __device__ __host__
 #include "LsqQuadraticFit.h"
 
@@ -142,13 +145,21 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize, bool debu
 	qi.maxRadius = cfg->qi_maxradius;
 	qi.minRadius = cfg->qi_minradius;
 	qi.radialSteps = cfg->qi_radialsteps;
-	std::vector<float2> qiradialgrid(qi.angularSteps);
+	std::vector<float2> radialgrid(qi.angularSteps);
 	for (int i=0;i<qi.angularSteps;i++)  {
 		float ang = 0.5f*3.141593f*i/(float)qi.angularSteps;
-		qiradialgrid[i]=make_float2(cos(ang), sin(ang));
+		radialgrid[i]=make_float2(cos(ang), sin(ang));
 	}
-	d_qiradialgrid=qiradialgrid;
+	d_qiradialgrid=radialgrid;
 	qi.radialgrid=d_qiradialgrid.data;
+
+	radialgrid.resize(qi.angularSteps);
+	for (int i=0;i<cfg->zlut_angularsteps;i++) {
+		float ang = 2*3.141593f*i/(float)cfg->zlut_angularsteps;
+		radialgrid[i]=make_float2(cos(ang),sin(ang));
+	}
+	d_zlutradialgrid = radialgrid;
+	kernelParams.zlut.radialgrid = d_zlutradialgrid.data; 
 	
 	zlut = cudaImageListf::empty();
 	kernelParams.zlut.img = zlut;
@@ -212,8 +223,8 @@ static __device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float co
 
 	for (int y=0;y<images.h;y++)
 		for (int x=0;x<images.w;x++) {
-			float v = tex2D(qi_image_texture, x, y + idx*images.h);
-			//float v = images.pixel(x,y,idx);
+			//float v = tex2D(qi_image_texture, x, y + idx*images.h);
+			float v = images.pixel(x,y,idx);
 			sum += v;
 			sum2 += v*v;
 		}
@@ -226,8 +237,8 @@ static __device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float co
 	for (int y=0;y<images.h;y++)
 		for(int x=0;x<images.w;x++)
 		{
-			float v = tex2D(qi_image_texture, x, y + idx*images.h);
-			//float v = images.pixel(x,y,idx);
+			//float v = tex2D(qi_image_texture, x, y + idx*images.h);
+			float v = images.pixel(x,y,idx);
 			v = fabsf(v-mean)-correctionFactor*stdev;
 			if(v<0.0f) v=0.0f;
 			sum += v;
@@ -458,12 +469,13 @@ static __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, f
 			float x = center.x + mx*params.radialgrid[a].x * r;
 			float y = center.y + my*params.radialgrid[a].y * r;
 
+			/*
 			float v;
 			if (x < 0 || x > images.w-1 || y < 0 || y > images.h-1)
 				v = 0.0f;
-			else 
-				v = tex2D(qi_image_texture, x,y + idx*images.h);
-			//float v = images.interpolate(x, y, idx);;
+			else
+				v = tex2D(qi_image_texture, x,y + idx*images.h);*/
+			float v = images.interpolate(x, y, idx);;
 			sum += v;
 //			printf("[%d] sum[%d,%d]:%f\n", idx, a, i, v);
 	//		printf("%f; ", v);
@@ -544,6 +556,7 @@ __shared__ float compute_offset_buffer[];
 
 __device__ float QI_ComputeAxisOffset(cufftComplex* autoconv, int fftlen)
 {
+	//float* shifted = (float*)malloc(fftlen*sizeof(float)); 
 	float* shifted = &compute_offset_buffer [threadIdx.x * fftlen];
 	int nr = fftlen/2;
 	for(int x=0;x<fftlen;x++)  {
@@ -552,6 +565,7 @@ __device__ float QI_ComputeAxisOffset(cufftComplex* autoconv, int fftlen)
 
 	float maxPos = ComputeMaxInterp<float,7>(shifted, fftlen);
 	float offset = (maxPos - nr) / (3.14159265359f * 0.5f);
+	//free(shifted);
 	return offset;
 }
 
@@ -703,11 +717,6 @@ void checksum(T* data, int elemsize, int numelem, const char *name)
 
 void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s)
 {
-/*	int njobs = s->jobs.size();
-	int nElem = njobs * qi_FFT_length * 2; // 2 profiles of qi_FFT_length size for each job
-	QI_ComputeProfile <<< blocks(nElem), threads(), 0, s->stream >>> (qi_FFT_length, s->*/
-
-//	cudaDeviceSynchronize();
 //	std::vector<float3> initial_h=*initial;
 
 //	TestCopyImage(s->images, 0, "testimg.jpg");
@@ -772,7 +781,8 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 
 
 
-static __device__ void RadialProfile(int idx, cudaImageListf& images, float *dst, const ZLUTParams zlut, float2 center, bool& error)
+// Compute a complete radial profile within the same kernel (slowish)
+static __device__ void ZLUT_RadialProfile(int idx, cudaImageListf& images, float *dst, const ZLUTParams zlut, float2 center, bool& error)
 {
 	int radialSteps = zlut.img.w;
 	for (int i=0;i<zlut.img.w;i++)
@@ -785,9 +795,8 @@ static __device__ void RadialProfile(int idx, cudaImageListf& images, float *dst
 
 		float r = zlut.minRadius+rstep*i;
 		for (int a=0;a<zlut.angularSteps;a++) {
-			float ang = 2*3.141593f*a/(float)zlut.angularSteps;
-			float x = center.x + __cosf(ang) * r;
-			float y = center.y + __sinf(ang) * r;
+			float x = center.x + zlut.radialgrid[a].x * r;
+			float y = center.y + zlut.radialgrid[a].y * r;
 			sum += images.interpolate(x,y, idx);
 		}
 
@@ -801,7 +810,7 @@ static __device__ void RadialProfile(int idx, cudaImageListf& images, float *dst
 }
 
 
-__global__ void BuildZLUTKernel(int njobs, cudaImageListf images, ZLUTParams params, float3* positions, CUDATrackerJob* jobs)
+__global__ void ZLUT_ProfilesToZLUT(int njobs, cudaImageListf images, ZLUTParams params, float3* positions, CUDATrackerJob* jobs, float* profiles)
 {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
@@ -809,11 +818,86 @@ __global__ void BuildZLUTKernel(int njobs, cudaImageListf images, ZLUTParams par
 		CUDATrackerJob& j = jobs[idx];
 		if (j.locType & LocalizeBuildZLUT) {
 			bool err;
-			RadialProfile(idx, images, params.GetZLUT( j.zlut, j.zlutPlane ), params, make_float2(positions[idx].x, positions[idx].y), err);
+			float* dst = params.GetZLUT( j.zlut, j.zlutPlane );
+
+			for (int i=0;i<params.radialSteps();i++)
+				dst [i] = profiles [ params.radialSteps()*idx + i ];
 		}
 	}
 }
 
+
+// Compute a single ZLUT radial profile element (looping through all the pixels at constant radial distance)
+__global__ void ZLUT_RadialProfileKernel(int njobs, cudaImageListf images, ZLUTParams params, float3* positions, float* profiles)
+{
+	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
+	int radialIdx = threadIdx.y + blockIdx.y * blockDim.y;
+
+	if (jobIdx >= njobs || radialIdx >= params.radialSteps()) 
+		return;
+
+	float* dstprof = &profiles[params.radialSteps() * jobIdx];
+	float r = params.minRadius + (params.maxRadius-params.minRadius)*radialIdx/params.radialSteps();
+	float sum = 0.0f;
+	
+	for (int i=0;i<params.angularSteps;i++) {
+		float x = positions[jobIdx].x + params.radialgrid[i].x * r;
+		float y = positions[jobIdx].y + params.radialgrid[i].y * r;
+
+		sum += images.interpolate(x,y, jobIdx);
+	}
+	dstprof [radialIdx] = sum/params.angularSteps-images.borderValue;
+}
+
+//		ZLUT_ComputeZ <<< blocks(s->jobCount), threads(), 0, s->stream >>> (s->jobCount, kernelParams.zlut, curpos->data);
+
+__global__ void ZLUT_ComputeZ (int njobs, ZLUTParams params, float3* positions, float* compareScoreBuf)
+{
+	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if (jobIdx < njobs) {
+		float* cmp = &compareScoreBuf [params.planes * jobIdx];
+
+		float maxPos = ComputeMaxInterp<float,7>(cmp, params.planes);
+		positions[jobIdx].z = maxPos;
+	}
+}
+
+__global__ void ZLUT_ComputeProfileMatchScores(int njobs, ZLUTParams params, float *profiles, float* compareScoreBuf)
+{
+	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
+	int zPlaneIdx = threadIdx.y + blockIdx.y * blockDim.y;
+
+	if (jobIdx >= njobs || zPlaneIdx >= params.planes)
+		return;
+
+	float* prof = &profiles [jobIdx * params.radialSteps()];
+	float diffsum = 0.0f;
+	for (int r=0;r<params.radialSteps();r++) {
+		float d = prof[r] - params.img.pixel(r, zPlaneIdx, jobIdx);
+		if (params.zcmpwindow)
+			d *= params.zcmpwindow[r];
+		diffsum += d*d;
+	}
+
+	compareScoreBuf[ params.planes * jobIdx + zPlaneIdx ] = diffsum;
+}
+
+__global__ void ZLUT_NormalizeProfiles(int njobs, ZLUTParams params, float* profiles)
+{
+	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if (jobIdx < njobs) {
+		float* prof = &profiles[params.radialSteps()*jobIdx];
+		float rmsSum2 = 0.0f;
+		for (int i=0;i<params.radialSteps();i++){
+			rmsSum2 += prof[i]*prof[i];
+		}
+		float invTotalRms = 1.0f / sqrt(rmsSum2/params.radialSteps());
+		for (int i=0;i<params.radialSteps();i++)
+			prof[i] *= invTotalRms;
+	}
+}
 
 
 
@@ -856,16 +940,25 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 
 	// Compute radial profiles
 	if (s->localizeFlags & (LocalizeZ | LocalizeBuildZLUT)) {
+		dim3 numThreads(16, 64);
+		//QI_ComputeQuadrants <<< dim3( (njobs + qdrThreads.x - 1) / qdrThreads.x, (4*cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y ), qdrThreads, 0, s->stream >>> 
+//			(njobs, s->images, initial->data, s->d_quadrants.data, kernelParams.qi);
+		ZLUT_RadialProfileKernel<<< dim3( (s->jobCount + numThreads.x - 1) / numThreads.x, (cfg.zlut_radialsteps + numThreads.y - 1) / numThreads.y), numThreads, 0, s->stream >>>
+			(s->jobCount, s->images, kernelParams.zlut, curpos->data, s->d_radialprofiles.data );
 
+		ZLUT_NormalizeProfiles<<< blocks(s->jobCount), threads(), 0, s->stream >>> (s->jobCount, kernelParams.zlut, s->d_radialprofiles.data);
 	}
 	// Store profile in LUT
 	if (s->localizeFlags & LocalizeBuildZLUT) {
-		BuildZLUTKernel <<< blocks(s->jobs.size()), threads(), 0, s->stream >>> (s->jobCount, s->images, kernelParams.zlut, curpos->data, s->d_jobs.data);
+		ZLUT_ProfilesToZLUT <<< blocks(s->jobCount), threads(), 0, s->stream >>> (s->jobCount, s->images, kernelParams.zlut, curpos->data, s->d_jobs.data, s->d_radialprofiles.data);
 	//	TestCopyImage( s->images, 0, "qtrktestimg0.jpg");
 	}
 	// Compute Z 
 	if (s->localizeFlags & LocalizeZ) {
-
+		dim3 numThreads(16, 64);
+		ZLUT_ComputeProfileMatchScores <<< dim3( (s->jobCount + numThreads.x - 1) / numThreads.x, (zlut_planes + numThreads.y - 1) / numThreads.y), numThreads, 0, s->stream >>> 
+			(s->jobCount, kernelParams.zlut, s->d_radialprofiles.data, s->d_zlutcmpscores.data);
+		ZLUT_ComputeZ <<< blocks(s->jobCount), threads(), 0, s->stream >>> (s->jobCount, kernelParams.zlut, curpos->data, s->d_zlutcmpscores.data);
 	}
 	
 	curpos->copyToHost(s->results.data(), true, s->stream);
@@ -938,33 +1031,35 @@ int QueuedCUDATracker::PollFinished(LocalizationResult* dstResults, int maxResul
 }
 
 // data can be zero to allocate ZLUT data
-void QueuedCUDATracker::SetZLUT(float* data,  int numLUTs, int planes, int res, float* zcmp) 
+void QueuedCUDATracker::SetZLUT(float* data,  int numLUTs, int planes, float* zcmp) 
 {
 	zlut_planes = planes;
 	zlut_count = numLUTs;
-	zlut_res = res;
+
+	for (int i=0;i<streams.size();i++) {
+		streams[i]->d_zlutcmpscores.init(zlut_planes * batchSize);
+	}
 
 	if (zcmp) {
-		zcompareWindow.copyToDevice(zcmp, res, false);
+		zcompareWindow.copyToDevice(zcmp, cfg.zlut_radialsteps, false);
 		kernelParams.zlut.zcmpwindow = zcompareWindow.data;
 	}
 
-	zlut = cudaImageListf::alloc(res, planes, numLUTs);
+	zlut = cudaImageListf::alloc(cfg.zlut_radialsteps, planes, numLUTs);
 	if (data) zlut.copyToDevice(data, false);
 	kernelParams.zlut.img = zlut;
 }
 
 // delete[] memory afterwards
-float* QueuedCUDATracker::GetZLUT(int *count, int* planes, int *res)
+float* QueuedCUDATracker::GetZLUT(int *count, int* planes)
 {
-	float* data = new float[zlut_planes * zlut_res * zlut_count];
+	float* data = new float[zlut_planes * cfg.zlut_radialsteps * zlut_count];
 	if (zlut.data)
 		zlut.copyToHost(data, false);
 	else
-		std::fill(data, data+(zlut_res*zlut_planes*zlut_count), 0.0f);
+		std::fill(data, data+(cfg.zlut_radialsteps*zlut_planes*zlut_count), 0.0f);
 
 	if (planes) *planes = zlut_planes;
-	if (res) *res = zlut_res;
 	if (count) *count = zlut_count;
 
 	return data;

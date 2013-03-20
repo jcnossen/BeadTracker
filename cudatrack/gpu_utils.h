@@ -48,7 +48,7 @@ public:
 	void init(int s) {
 		if(size != s) {
 			clear();
-			cudaMalloc(&data, sizeof(T)*s);
+			if (s!=0) cudaMalloc(&data, sizeof(T)*s);
 		}
 		size = s;
 	}

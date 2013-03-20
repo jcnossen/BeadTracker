@@ -22,7 +22,7 @@ typedef cudaImageList<float> cudaImageListf;
 struct QIParams {
 	float minRadius, maxRadius;
 	int radialSteps, iterations, angularSteps;
-	float2* radialgrid;
+	float2* radialgrid; // precomputed radial directions (cos,sin pairs)
 };
 
 struct ZLUTParams {
@@ -32,6 +32,8 @@ struct ZLUTParams {
 	int angularSteps;
 	int planes;
 	cudaImageListf img;
+	CUBOTH int radialSteps() { return img.w; }
+	float2* radialgrid; // precomputed radial directions (cos,sin pairs)
 };
 
 struct KernelParams {
@@ -83,8 +85,8 @@ public:
 	void ClearResults();
 
 	// data can be zero to allocate ZLUT data.
-	void SetZLUT(float* data,  int numLUTs, int planes, int res, float* zcmp=0); 
-	float* GetZLUT(int *count=0, int* planes=0, int *res=0); // delete[] memory afterwards
+	void SetZLUT(float* data,  int numLUTs, int planes, float* zcmp=0); 
+	float* GetZLUT(int *count=0, int* planes=0); // delete[] memory afterwards
 	int PollFinished(LocalizationResult* results, int maxResults);
 
 	// Force the current waiting batch to be processed. Useful when number of localizations is not a multiple of internal batch size (almost always)
@@ -125,7 +127,8 @@ protected:
 		float2* d_QIprofiles_reverse;
 		device_vec<float> d_quadrants;
 
-		device_vec<float> d_radialprofiles;//for Z computation
+		device_vec<float> d_radialprofiles;// [ radialsteps * njobs ] for Z computation
+		device_vec<float> d_zlutcmpscores; // [ zlutplanes * njobs ]
 
 		uint localizeFlags; // Indicates whether kernels should be ran for building zlut, z computing, or QI
 
@@ -165,10 +168,11 @@ protected:
 	cudaDeviceProp deviceProp;
 	KernelParams kernelParams;
 
-	int zlut_count, zlut_planes, zlut_res;
+	int zlut_count, zlut_planes;
 	cudaImageListf zlut;
 	device_vec<float> zcompareWindow;
 	device_vec<float2> d_qiradialgrid;
+	device_vec<float2> d_zlutradialgrid;
 
 	int FetchResults();
 	void ExecuteBatch(Stream *s);

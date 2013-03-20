@@ -192,6 +192,7 @@ void QTrkTest()
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
+	cfg.zlut_radialsteps = 64;
 	bool haveZLUT = true;
 #ifdef _DEBUG
 	cfg.qi_radialsteps=8;
@@ -210,9 +211,9 @@ void QTrkTest()
 	float *image = new float[cfg.width*cfg.height];
 
 	// Generate ZLUT
-	int radialSteps=64, zplanes=100;
+	int zplanes=100;
 	float zmin=0.5,zmax=3;
-	qtrk.SetZLUT(0, 1, zplanes, radialSteps);
+	qtrk.SetZLUT(0, 1, zplanes);
 	if (haveZLUT) {
 		for (int x=0;x<zplanes;x++)  {
 			vector2f center = { cfg.width/2, cfg.height/2 };
@@ -232,19 +233,19 @@ void QTrkTest()
 			dbgprintf(".");
 		}
 	}
-	float* zlut = qtrk.GetZLUT(0,0,0);
+	float* zlut = qtrk.GetZLUT(0,0);
 	qtrk.ClearResults();
-	uchar* zlut_bytes = floatToNormalizedInt(zlut, radialSteps, zplanes, (uchar)255);
-	WriteJPEGFile(zlut_bytes, radialSteps, zplanes, "qtrkzlutcuda.jpg", 99);
+	uchar* zlut_bytes = floatToNormalizedInt(zlut, cfg.zlut_radialsteps, zplanes, (uchar)255);
+	WriteJPEGFile(zlut_bytes, cfg.zlut_radialsteps, zplanes, "qtrkzlutcuda.jpg", 99);
 	delete[] zlut; delete[] zlut_bytes;
 	
 	// Schedule images to localize on
 	dbgprintf("Benchmarking...\n", total);
-	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2+2, cfg.height/2, zmin, 0);
+	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2+2, cfg.height/2, (zmin+zmax)/2, 0);
 	double tstart = getPreciseTime();
 	int rc = 0, displayrc=0;
 	for (int n=0;n<total;n++) {
-		qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI|LocalizeZ), n, 0, 0, 0);
+		qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI), n, 0, 0, 0);
 		if (n % 10 == 0) {
 			rc = qtrk.GetResultCount();
 			while (displayrc<rc) {
@@ -271,7 +272,7 @@ void QTrkTest()
 	for (int i=0;i<std::min(20,total);i++) {
 		LocalizationResult r;
 		qtrk.PollFinished(&r, 1);
-		dbgprintf("[%d] Result.x: %f, Result.y: %f. COM: %f, %f\n", i,r.pos.x, r.pos.y, r.firstGuess.x, r.firstGuess.y);
+		dbgprintf("[%d] Result.x: %f, Result.y: %f. Result.z: %f, COM: %f, %f\n", i,r.pos.x, r.pos.y, r.z, r.firstGuess.x, r.firstGuess.y);
 	}
 
 	dbgprintf("Localization Speed: %d (img/s)\n", (int)( total/(tend-tstart) ));
