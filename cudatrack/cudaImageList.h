@@ -79,6 +79,10 @@ struct cudaImageList {
 			cudaMemcpy2D(data, pitch, src, w*sizeof(T), w*sizeof(T), count*h, cudaMemcpyHostToDevice);
 	}
 
+	void clear() {
+		cudaMemset2D(data, pitch, 0, w*sizeof(T), count*h);
+	}
+
 	CUBOTH int totalsize() { return pitch*h*count; }
 	
 	CUBOTH static inline T interp(T a, T b, float x) { return a + (b-a)*x; }

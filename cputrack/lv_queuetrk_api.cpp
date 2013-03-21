@@ -117,7 +117,6 @@ CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings, ErrorCluster* e)
 		trackerList.push_back(tracker);
 		trackerListMutex.unlock();
 
-		tracker->Start();
 	} catch(const std::runtime_error &exc) {
 		FillErrorCluster(kAppErrorBase, exc.what(), e );
 	}

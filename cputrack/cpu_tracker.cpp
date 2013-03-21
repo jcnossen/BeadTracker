@@ -459,7 +459,7 @@ void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, 
 
 
 
-vector2f CPUTracker::ComputeBgCorrectedCOM()
+vector2f CPUTracker::ComputeBgCorrectedCOM(float bgcorrection)
 {
 	float sum=0, sum2=0;
 	float momentX=0;
@@ -481,7 +481,7 @@ vector2f CPUTracker::ComputeBgCorrectedCOM()
 		for(int x=0;x<width;x++)
 		{
 			float v = getPixel(x,y);
-			v = std::max(0.0f, fabs(v-mean)-2.0f*stdev);
+			v = std::max(0.0f, fabs(v-mean)-bgcorrection*stdev);
 			sum += v;
 			momentX += x*v;
 			momentY += y*v;

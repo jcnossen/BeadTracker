@@ -17,9 +17,7 @@
 #include <stdint.h>
 #include "gpu_utils.h"
 #include "QueuedCUDATracker.h"
-
-#include "simplefft.h"
-#include "cudafft/cudafft.h"
+#include "queued_cpu_tracker.h"
 
 double getPreciseTime()
 {
@@ -53,45 +51,6 @@ inline __device__ float2 mul_conjugate(float2 a, float2 b)
 
 texture<float, cudaTextureType2D, cudaReadModeElementType> smpImgRef(0, cudaFilterModeLinear);
 
-
-void TestSimpleFFT()
-{
-	int N=64;
-	cudafft<double> fft(N, false);
-
-	std::vector< cudafft<double>::cpx_type > data(N), result(N), cpu_result(N);
-	for (int x=0;x<N;x++) {
-		data[x].x = 10*cos(x*0.1f-5);
-		data[x].y = 6*cos(x*0.2f-2)+3;
-	}
-
-	device_vec< cudafft<double>::cpx_type> d_data = data, d_result (N);
-
-	std::vector<sfft::complex<double> > twiddles = sfft::fill_twiddles<double>(N);
-
-	fft.host_transform(&data[0], &cpu_result[0]);
-	//sfft::fft_forward(N, (sfft::complex<double>*)&data[0], &twiddles[0]);
-	
-	for (int k=0;k<N;k++) {
-//		dbgprintf("[%d] kissfft: %f+%fi, sfft: %f+%fi. diff=%f+%fi\n", k, cpu_result[k].x, cpu_result[k].y, data[k].x,data[k].y, cpu_result[k].x - data[k].x,cpu_result[k].y - data[k].y);
-	}
-
-	cufftHandle plan;
-	cufftPlan1d(&plan, N, CUFFT_Z2Z, 1);
-	//cufftPlanMany(&plan, 1, &N, 0, 0, N, 0, 0, N, CUFFT_Z2Z, 1);
-	cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE);
-
-	cufftExecZ2Z(plan, (cufftDoubleComplex*) d_data.data,(cufftDoubleComplex*) d_result.data, CUFFT_FORWARD);
-	cudaDeviceSynchronize();
-	result = d_result;
-
-	for (int k=0;k<N;k++)
-	{
-		dbgprintf("CUFFT: [%d] = %f+%fi.  True: %f+%fi\n" ,k, result[k].x, result[k].y, cpu_result[k].x, cpu_result[k].y);
-	}
-
-	cufftDestroy(plan);
-}
 
 
 void ShowCUDAError() {
@@ -187,7 +146,7 @@ void QTrkTest()
 	QTrkSettings cfg;
 	cfg.width = cfg.height = 60;
 	cfg.qi_iterations = 1;
-	cfg.qi_maxradius = 50;
+	cfg.qi_maxradius = 25;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1;
@@ -195,25 +154,28 @@ void QTrkTest()
 	cfg.zlut_radialsteps = 64;
 	bool haveZLUT = true;
 #ifdef _DEBUG
-	cfg.qi_radialsteps=8;
+	cfg.qi_radialsteps=32;
 	cfg.numThreads = 2;
 	cfg.qi_iterations=1;
-	int total= 100;
+	int total= 5;
 	int batchSize = 2;
 	haveZLUT=false;
 #else
-	cfg.numThreads = 8;
+	cfg.numThreads = 4;
 	int total = 30000;
 	int batchSize = 1024;
 #endif
 
 	QueuedCUDATracker qtrk(&cfg, batchSize);
+	QueuedCPUTracker qtrkcpu(&cfg);
 	float *image = new float[cfg.width*cfg.height];
+	bool cpucmp = true;
 
 	// Generate ZLUT
 	int zplanes=100;
 	float zmin=0.5,zmax=3;
 	qtrk.SetZLUT(0, 1, zplanes);
+	if (cpucmp) qtrkcpu.SetZLUT(0, 1, zplanes);
 	if (haveZLUT) {
 		for (int x=0;x<zplanes;x++)  {
 			vector2f center = { cfg.width/2, cfg.height/2 };
@@ -222,9 +184,12 @@ void QTrkTest()
 			uchar* zlutimg = floatToNormalizedInt(image, cfg.width,cfg.height, (uchar)255);
 			WriteJPEGFile(zlutimg, cfg.width,cfg.height, "qtrkzlutimg.jpg", 99);
 			delete[] zlutimg;
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, (LocalizeType)(LocalizeBuildZLUT|LocalizeOnlyCOM), x, 0, 0, x);
+			LocalizeType flags = (LocalizeType)(LocalizeBuildZLUT|LocalizeOnlyCOM);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat,flags , x, 0, 0, x);
+			if (cpucmp) qtrkcpu.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, flags, x, 0, 0, x);
 		}
 		qtrk.Flush();
+		if (cpucmp) qtrkcpu.Flush();
 		// wait to finish ZLUT
 		while(true) {
 			int rc = qtrk.GetResultCount();
@@ -234,18 +199,24 @@ void QTrkTest()
 		}
 	}
 	float* zlut = qtrk.GetZLUT(0,0);
+	if (cpucmp) { 
+		float* zlutcpu = qtrkcpu.GetZLUT(0,0);
+	}
 	qtrk.ClearResults();
+	if (cpucmp) qtrkcpu.ClearResults();
 	uchar* zlut_bytes = floatToNormalizedInt(zlut, cfg.zlut_radialsteps, zplanes, (uchar)255);
 	WriteJPEGFile(zlut_bytes, cfg.zlut_radialsteps, zplanes, "qtrkzlutcuda.jpg", 99);
 	delete[] zlut; delete[] zlut_bytes;
 	
 	// Schedule images to localize on
 	dbgprintf("Benchmarking...\n", total);
-	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2+2, cfg.height/2, (zmin+zmax)/2, 0);
+	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2, cfg.height/2, (zmin+zmax)/2, 0);
 	double tstart = getPreciseTime();
 	int rc = 0, displayrc=0;
 	for (int n=0;n<total;n++) {
-		qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI), n, 0, 0, 0);
+		LocalizeType flags = (LocalizeType)(LocalizeQI| (haveZLUT ? LocalizeZ : 0) );
+		qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, flags, n, 0, 0, 0);
+		if (cpucmp) qtrkcpu.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, flags, n, 0, 0, 0);
 		if (n % 10 == 0) {
 			rc = qtrk.GetResultCount();
 			while (displayrc<rc) {
@@ -254,25 +225,44 @@ void QTrkTest()
 			}
 		}
 	}
+	if (cpucmp) qtrkcpu.Flush();
 	qtrk.Flush();
 	do {
 		rc = qtrk.GetResultCount();
 		while (displayrc<rc) {
-			if( displayrc%(total/10)==0) dbgprintf("Done: %d / %d\n", displayrc, total);
+			if( displayrc%std::max(1,total/10)==0) dbgprintf("Done: %d / %d\n", displayrc, total);
 			displayrc++;
 		}
 		Sleep(10);
 	} while (rc != total);
+	if (cpucmp) {
+		dbgprintf("waiting for cpu results..\n");
+		while (total != qtrkcpu.GetResultCount())
+			Sleep(10);
+	}
 	
 	// Measure speed
 	double tend = getPreciseTime();
 
 	delete[] image;
 
-	for (int i=0;i<std::min(20,total);i++) {
-		LocalizationResult r;
-		qtrk.PollFinished(&r, 1);
-		dbgprintf("[%d] Result.x: %f, Result.y: %f. Result.z: %f, COM: %f, %f\n", i,r.pos.x, r.pos.y, r.z, r.firstGuess.x, r.firstGuess.y);
+	const int NumResults = 20;
+	LocalizationResult results[NumResults], resultscpu[NumResults];
+	int rcount = std::min(NumResults,total);
+	for (int i=0;i<rcount;i++) {
+		qtrk.PollFinished(&results[i], 1);
+		if (cpucmp) qtrkcpu.PollFinished(&resultscpu[i], 1);
+	}
+	std::sort(results, results+rcount, [](LocalizationResult a, LocalizationResult b) -> bool { return a.id > b.id; });
+	if(cpucmp) std::sort(resultscpu, resultscpu+rcount, [](LocalizationResult a, LocalizationResult b) -> bool { return a.id > b.id; });
+	for (int i=0;i<rcount;i++) {
+		LocalizationResult& r = results[i];
+		dbgprintf("gpu [%d] x: %f, y: %f. z: %f, COM: %f, %f\n", i,r.pos.x, r.pos.y, r.z, r.firstGuess.x, r.firstGuess.y);
+
+		if (cpucmp) {
+			r = resultscpu[i];
+			dbgprintf("cpu [%d] x: %f, y: %f. z: %f, COM: %f, %f\n", i,r.pos.x, r.pos.y, r.z, r.firstGuess.x, r.firstGuess.y);
+		}
 	}
 
 	dbgprintf("Localization Speed: %d (img/s)\n", (int)( total/(tend-tstart) ));

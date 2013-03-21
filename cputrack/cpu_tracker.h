@@ -76,7 +76,7 @@ public:
 	void SetImage8Bit(uchar* srcImage, uint srcpitch) { SetImage(srcImage, srcpitch); }
 	void SetImageFloat(float* srcImage);
 
-	vector2f ComputeBgCorrectedCOM();
+	vector2f ComputeBgCorrectedCOM(float bgcorrection=2.0f);
 	void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius, vector2f center, bool crp, bool* boundaryHit=0);
 	void ComputeQuadrantProfile(qi_t* dst, int radialSteps, int angularSteps, int quadrant, float minRadius, float maxRadius, vector2f center);
 

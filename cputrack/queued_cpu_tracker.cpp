@@ -1,9 +1,11 @@
 #include "std_incl.h"
 #include "queued_cpu_tracker.h"
 
+#ifndef CUDA_TRACK
 QueuedTracker* CreateQueuedTracker(QTrkSettings* s) {
 	return new QueuedCPUTracker(s);
 }
+#endif
 
 static int PDT_BytesPerPixel(QTRK_PixelDataType pdt) {
 	const int pdtBytes[] = {1, 2, 4};
@@ -96,6 +98,8 @@ QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 	zluts = 0;
 	zlut_count = zlut_planes = 0;
 	processJobs = false;
+
+	Start();
 }
 
 QueuedCPUTracker::~QueuedCPUTracker()
@@ -185,7 +189,7 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 	result.locType = j->locType;
 	result.zlutIndex = j->zlut;
 
-	vector2f com = trk->ComputeBgCorrectedCOM();
+	vector2f com = trk->ComputeBgCorrectedCOM(cfg.com_bgcorrection);
 
 	LocalizeType locType = (LocalizeType)(j->locType&Localize2DMask);
 	bool boundaryHit = false;

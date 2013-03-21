@@ -34,7 +34,7 @@ Issues:
 #include "simplefft.h"
 #include "gpu_utils.h"
 
-//#define QI_DBG_EXPORT
+#define QI_DBG_EXPORT
 #define ZLUT_DBG_EXPORT
 
 #define LSQFIT_FUNC __device__ __host__
@@ -242,8 +242,8 @@ static __device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float co
 			v = fabsf(v-mean)-correctionFactor*stdev;
 			if(v<0.0f) v=0.0f;
 			sum += v;
-			momentX += (x+0.5f)*v;
-			momentY += (y+0.5f)*v;
+			momentX += x*v;
+			momentY += y*v;
 		}
 
 	float2 com;
@@ -358,8 +358,10 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::GetReadyStream()
 	}
 
 	// Find another stream that is ready
-	while (true) {
-		FetchResults();
+	// First round: Check streams with current non-updated state. 
+	// Second round: Query the GPU again for updated stream state.
+	// Further rounds: Wait 1 ms and try again.
+	for (int i = 0; true; i ++) {
 		for (int a=0;a<streams.size();a++) {
 			Stream *s = streams[a];
 			if (s->state != Stream::StreamExecuting) {
@@ -368,16 +370,13 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::GetReadyStream()
 				return s;
 			}
 		}
-		Threads::Sleep(1);
+		FetchResults();
+		if (i > 0) Threads::Sleep(1);
 	}
 }
 
 
 
-void QueuedCUDATracker::Start() 
-{
-
-}
 
 
 void QueuedCUDATracker::ClearResults()
@@ -702,7 +701,7 @@ static unsigned long hash(unsigned char *str, int n)
 template<typename T>
 void checksum(T* data, int elemsize, int numelem, const char *name)
 {
-#ifdef _DEBUG
+#ifdef QI_DBG_EXPORT
 	uchar* cp = (uchar*)ALLOCA(elemsize*numelem*sizeof(T));
 	cudaDeviceSynchronize();
 	cudaMemcpy(cp, data, sizeof(T)*elemsize*numelem, cudaMemcpyDeviceToHost);
@@ -724,7 +723,7 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 	int njobs = s->jobCount;
 	dim3 qdrThreads(16, 64);
 
-	if (1) {
+	if (0) {
 		QI_ComputeQuadrants <<< dim3( (njobs + qdrThreads.x - 1) / qdrThreads.x, (4*cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y ), qdrThreads, 0, s->stream >>> 
 			(njobs, s->images, initial->data, s->d_quadrants.data, kernelParams.qi);
 
@@ -958,7 +957,7 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 		dim3 numThreads(16, 64);
 		ZLUT_ComputeProfileMatchScores <<< dim3( (s->jobCount + numThreads.x - 1) / numThreads.x, (zlut_planes + numThreads.y - 1) / numThreads.y), numThreads, 0, s->stream >>> 
 			(s->jobCount, kernelParams.zlut, s->d_radialprofiles.data, s->d_zlutcmpscores.data);
-		ZLUT_ComputeZ <<< blocks(s->jobCount), threads(), 0, s->stream >>> (s->jobCount, kernelParams.zlut, curpos->data, s->d_zlutcmpscores.data);
+//		ZLUT_ComputeZ <<< blocks(s->jobCount), threads(), 0, s->stream >>> (s->jobCount, kernelParams.zlut, curpos->data, s->d_zlutcmpscores.data);
 	}
 	
 	curpos->copyToHost(s->results.data(), true, s->stream);
@@ -974,10 +973,11 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 
 void QueuedCUDATracker::Flush()
 {
-	if (currentStream) {
+	if (currentStream && currentStream->state == Stream::StreamIdle) {
 		currentStream->lock();
 		ExecuteBatch(currentStream);
 		currentStream->unlock();
+		currentStream = 0;
 	}
 }
 
@@ -1047,6 +1047,7 @@ void QueuedCUDATracker::SetZLUT(float* data,  int numLUTs, int planes, float* zc
 
 	zlut = cudaImageListf::alloc(cfg.zlut_radialsteps, planes, numLUTs);
 	if (data) zlut.copyToDevice(data, false);
+	else zlut.clear();
 	kernelParams.zlut.img = zlut;
 }
 

@@ -74,7 +74,6 @@ public:
 	QueuedCUDATracker(QTrkSettings* cfg, int batchSize=-1, bool debugStream=false);
 	~QueuedCUDATracker();
 
-	void Start();
 	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
 	
 	// Schedule an entire frame at once, allowing for further optimizations
@@ -102,6 +101,8 @@ protected:
 		Stream();
 		~Stream();
 		bool IsExecutionDone();
+		int CalcMemoryUse();
+		int GetJobCount();
 		
 		pinned_array<float3> results;
 		pinned_array<float3> com;
@@ -109,8 +110,6 @@ protected:
 		device_vec<CUDATrackerJob> d_jobs;
 		int jobCount;
 		
-		int CalcMemoryUse();
-		int GetJobCount();
 		cudaImageListf images; 
 		//pinned_array<float, cudaHostAllocWriteCombined> hostImageBuf; // original image format pixel buffer
 		pinned_array<float> hostImageBuf; // original image format pixel buffer

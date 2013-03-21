@@ -352,7 +352,6 @@ void QTrkTest()
 	int radialSteps=64, zplanes=100;
 	float zmin=0.5,zmax=2.5;
 	bool haveZLUT = false;
-	qtrk.Start();
 	qtrk.SetZLUT(0, 1, zplanes, radialSteps, 0);
 	if (haveZLUT) {
 		for (int x=0;x<zplanes;x++)  {

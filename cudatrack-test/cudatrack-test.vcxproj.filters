@@ -14,6 +14,7 @@
     <ClInclude Include="..\cputrack\TeLibJpeg\jmemdstsrc.h">
       <Filter>fastjpeg</Filter>
     </ClInclude>
+    <ClInclude Include="..\cputrack\cpu_tracker.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="test.cu" />
@@ -39,5 +40,6 @@
       <Filter>fastjpeg</Filter>
     </ClCompile>
     <ClCompile Include="..\cputrack\cpu_tracker.cpp" />
+    <ClCompile Include="..\cputrack\queued_cpu_tracker.cpp" />
   </ItemGroup>
 </Project>

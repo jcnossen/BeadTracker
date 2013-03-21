@@ -1,4 +1,5 @@
 // Thread OS related code is abstracted into a simple "Threads" struct
+#pragma once
 #ifdef USE_PTHREADS
 
 #include "pthread.h"

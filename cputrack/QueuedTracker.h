@@ -91,7 +91,6 @@ public:
 	QueuedTracker() {}
 	virtual ~QueuedTracker() {}
 
-	virtual void Start () = 0;
 	virtual bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane) = 0;
 	virtual void ClearResults() = 0;
 	virtual void Flush() = 0; // stop waiting for more jobs to do, and just process the current batch

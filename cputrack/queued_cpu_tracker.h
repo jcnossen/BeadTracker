@@ -14,7 +14,7 @@ public:
 
 	void Start();
 	void Break(bool pause);
-	void SetZLUT(float* data, int num_zluts, int planes, float* zcmp);
+	void SetZLUT(float* data, int num_zluts, int planes, float* zcmp=0);
 	float* GetZLUT(int *num_zluts, int* planes);
 	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
 	// Schedule an entire frame at once, allowing for further optimizations
