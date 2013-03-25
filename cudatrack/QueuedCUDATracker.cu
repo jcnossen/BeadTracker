@@ -120,15 +120,15 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize, bool debu
 	}
 	this->batchSize = batchSize;
 
+	qi_FFT_length = 1;
+	while (qi_FFT_length < cfg->qi_radialsteps*2) qi_FFT_length *= 2;
+
 	//int sharedSpacePerThread = (prop.sharedMemPerBlock-forward_fft->kparams_size*2) / numThreads;
 //	dbgprintf("2X FFT instance requires %d bytes. Space per thread: %d\n", forward_fft->kparams_size*2, sharedSpacePerThread);
 	dbgprintf("Device: %s\n", deviceProp.name);
 	dbgprintf("Shared memory space:%d bytes. Per thread: %d\n", deviceProp.sharedMemPerBlock, deviceProp.sharedMemPerBlock/numThreads);
 	dbgprintf("# of CUDA processors:%d\n", deviceProp.multiProcessorCount);
-	dbgprintf("Warp size: %d. Batch size: %d\n", deviceProp.warpSize, batchSize);
-
-	qi_FFT_length = 1;
-	while (qi_FFT_length < cfg->qi_radialsteps*2) qi_FFT_length *= 2;
+	dbgprintf("Warp size: %d. Batch size: %d. QI FFT Length: %d\n", deviceProp.warpSize, batchSize, qi_FFT_length);
 
 	KernelParams &p = kernelParams;
 	p.com_bgcorrection = cfg->com_bgcorrection;
@@ -187,34 +187,7 @@ QueuedCUDATracker::~QueuedCUDATracker()
 	DeleteAllElems(streams);
 }
 
-__global__ void TestSampleImage(cudaImageListf images, int idx, float* dst)
-{
-	int x = threadIdx.x + blockDim.x * blockIdx.x;
-	int y = threadIdx.y + blockDim.y * blockIdx.y;
-
-	if (x < images.w && y < images.h) {
-
-		float p = tex2D( qi_image_texture, x, y);
-		//float& p = images.pixel(x, y, idx);
-		dst [y*images.w+x] = p;
-	}
-}
-
-void TestCopyImage( cudaImageListf& images, int idx, const char* file)
-{
-	device_vec<float> ddst (images.w*images.h);
-	int nt=32;
-	cudaDeviceSynchronize();
-	TestSampleImage <<< dim3((images.w+nt-1)/nt, (images.h+nt-1)/nt), dim3(nt,nt) >>> (images, idx, ddst.data);
-
-	std::vector<float> dst = ddst;
-	uchar* norm = floatToNormalizedInt(&dst[0], images.w,images.h, (uchar)255);
-	WriteJPEGFile(norm, images.w,images.h, file, 99);
-	delete[] norm;
-}
-
-
-static __device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float correctionFactor)
+static __device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float correctionFactor, float* pMean)
 {
 	int imgsize = images.w*images.h;
 	float sum=0, sum2=0;
@@ -246,30 +219,22 @@ static __device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float co
 			momentY += y*v;
 		}
 
+	if (pMean)
+		*pMean = mean;
+
 	float2 com;
 	com.x = momentX / (float)sum;
 	com.y = momentY / (float)sum;
 	return com;
 }
 
-__global__ void BgCorrectedCOM(int count, cudaImageListf images,float3* d_com, float bgCorrectionFactor) {
+__global__ void BgCorrectedCOM(int count, cudaImageListf images,float3* d_com, float* d_means, float bgCorrectionFactor) {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
 	if (idx < count) {
-		float2 com = BgCorrectedCOM(idx, images, bgCorrectionFactor);
+		float2 com = BgCorrectedCOM(idx, images, bgCorrectionFactor, &d_means[idx]);
 		d_com[idx] = make_float3(com.x,com.y,0.0f);
 	}
 }
-
-__global__ void ComputeQIKernel(cudaImageListf images, KernelParams params, float2* d_initial, float2* d_result)
-{
-	int idx = threadIdx.x + blockDim.x * blockIdx.x;
-
-	if (idx < images.count) {
-		bool error;
-	//	d_result[idx] = ComputeQIPosition(idx, images, params, d_initial[idx], error);
-	}
-}
-
 
 QueuedCUDATracker::Stream::Stream()
 { 
@@ -331,9 +296,10 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream()
 	s->results.init(batchSize);
 	s->d_jobs.init(batchSize);
 	s->d_quadrants.init(qi_FFT_length*batchSize*2);
-	s->d_QIprofiles.init(batchSize*4*qi_FFT_length); // (2 axis) * (2 radialsteps) * (rev/forw) = 8 * nr = 4 * qi_FFT_length
-	s->d_QIprofiles_reverse = s->d_QIprofiles.data + batchSize*2*qi_FFT_length;
+	s->d_QIprofiles.init(batchSize*2*qi_FFT_length); // (2 axis) * (2 radialsteps) = 8 * nr = 2 * qi_FFT_length
+	s->d_QIprofiles_reverse.init(batchSize*2*qi_FFT_length);
 	s->d_radialprofiles.init(cfg.zlut_radialsteps*batchSize);
+	s->d_imgmeans.init(batchSize);
 	
 	// 2* batchSize, since X & Y both need an FFT transform
 	//cufftResult_t r = cufftPlanMany(&s->fftPlan, 1, &qi_FFT_length, 0, 1, qi_FFT_length, 0, 1, qi_FFT_length, CUFFT_C2C, batchSize*4);
@@ -441,7 +407,7 @@ bool QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 template<typename T>
 static __device__ T interpolate(T a, T b, float x) { return a + (b-a)*x; }
 
-static __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, float* dst, const QIParams& params, int quadrant, float2 center)
+static __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, float* dst, const QIParams& params, int quadrant, float img_mean, float2 center)
 {
 	const int qmat[] = {
 		1, 1,
@@ -474,23 +440,17 @@ static __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, f
 				v = 0.0f;
 			else
 				v = tex2D(qi_image_texture, x,y + idx*images.h);*/
-			float v = images.interpolate(x, y, idx);;
+			float v = images.interpolate(x, y, idx, img_mean);
 			sum += v;
-//			printf("[%d] sum[%d,%d]:%f\n", idx, a, i, v);
-	//		printf("%f; ", v);
 		}
-		//printf("\n");
 
-		dst[i] = sum/params.angularSteps-images.borderValue;
+		dst[i] = sum/params.angularSteps - img_mean;
 		total += dst[i];
 		sum2+=sum;
 	}
-
-//	printf("[%d] sum2:%f\n", idx,sum2);
-
 }
 
-__global__ void QI_ComputeProfile(int count, cudaImageListf images, float3* positions, float* quadrants, float2* profiles, float2* reverseProfiles, QIParams params)
+__global__ void QI_ComputeProfile(int count, cudaImageListf images, float3* positions, float* quadrants, float2* profiles, float2* reverseProfiles, float* img_means, QIParams params)
 {
 //ComputeQuadrantProfile(cudaImageListf& images, int idx, float* dst, const QIParams& params, int quadrant, float2 center)
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
@@ -498,7 +458,7 @@ __global__ void QI_ComputeProfile(int count, cudaImageListf images, float3* posi
 		int fftlen = params.radialSteps*2;
 		float* img_qdr = &quadrants[ idx * params.radialSteps * 4 ];
 		for (int q=0;q<4;q++)
-			ComputeQuadrantProfile(images, idx, &img_qdr[q*params.radialSteps], params, q, make_float2(positions[idx].x, positions[idx].y));
+			ComputeQuadrantProfile(images, idx, &img_qdr[q*params.radialSteps], params, q, img_means[idx], make_float2(positions[idx].x, positions[idx].y));
 
 		int nr = params.radialSteps;
 		qicomplex_t* imgprof = (qicomplex_t*) &profiles[idx * fftlen*2];
@@ -555,20 +515,21 @@ __shared__ float compute_offset_buffer[];
 
 __device__ float QI_ComputeAxisOffset(cufftComplex* autoconv, int fftlen)
 {
-	//float* shifted = (float*)malloc(fftlen*sizeof(float)); 
-	float* shifted = &compute_offset_buffer [threadIdx.x * fftlen];
+	typedef float compute_t;
+	compute_t* shifted = (compute_t*)malloc(fftlen*sizeof(compute_t)); 
+	//float* shifted = &compute_offset_buffer [threadIdx.x * fftlen];
 	int nr = fftlen/2;
 	for(int x=0;x<fftlen;x++)  {
 		shifted[x] = autoconv[(x+nr)%(nr*2)].x;
 	}
 
-	float maxPos = ComputeMaxInterp<float,7>(shifted, fftlen);
-	float offset = (maxPos - nr) / (3.14159265359f * 0.5f);
-	//free(shifted);
+	compute_t maxPos = ComputeMaxInterp<compute_t>::Compute(shifted, fftlen);
+	compute_t offset = (maxPos - nr) / (3.14159265359f * 0.5f);
+	free(shifted);
 	return offset;
 }
 
-__global__ void QI_OffsetPositions(int njobs, float3* current, float3* dst, cufftComplex* autoconv, int fftLength, float2* offsets)
+__global__ void QI_OffsetPositions(int njobs, float3* current, float3* dst, cufftComplex* autoconv, int fftLength, float2* offsets, float pixelsPerProfLen)
 {
 	int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -580,8 +541,8 @@ __global__ void QI_OffsetPositions(int njobs, float3* current, float3* dst, cuff
 		cufftComplex* autoconvY = autoconvX + fftLength;
 		float yoffset = QI_ComputeAxisOffset(autoconvY, fftLength);
 
-		dst[idx].x = current[idx].x + xoffset;
-		dst[idx].y = current[idx].y + yoffset;
+		dst[idx].x = current[idx].x + xoffset * pixelsPerProfLen;
+		dst[idx].y = current[idx].y + yoffset * pixelsPerProfLen;
 
 		if (offsets) 
 			offsets[idx] = make_float2( xoffset, yoffset);
@@ -598,7 +559,7 @@ __global__ void QI_OffsetPositions(int njobs, float3* current, float3* dst, cuff
 
 	kernel gets called with dim3(images.count, radialsteps*4) elements
 */
-__global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* positions, float* dst_quadrants, const QIParams params)
+__global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* positions, float* dst_quadrants, float* imgmeans, const QIParams params)
 {
 	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
 	int rIdx = threadIdx.y + blockIdx.y * blockDim.y;
@@ -617,15 +578,16 @@ __global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* po
 		float* qdr = &dst_quadrants[ (jobIdx * 4 + quadrant) * params.radialSteps ];
 
 		float rstep = (params.maxRadius - params.minRadius) / params.radialSteps;
-		double sum = 0.0f;
+		float sum = 0.0f;
 		float r = params.minRadius + rstep * rIdx;
 		float3 pos = positions[jobIdx];
+		float mean = imgmeans[jobIdx];
 
 		for (int a=0;a<params.angularSteps;a++) {
 			float ang = 0.5f*3.141593f*a/(float)params.angularSteps;
 			float x = pos.x + mx*params.radialgrid[a].x * r;
 			float y = pos.y + my*params.radialgrid[a].y * r;
-			sum += images.interpolate(x, y, jobIdx);
+			sum += images.interpolate(x, y, jobIdx, mean);
 			/*
 			float v;
 			if (x < 0 || x > images.w-1 || y < 0 || y > images.h-1)
@@ -634,7 +596,7 @@ __global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* po
 				v = tex2D(qi_image_texture, x,y + jobIdx*images.h);
 			sum += v;*/
 		}
-		qdr[rIdx] = sum/params.angularSteps-images.borderValue;
+		qdr[rIdx] = sum/params.angularSteps-mean;
 	}
 }
 
@@ -677,7 +639,6 @@ __global__ void QI_QuadrantsToProfiles(int njobs, cudaImageListf images, float* 
 			y0[nr-r-1] = qicomplex_t(q2[r]+q3[r]);
 		}
 
-
 		for(int r=0;r<nr*2;r++)
 			xrev[r] = x0[nr*2-r-1];
 		for(int r=0;r<nr*2;r++)
@@ -714,6 +675,8 @@ void checksum(T* data, int elemsize, int numelem, const char *name)
 #endif
 }
 
+std::vector< std::complex<float> > cmpdata_gpu;
+
 void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s)
 {
 //	std::vector<float3> initial_h=*initial;
@@ -725,18 +688,18 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 
 	if (0) {
 		QI_ComputeQuadrants <<< dim3( (njobs + qdrThreads.x - 1) / qdrThreads.x, (4*cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y ), qdrThreads, 0, s->stream >>> 
-			(njobs, s->images, initial->data, s->d_quadrants.data, kernelParams.qi);
+			(njobs, s->images, initial->data, s->d_quadrants.data, s->d_imgmeans.data, kernelParams.qi);
 
 		QI_QuadrantsToProfiles <<< blocks(njobs), threads(), 0, s->stream >>> 
-			(njobs, s->images, s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse, kernelParams.qi);
+			(njobs, s->images, s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, kernelParams.qi);
 	} 
 	else {
 		QI_ComputeProfile <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
-			s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse, kernelParams.qi);
+			s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, s->d_imgmeans.data,  kernelParams.qi);
 	}
 	checksum(s->d_quadrants.data, qi_FFT_length * 2, njobs, "quadrant");
 	checksum(s->d_QIprofiles.data, qi_FFT_length * 2, njobs, "prof");
-	checksum(s->d_QIprofiles_reverse, qi_FFT_length * 2, njobs, "revprof");
+	checksum(s->d_QIprofiles_reverse.data, qi_FFT_length * 2, njobs, "revprof");
 
 #ifdef QI_DBG_EXPORT
 	cudaDeviceSynchronize();
@@ -745,7 +708,7 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 #endif
 
 	cufftComplex* prof = (cufftComplex*)s->d_QIprofiles.data;
-	cufftComplex* revprof = s->d_QIprofiles_reverse;
+	cufftComplex* revprof = (cufftComplex*)s->d_QIprofiles_reverse.data;
 #ifdef QI_DBG_EXPORT
 	cudaDeviceSynchronize();
 	std::vector<float2> hprof = s->d_QIprofiles;
@@ -764,10 +727,19 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 	QI_MultiplyWithConjugate<<< dim3( (nval + nthread - 1)/nthread ), dim3(nthread), 0, s->stream >>>(nval, prof, revprof);
 	cufftExecC2C(s->fftPlan, prof, prof, CUFFT_INVERSE);
 
-	QI_OffsetPositions<<<blocks(njobs), threads(), sizeof(float)*qi_FFT_length*numThreads , s->stream>>>(njobs, initial->data, newpos->data, prof, qi_FFT_length, 0);
+	float2* d_offsets=0;
 #ifdef QI_DBG_EXPORT
 	device_vec<float2> offsets(njobs);
-	QI_OffsetPositions<<<blocks(njobs), threads(), sizeof(float)*qi_FFT_length*numThreads, s->stream>>>(njobs, initial->data, newpos->data, prof, qi_FFT_length, offsets.data);
+	d_offsets=  offsets.data;
+
+	hprof = s->d_QIprofiles;
+	std::complex<float>* hprofptr = (std::complex<float>*)&hprof[0];
+	cmpdata_gpu.assign(hprofptr, hprofptr+hprof.size());
+#endif
+	float pixelsPerProfLen = (cfg.qi_maxradius-cfg.qi_minradius)/cfg.qi_radialsteps;
+	QI_OffsetPositions<<<blocks(njobs), threads(), sizeof(float)*qi_FFT_length*numThreads, s->stream>>>(njobs, initial->data, newpos->data, prof, qi_FFT_length, d_offsets, pixelsPerProfLen);
+
+#ifdef QI_DBG_EXPORT
 	cudaDeviceSynchronize();
 	std::vector<float2> h_offsets = offsets;
 	for (int i=0;i<njobs;i++) {
@@ -779,9 +751,9 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 }
 
 
-
+/*
 // Compute a complete radial profile within the same kernel (slowish)
-static __device__ void ZLUT_RadialProfile(int idx, cudaImageListf& images, float *dst, const ZLUTParams zlut, float2 center, bool& error)
+static __device__ void ZLUT_RadialProfile(int idx, cudaImageListf& images, float *dst, const ZLUTParams zlut, float2 center, float mean, bool& error)
 {
 	int radialSteps = zlut.img.w;
 	for (int i=0;i<zlut.img.w;i++)
@@ -796,17 +768,17 @@ static __device__ void ZLUT_RadialProfile(int idx, cudaImageListf& images, float
 		for (int a=0;a<zlut.angularSteps;a++) {
 			float x = center.x + zlut.radialgrid[a].x * r;
 			float y = center.y + zlut.radialgrid[a].y * r;
-			sum += images.interpolate(x,y, idx);
+			sum += images.interpolate(x,y, idx,mean);
 		}
 
-		dst[i] = sum/zlut.angularSteps-images.borderValue;
+		dst[i] = sum/zlut.angularSteps-mean;
 		totalrmssum2 += dst[i]*dst[i];
 	}
 	double invTotalrms = 1.0f/sqrt(totalrmssum2/radialSteps);
 	for (int i=0;i<radialSteps;i++) {
 		dst[i] *= invTotalrms;
 	}
-}
+}*/
 
 
 __global__ void ZLUT_ProfilesToZLUT(int njobs, cudaImageListf images, ZLUTParams params, float3* positions, CUDATrackerJob* jobs, float* profiles)
@@ -827,7 +799,7 @@ __global__ void ZLUT_ProfilesToZLUT(int njobs, cudaImageListf images, ZLUTParams
 
 
 // Compute a single ZLUT radial profile element (looping through all the pixels at constant radial distance)
-__global__ void ZLUT_RadialProfileKernel(int njobs, cudaImageListf images, ZLUTParams params, float3* positions, float* profiles)
+__global__ void ZLUT_RadialProfileKernel(int njobs, cudaImageListf images, ZLUTParams params, float3* positions, float* profiles, float* imgmeans)
 {
 	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
 	int radialIdx = threadIdx.y + blockIdx.y * blockDim.y;
@@ -838,14 +810,15 @@ __global__ void ZLUT_RadialProfileKernel(int njobs, cudaImageListf images, ZLUTP
 	float* dstprof = &profiles[params.radialSteps() * jobIdx];
 	float r = params.minRadius + (params.maxRadius-params.minRadius)*radialIdx/params.radialSteps();
 	float sum = 0.0f;
+	float imgmean = imgmeans[jobIdx];
 	
 	for (int i=0;i<params.angularSteps;i++) {
 		float x = positions[jobIdx].x + params.radialgrid[i].x * r;
 		float y = positions[jobIdx].y + params.radialgrid[i].y * r;
 
-		sum += images.interpolate(x,y, jobIdx);
+		sum += images.interpolate(x,y, jobIdx, imgmean);
 	}
-	dstprof [radialIdx] = sum/params.angularSteps-images.borderValue;
+	dstprof [radialIdx] = sum/params.angularSteps-imgmean;
 }
 
 //		ZLUT_ComputeZ <<< blocks(s->jobCount), threads(), 0, s->stream >>> (s->jobCount, kernelParams.zlut, curpos->data);
@@ -857,12 +830,12 @@ __global__ void ZLUT_ComputeZ (int njobs, ZLUTParams params, float3* positions, 
 	if (jobIdx < njobs) {
 		float* cmp = &compareScoreBuf [params.planes * jobIdx];
 
-		float maxPos = ComputeMaxInterp<float,7>(cmp, params.planes);
+		float maxPos = ComputeMaxInterp<float>::Compute(cmp, params.planes);
 		positions[jobIdx].z = maxPos;
 	}
 }
 
-__global__ void ZLUT_ComputeProfileMatchScores(int njobs, ZLUTParams params, float *profiles, float* compareScoreBuf)
+__global__ void ZLUT_ComputeProfileMatchScores(int njobs, ZLUTParams params, float *profiles, float* imgmeans, float* compareScoreBuf)
 {
 	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
 	int zPlaneIdx = threadIdx.y + blockIdx.y * blockDim.y;
@@ -873,7 +846,7 @@ __global__ void ZLUT_ComputeProfileMatchScores(int njobs, ZLUTParams params, flo
 	float* prof = &profiles [jobIdx * params.radialSteps()];
 	float diffsum = 0.0f;
 	for (int r=0;r<params.radialSteps();r++) {
-		float d = prof[r] - params.img.pixel(r, zPlaneIdx, jobIdx);
+		float d = prof[r] - params.img.pixel(r, zPlaneIdx, jobIdx, imgmeans[jobIdx]);
 		if (params.zcmpwindow)
 			d *= params.zcmpwindow[r];
 		diffsum += d*d;
@@ -923,7 +896,7 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	cudaMemcpy2DAsync( s->images.data, s->images.pitch, s->hostImageBuf.data(), sizeof(float)*s->images.w, s->images.w*sizeof(float), s->images.h * s->jobCount, cudaMemcpyHostToDevice, s->stream);
 	s->d_jobs.copyToDevice(s->jobs.data(), s->jobCount, true, s->stream);
 	s->images.bind(qi_image_texture);
-	BgCorrectedCOM <<< blocks(s->jobCount), threads(), 0, s->stream >>> (s->jobCount, s->images, s->d_com.data, cfg.com_bgcorrection);
+	BgCorrectedCOM <<< blocks(s->jobCount), threads(), 0, s->stream >>> (s->jobCount, s->images, s->d_com.data, s->d_imgmeans.data, cfg.com_bgcorrection);
 
 	checksum(s->d_com.data, 1, s->jobCount, "com");
 
@@ -943,7 +916,7 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 		//QI_ComputeQuadrants <<< dim3( (njobs + qdrThreads.x - 1) / qdrThreads.x, (4*cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y ), qdrThreads, 0, s->stream >>> 
 //			(njobs, s->images, initial->data, s->d_quadrants.data, kernelParams.qi);
 		ZLUT_RadialProfileKernel<<< dim3( (s->jobCount + numThreads.x - 1) / numThreads.x, (cfg.zlut_radialsteps + numThreads.y - 1) / numThreads.y), numThreads, 0, s->stream >>>
-			(s->jobCount, s->images, kernelParams.zlut, curpos->data, s->d_radialprofiles.data );
+			(s->jobCount, s->images, kernelParams.zlut, curpos->data, s->d_radialprofiles.data,  s->d_imgmeans.data);
 
 		ZLUT_NormalizeProfiles<<< blocks(s->jobCount), threads(), 0, s->stream >>> (s->jobCount, kernelParams.zlut, s->d_radialprofiles.data);
 	}
@@ -956,7 +929,7 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	if (s->localizeFlags & LocalizeZ) {
 		dim3 numThreads(16, 64);
 		ZLUT_ComputeProfileMatchScores <<< dim3( (s->jobCount + numThreads.x - 1) / numThreads.x, (zlut_planes + numThreads.y - 1) / numThreads.y), numThreads, 0, s->stream >>> 
-			(s->jobCount, kernelParams.zlut, s->d_radialprofiles.data, s->d_zlutcmpscores.data);
+			(s->jobCount, kernelParams.zlut, s->d_radialprofiles.data, s->d_imgmeans.data, s->d_zlutcmpscores.data);
 //		ZLUT_ComputeZ <<< blocks(s->jobCount), threads(), 0, s->stream >>> (s->jobCount, kernelParams.zlut, curpos->data, s->d_zlutcmpscores.data);
 	}
 	

@@ -141,6 +141,10 @@ void TestSharedMem()
 }
 
 
+extern std::vector< std::complex<float> > cmpdata_gpu;
+extern std::vector< std::complex<float> > cmpdata_cpu;
+
+
 void QTrkTest()
 {
 	QTrkSettings cfg;
@@ -154,11 +158,11 @@ void QTrkTest()
 	cfg.zlut_radialsteps = 64;
 	bool haveZLUT = true;
 #ifdef _DEBUG
-	cfg.qi_radialsteps=32;
+	cfg.qi_radialsteps=16;
 	cfg.numThreads = 2;
 	cfg.qi_iterations=1;
 	int total= 5;
-	int batchSize = 2;
+	int batchSize = 1;
 	haveZLUT=false;
 #else
 	cfg.numThreads = 4;
@@ -196,6 +200,9 @@ void QTrkTest()
 			if (rc == zplanes) break;
 			Sleep(100);
 			dbgprintf(".");
+		}
+		if (cpucmp) {
+			while(qtrkcpu.GetResultCount() != zplanes);
 		}
 	}
 	float* zlut = qtrk.GetZLUT(0,0);
@@ -241,6 +248,10 @@ void QTrkTest()
 			Sleep(10);
 	}
 	
+	for (int i=0;i<cmpdata_cpu.size();i++) {
+		dbgprintf("[%d]: GPU: %+f, CPU: %+f, Diff: %+g\n", i, cmpdata_gpu[i].real(), cmpdata_cpu[i].real(), cmpdata_cpu[i].real()-cmpdata_gpu[i].real());
+	}
+	
 	// Measure speed
 	double tend = getPreciseTime();
 
@@ -257,11 +268,11 @@ void QTrkTest()
 	if(cpucmp) std::sort(resultscpu, resultscpu+rcount, [](LocalizationResult a, LocalizationResult b) -> bool { return a.id > b.id; });
 	for (int i=0;i<rcount;i++) {
 		LocalizationResult& r = results[i];
-		dbgprintf("gpu [%d] x: %f, y: %f. z: %f, COM: %f, %f\n", i,r.pos.x, r.pos.y, r.z, r.firstGuess.x, r.firstGuess.y);
+		dbgprintf("gpu [%d] x: %f, y: %f. z: %+g, COM: %f, %f\n", i,r.pos.x, r.pos.y, r.z, r.firstGuess.x, r.firstGuess.y);
 
 		if (cpucmp) {
 			r = resultscpu[i];
-			dbgprintf("cpu [%d] x: %f, y: %f. z: %f, COM: %f, %f\n", i,r.pos.x, r.pos.y, r.z, r.firstGuess.x, r.firstGuess.y);
+			dbgprintf("cpu [%d] x: %f, y: %f. z: %+g, COM: %f, %f\n", i,r.pos.x, r.pos.y, r.z, r.firstGuess.x, r.firstGuess.y);
 		}
 	}
 

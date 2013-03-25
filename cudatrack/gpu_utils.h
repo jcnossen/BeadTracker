@@ -105,50 +105,6 @@ public:
 
 
 
-template<typename T>
-CUBOTH T max_(T a, T b) { return a>b ? a : b; }
-template<typename T>
-CUBOTH T min_(T a, T b) { return a<b ? a : b; }
-
-template<typename T, int numPts>
-CUBOTH T ComputeMaxInterp(T* data, int len)
-{
-	int iMax=0;
-	T vMax=data[0];
-	for (int k=1;k<len;k++) {
-		if (data[k]>vMax) {
-			vMax = data[k];
-			iMax = k;
-		}
-	}
-	T xs[numPts]; 
-	int startPos = max_(iMax-numPts/2, 0);
-	int endPos = min_(iMax+(numPts-numPts/2), len);
-	int numpoints = endPos - startPos;
-
-
-	if (numpoints<3) 
-		return iMax;
-	else {
-		for(int i=startPos;i<endPos;i++)
-			xs[i-startPos] = i-iMax;
-
-		LsqSqQuadFit<T> qfit(numpoints, xs, &data[startPos]);
-		//printf("iMax: %d. qfit: data[%d]=%f\n", iMax, startPos, data[startPos]);
-		//for (int k=0;k<numpoints;k++) {
-	//		printf("data[%d]=%f\n", startPos+k, data[startPos]);
-		//}
-		T interpMax = qfit.maxPos();
-
-		if (fabs(qfit.a)<1e-9f)
-			return (T)iMax;
-		else
-			return (T)iMax + interpMax;
-	}
-}
-
-
-
 #if 1 //defined(_DEBUG)
 struct MeasureTime {
 	uint64_t freq, time;

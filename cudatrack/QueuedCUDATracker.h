@@ -26,7 +26,7 @@ struct QIParams {
 };
 
 struct ZLUTParams {
-	CUBOTH float* GetZLUT(int bead, int plane) { return &img.pixel(0, plane, bead); }
+	CUBOTH float* GetZLUT(int bead, int plane) { return img.pixelAddress(0, plane, bead); }
 	float minRadius, maxRadius;
 	float* zcmpwindow;
 	int angularSteps;
@@ -74,26 +74,26 @@ public:
 	QueuedCUDATracker(QTrkSettings* cfg, int batchSize=-1, bool debugStream=false);
 	~QueuedCUDATracker();
 
-	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
+	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane) override;
 	
 	// Schedule an entire frame at once, allowing for further optimizations
 	void ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
-		LocalizeType locType, uint frame, uint zlutPlane, bool async);
-	void WaitForScheduleFrame(uchar* imgptr); // Wait for an asynchronous call to ScheduleFrame to be finished with the specified buffer
+		LocalizeType locType, uint frame, uint zlutPlane, bool async) override;
+	void WaitForScheduleFrame(uchar* imgptr) override; // Wait for an asynchronous call to ScheduleFrame to be finished with the specified buffer
 
-	void ClearResults();
+	void ClearResults() override;
 
 	// data can be zero to allocate ZLUT data.
-	void SetZLUT(float* data,  int numLUTs, int planes, float* zcmp=0); 
-	float* GetZLUT(int *count=0, int* planes=0); // delete[] memory afterwards
-	int PollFinished(LocalizationResult* results, int maxResults);
+	void SetZLUT(float* data,  int numLUTs, int planes, float* zcmp=0) override; 
+	float* GetZLUT(int *count=0, int* planes=0) override; // delete[] memory afterwards
+	int PollFinished(LocalizationResult* results, int maxResults) override;
 
 	// Force the current waiting batch to be processed. Useful when number of localizations is not a multiple of internal batch size (almost always)
-	void Flush();
+	void Flush() override;
 	
-	bool IsQueueFilled();
-	bool IsIdle();
-	int GetResultCount();
+	bool IsQueueFilled() override;
+	bool IsIdle() override;
+	int GetResultCount() override;
 
 protected:
 
@@ -123,11 +123,12 @@ protected:
 		device_vec<float3> d_resultpos;
 		device_vec<float3> d_com; // z is zero
 		device_vec<float2> d_QIprofiles;
-		float2* d_QIprofiles_reverse;
+		device_vec<float2> d_QIprofiles_reverse;
 		device_vec<float> d_quadrants;
 
 		device_vec<float> d_radialprofiles;// [ radialsteps * njobs ] for Z computation
 		device_vec<float> d_zlutcmpscores; // [ zlutplanes * njobs ]
+		device_vec<float> d_imgmeans; // image mean value [njobs]
 
 		uint localizeFlags; // Indicates whether kernels should be ran for building zlut, z computing, or QI
 

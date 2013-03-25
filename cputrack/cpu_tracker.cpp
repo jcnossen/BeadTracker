@@ -8,6 +8,8 @@ CPU only tracker
 #include "std_incl.h"
 #include <exception>
 
+// 
+//#define QI_DBG_EXPORT
 
 #pragma warning(disable: 4996) // Function call with parameters that may be unsafe
 
@@ -94,54 +96,25 @@ inline void _markPixels(float x,float y, float* img, int w, int h, float mv)
 	#define MARKPIXELI(x,y)
 #endif
 
-XCor1DBuffer::XCor1DBuffer(int xcorw) 
-	: fft_forward(xcorw, false), fft_backward(xcorw, true)
+
+
+void XCor1DBuffer::XCorFFTHelper(complexc* prof, complexc *prof_rev, xcor_t* result)
 {
-	X_xcr.resize(xcorw);
-	Y_xcr.resize(xcorw);
-	X_xc.resize(xcorw);
-	X_result.resize(xcorw);
-	Y_xc.resize(xcorw);
-	Y_result.resize(xcorw);
-	shiftedResult.resize(xcorw);
-	this->xcorw = xcorw;
+	complexc* fft_out = (complexc*)ALLOCA(sizeof(complexc)*xcorw);
+	complexc* fft_out_rev = (complexc*)ALLOCA(sizeof(complexc)*xcorw);
 
-	fft_out = new complexc[xcorw];
-	fft_revout = new complexc[xcorw];
-}
-
-XCor1DBuffer::~XCor1DBuffer()
-{
-	delete[] fft_out;
-	delete[] fft_revout;
-}
-
-
-
-void XCor1DBuffer::OutputDebugInfo()
-{
-	for (int i=0;i<xcorw;i++) {
-		//dbgout(SPrintf("i=%d,  X = %f;  X_rev = %f;  Y = %f,  Y_rev = %f\n", i, X_xc[i], X_xcr[i], Y_xc[i], Y_xcr[i]));
-		dbgout(SPrintf("i=%d,  X_result = %f;   X = %f;  X_rev = %f\n", i, X_result[i], X_xc[i], X_xcr[i]));
-	}
-}
-
-
-
-void XCor1DBuffer::XCorFFTHelper(complexc* xc, complexc *xcr, xcor_t* result)
-{
-	fft_forward.transform(xc, fft_out);
-	fft_forward.transform(xcr, fft_revout);
+	fft_forward.transform(prof, fft_out);
+	fft_forward.transform(prof_rev, fft_out_rev);
 
 	// Multiply with conjugate of reverse
 	for (int x=0;x<xcorw;x++) {
-		fft_out[x] *= conjugate(fft_revout[x]);
+		fft_out[x] *= conjugate(fft_out_rev[x]);
 	}
 
-	fft_backward.transform(fft_out, &shiftedResult[0]);
+	fft_backward.transform(fft_out, fft_out_rev);
 
 	for (int x=0;x<xcorw;x++)
-		result[x] = shiftedResult[ (x+xcorw/2) % xcorw ].real();
+		result[x] = fft_out_rev[ (x+xcorw/2) % xcorw ].real();
 }
 
 // Returns true if bounds are crossed
@@ -195,6 +168,10 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 		return initial;
 	}
 
+	complexc* prof = (complexc*)ALLOCA(sizeof(complexc)*xcorw);
+	complexc* prof_rev = (complexc*)ALLOCA(sizeof(complexc)*xcorw);
+	float* prof_autocor = (xcor_t*)ALLOCA(sizeof(float)*xcorw);
+
 	boundaryHit = false;
 	for (int k=0;k<iterations;k++) {
 		boundaryHit = CheckBoundaries(pos, XCorScale*xcorw/2);
@@ -202,8 +179,6 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 		float xmin = pos.x - XCorScale * xcorw/2;
 		float ymin = pos.y - XCorScale * xcorw/2;
 
-		complexc* xc = &xcorBuffer->X_xc[0];
-		complexc* xcr = &xcorBuffer->X_xcr[0];
 		// generate X position xcor array (summing over y range)
 		for (int x=0;x<xcorw;x++) {
 			xcor_t s = 0.0f;
@@ -213,16 +188,14 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 				s += Interpolate(srcImage, width, height, xp, yp,mean);
 				MARKPIXELI(xp, yp);
 			}
-			xc [x] = s;
-			xcr [xcorw-x-1] = xc[x];
+			prof [x] = s;
+			prof_rev [xcorw-x-1] = s;
 		}
 
-		xcorBuffer->XCorFFTHelper(xc, xcr, &xcorBuffer->X_result[0]);
-		xcor_t offsetX = ComputeMaxInterp(&xcorBuffer->X_result[0],xcorBuffer->X_result.size()) - (xcor_t)xcorw/2;
+		xcorBuffer->XCorFFTHelper(prof, prof_rev, prof_autocor);
+		xcor_t offsetX = ComputeMaxInterp<float>::Compute(prof_autocor, xcorw) - (xcor_t)xcorw/2;
 
 		// generate Y position xcor array (summing over x range)
-		xc = &xcorBuffer->Y_xc[0];
-		xcr = &xcorBuffer->Y_xcr[0];
 		for (int y=0;y<xcorw;y++) {
 			xcor_t s = 0.0f; 
 			for (int x=0;x<profileWidth;x++) {
@@ -231,13 +204,13 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 				s += Interpolate(srcImage,width,height, xp, yp,mean);
 				MARKPIXELI(xp,yp);
 			}
-			xc[y] = s;
-			xcr [xcorw-y-1] = xc[y];
+			prof[y] = s;
+			prof_rev [xcorw-y-1] =s;
 		}
 
-		xcorBuffer->XCorFFTHelper(xc,xcr, &xcorBuffer->Y_result[0]);
+		xcorBuffer->XCorFFTHelper(prof,prof_rev, prof_autocor);
 		//WriteImageAsCSV("xcorautoconv.txt",&xcorBuffer->Y_result[0],xcorBuffer->Y_result.size(),1);
-		xcor_t offsetY = ComputeMaxInterp(&xcorBuffer->Y_result[0], xcorBuffer->Y_result.size()) - (xcor_t)xcorw/2;
+		xcor_t offsetY = ComputeMaxInterp<xcor_t>::Compute(prof_autocor, xcorw) - (xcor_t)xcorw/2;
 
 		pos.x += (offsetX - 1) * XCorScale * 0.5f;
 		pos.y += (offsetY - 1) * XCorScale * 0.5f;
@@ -246,8 +219,7 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 	return pos;
 }
 
-
-
+std::vector< std::complex<float> > cmpdata_cpu;
 
 vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQ, float minRadius, float maxRadius, bool& boundaryHit)
 {
@@ -297,7 +269,7 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 		for (int q=0;q<4;q++) {
 			ComputeQuadrantProfile(buf+q*nr, nr, angularStepsPerQ, q, minRadius, maxRadius, center);
 		}
-		
+
 		// Build Ix = [ qL(-r)  qR(r) ]
 		// qL = q1 + q2   (concat0)
 		// qR = q0 + q3   (concat1)
@@ -306,10 +278,12 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 			concat1[r] = q0[r]+q3[r];
 		}
 
+#ifdef QI_DBG_EXPORT
 		std::vector<std::complex<float> > tmp(nr*4);
 		std::copy(concat0, concat0+nr*2,tmp.begin());
+#endif
 		
-		float offsetX = QI_ComputeOffset(concat0, nr);
+		float offsetX = QI_ComputeOffset(concat0, nr, 0);
 
 		// Build Iy = [ qB(-r)  qT(r) ]
 		// qT = q0 + q1
@@ -317,12 +291,15 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 		for(int r=0;r<nr;r++) {
 			concat1[r] = q0[r]+q1[r];
 			concat0[nr-r-1] = q2[r]+q3[r];
-		}
-		float offsetY = QI_ComputeOffset(concat0, nr);
+		}	
+		
+		float offsetY = QI_ComputeOffset(concat0, nr, 1);
 
+#ifdef QI_DBG_EXPORT
 		std::copy(concat0, concat0+nr*2,tmp.begin()+nr*2);
-	//	WriteComplexImageAsCSV("cpuprofxy.txt", &tmp[0], nr*4, 1);
-//dbgprintf("[%d] OffsetX: %f, OffsetY: %f\n", k, offsetX, offsetY);
+		WriteComplexImageAsCSV("cpuprofxy.txt", &tmp[0], nr*4, 1);
+		dbgprintf("[%d] OffsetX: %f, OffsetY: %f\n", k, offsetX, offsetY);
+#endif
 
 		center.x += offsetX * pixelsPerProfLen;
 		center.y += offsetY * pixelsPerProfLen;
@@ -344,7 +321,7 @@ double sum_diff(T* begin, T* end, T* other)
 }
 
 // Profile is complexc[nr*2]
-CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr)
+CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr, int axisForDebug)
 {
 	qic_t* reverse = ALLOCA_ARRAY(qic_t, nr*2);
 	qic_t* fft_out = ALLOCA_ARRAY(qic_t, nr*2);
@@ -367,6 +344,9 @@ CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr
 
 	qi_fft_backward->transform(fft_out, fft_out2);
 
+	cmpdata_cpu.resize(4*nr);
+	std::copy(fft_out2, fft_out2 + nr*2, cmpdata_cpu.begin() + axisForDebug*nr*2);
+
 	// fft_out2 now contains the autoconvolution
 	// convert it to float
 	qi_t* autoconv = ALLOCA_ARRAY(qi_t, nr*2);
@@ -376,8 +356,8 @@ CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr
 
 //	WriteImageAsCSV("qiautoconv.txt", autoconv, nr*2, 1);
 
-	float maxPos = ComputeMaxInterp(autoconv, nr*2);
-	return (maxPos - nr) / (3.141593 * 0.5);
+	float maxPos = ComputeMaxInterp<xcor_t>::Compute(autoconv, nr*2);
+	return (maxPos - nr) / (3.14159265359f * 0.5f);
 }
 
 vector2f CPUTracker::Compute2DGaussianMLE(vector2f initial, int iterations)
@@ -440,10 +420,10 @@ void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, 
 	for (int i=0;i<radialSteps;i++)
 		dst[i]=0.0f;
 
-	double total = 0.0f;
+	float total = 0.0f;
 	float rstep = (maxRadius - minRadius) / radialSteps;
 	for (int i=0;i<radialSteps; i++) {
-		double sum = 0.0f;
+		float sum = 0.0f;
 		float r = minRadius + rstep * i;
 
 		for (int a=0;a<angularSteps;a++) {
@@ -580,32 +560,11 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, boo
 		std::copy(rprof_diff, rprof_diff+zlut_planes, cmpProf);
 	}
 
-	float z = ComputeMaxInterp(rprof_diff, zlut_planes);
+	float z = ComputeMaxInterp<xcor_t>::Compute(rprof_diff, zlut_planes);
 	return z;
 }
 
-static void CopyCpxVector(std::vector<xcor_t>& xprof, const std::vector<complexc>& src) {
-	xprof.resize(src.size());
-	for (int k=0;k<src.size();k++)
-		xprof[k]=src[k].real();
-}
-
-bool CPUTracker::GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
-		std::vector<xcor_t>& xconv, std::vector<xcor_t>& yconv)
-{
-	if (xcorBuffer) {
-		CopyCpxVector(xprof, xcorBuffer->X_xc);
-		CopyCpxVector(yprof, xcorBuffer->Y_xc);
-		xconv = xcorBuffer->X_result;
-		yconv = xcorBuffer->Y_result;
-	}
-	return true;
-}
-
-
-
-
 vector2f CPUTracker::Compute2DXCor()
 {
-
+	return vector2f();
 }

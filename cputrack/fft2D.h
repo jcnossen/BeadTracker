@@ -116,53 +116,53 @@ int FFT(int dir,int m,T *x,T *y)
       the dimensions are not powers of 2
 */
 template<typename T>
-bool FFT2D(std::complex<T> **c,int nx,int ny,int dir)
+bool FFT2D(std::complex<T> *c,int nx,int ny,int dir)
 {
    int i,j;
    int m,twopm;
    T *real,*imag;
 
    /* Transform the rows */
-   real = (T *)malloc(nx * sizeof(T));
-   imag = (T *)malloc(nx * sizeof(T));
+   real = new T[nx];
+   imag = new T[nx];
    if (real == NULL || imag == NULL)
       return false;
    if (!Powerof2(nx,))
       return false;
    for (j=0;j<ny;j++) {
       for (i=0;i<nx;i++) {
-         real[i] = c[i][j].real;
-         imag[i] = c[i][j].imag;
+         real[i] = c[j*nw+i].real;
+         imag[i] = c[j*nw+i].imag;
       }
       FFT(dir,m,real,imag);
       for (i=0;i<nx;i++) {
-         c[i][j].real = real[i];
-         c[i][j].imag = imag[i];
+         c[j*nw+i].real = real[i];
+         c[j*nw+i].imag = imag[i];
       }
    }
-   free(real);
-   free(imag);
+   delete[] real;
+   delete[] imag;
 
    /* Transform the columns */
-   real = (T *)malloc(ny * sizeof(T));
-   imag = (T *)malloc(ny * sizeof(T));
+   real = new T[ny];
+   imag = new T[ny];
    if (real == NULL || imag == NULL)
       return false;
    if (!Powerof2(ny))
       return false;
    for (i=0;i<nx;i++) {
       for (j=0;j<ny;j++) {
-         real[j] = c[i][j].real;
-         imag[j] = c[i][j].imag;
+         real[j] = c[j*nw+i].real;
+         imag[j] = c[j*nw+i].imag;
       }
       FFT(dir,m,real,imag);
       for (j=0;j<ny;j++) {
-         c[i][j].real = real[j];
-         c[i][j].imag = imag[j];
+         c[j*nw+i].real = real[j];
+         c[j*nw+i].imag = imag[j];
       }
    }
-   free(real);
-   free(imag);
+   delete[] real;
+   delete[] imag;
 
    return true;
 }

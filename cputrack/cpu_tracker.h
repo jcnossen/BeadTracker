@@ -11,20 +11,13 @@ typedef uchar pixel_t;
 
 class XCor1DBuffer {
 public:
-	XCor1DBuffer(int xcorw);
-	~XCor1DBuffer();
+	XCor1DBuffer(int xcorw) : fft_forward(xcorw, false), fft_backward(xcorw, true), xcorw(xcorw)
+	{}
 
 	kissfft<xcor_t> fft_forward, fft_backward;
 	int xcorw;
-	std::vector<complexc> shiftedResult;
-	std::vector<complexc> X_xc, X_xcr;
-	std::vector<xcor_t> X_result;
-	std::vector<complexc> Y_xc, Y_xcr;
-	std::vector<xcor_t> Y_result;
-	complexc *fft_out, *fft_revout;
 
 	void XCorFFTHelper(complexc* xc, complexc* xcr, xcor_t* result);
-	void OutputDebugInfo();
 };
 
 class CPUTracker
@@ -69,7 +62,7 @@ public:
 	vector2f Compute2DGaussianMLE(vector2f initial ,int iterations);
 	vector2f Compute2DXCor();
 
-	qi_t QI_ComputeOffset(qic_t* qi_profile, int nr);
+	qi_t QI_ComputeOffset(qic_t* qi_profile, int nr, int axisForDebug);
 	float ComputeAsymmetry(vector2f center, int radialSteps, int angularSteps, float minRadius, float maxRadius, float *dstAngProf=0);
 
 	template<typename TPixel> void SetImage(TPixel* srcImage, uint srcpitch);
@@ -84,11 +77,6 @@ public:
 	void Normalize(float *image=0);
 	void SetZLUT(float* data, int planes, int res, int num_zluts, float minradius, float maxradius, int angularSteps, bool copyMemory, bool useCorrelation, float* radialweights=0);
 	float ComputeZ(vector2f center, int angularSteps, int zlutIndex, bool crp, bool* boundaryHit=0, float* profile=0, float* cmpprof=0 ); // radialSteps is given by zlut_res
-
-	bool GetLastXCorProfiles(std::vector<xcor_t>& xprof, std::vector<xcor_t>& yprof, 
-		std::vector<xcor_t>& xconv, std::vector<xcor_t>& yconv);
-
-	void OutputDebugInfo();
 	float* GetDebugImage() { return debugImage; }
 };
 
@@ -108,39 +96,5 @@ void CPUTracker::SetImage(TPixel* data, uint pitchInBytes)
 	}
 
 	mean=0.0f;
-}
-
-
-
-template<typename T>
-T ComputeMaxInterp(T* data, int len, int numpoints=7)
-{
-	int iMax=0;
-	T vMax=data[0];
-	for (int k=1;k<len;k++) {
-		if (data[k]>vMax) {
-			vMax = data[k];
-			iMax = k;
-		}
-	}
-	int startPos = std::max(iMax-numpoints/2, 0);
-	int endPos = std::min(iMax+(numpoints-numpoints/2), len);
-	numpoints = endPos - startPos;
-
-	if (numpoints<3) 
-		return iMax;
-	else {
-		double *xs = (double*)ALLOCA(sizeof(double)*numpoints);
-		double *ys = (double*)ALLOCA(sizeof(double)*numpoints);
-		for(int i=startPos;i<endPos;i++) {
-			xs[i-startPos] = i-iMax;
-			ys[i-startPos] = data[i];
-		}
-		LsqSqQuadFit<double> qfit(numpoints, xs, ys);
-		if (fabs(qfit.a)<1e-9)
-			return (T)iMax;
-		else
-			return (T)(iMax + qfit.maxPos());
-	}
 }
 
