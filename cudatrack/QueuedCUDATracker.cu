@@ -34,7 +34,7 @@ Issues:
 #include "simplefft.h"
 #include "gpu_utils.h"
 
-#define QI_DBG_EXPORT
+//#define QI_DBG_EXPORT
 #define ZLUT_DBG_EXPORT
 
 #define LSQFIT_FUNC __device__ __host__
@@ -50,21 +50,18 @@ typedef sfft::complex<qivalue_t> qicomplex_t;
 texture<float, cudaTextureType2D, cudaReadModeElementType> qi_image_texture(0,  cudaFilterModeLinear); // Un-normalized
 
 
-__shared__ float2 cudaSharedMemory[];
+// All interpolated texture/images fetches go through here
+__device__ float SampleInterpolated(cudaImageListf& images, float x,float y, int img, float imgmean)
+{
+	return images.interpolate(x,y,img, imgmean);
 
-// QueuedCUDATracker allows runtime choosing of GPU or CPU code. All GPU kernel calls are done through the following macro:
-// Depending on 'useCPU' it either invokes a CUDA kernel named 'Funcname', or simply loops over the data on the CPU side calling 'Funcname' for each image
-#define KERNEL_DISPATCH(Funcname, TParam) \
-__global__ void Funcname##Kernel(cudaImageListf images, TParam param, int sharedMemPerThread) { \
-	int idx = blockIdx.x * blockDim.x + threadIdx.x; \
-	if (idx < images.count) { \
-		Funcname(idx, images, &cudaSharedMemory [threadIdx.x * sharedMemPerThread], param); \
-	} \
-} \
-void QueuedCUDATracker::CallKernel_##Funcname(cudaImageListf& images, TParam param, uint sharedMemPerThread)  { \
-	Funcname##Kernel <<<blocks(images.count), threads(), sharedMemPerThread * numThreads >>> (images,param, sharedMemPerThread); \
+/*	float v;
+	if (x < 0 || x > images.w-1 || y < 0 || y > images.h-1)
+		v = imgmean;
+	else 
+		v = tex2D(qi_image_texture, x,y + img*images.h);
+	return v;*/
 }
-
 
 
 QueuedTracker* CreateQueuedTracker(QTrkSettings* cfg)
@@ -428,19 +425,9 @@ static __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, f
 		float r = params.minRadius + rstep * i;
 
 		for (int a=0;a<params.angularSteps;a++) {
-			//float ang = 0.5f*3.141593f*i/(float)params.angularSteps;
-	//		float x = center.x + mx*cosf(ang) * r;
-//			float y = center.y + my*sinf(ang) * r;
 			float x = center.x + mx*params.radialgrid[a].x * r;
 			float y = center.y + my*params.radialgrid[a].y * r;
-
-			/*
-			float v;
-			if (x < 0 || x > images.w-1 || y < 0 || y > images.h-1)
-				v = 0.0f;
-			else
-				v = tex2D(qi_image_texture, x,y + idx*images.h);*/
-			float v = images.interpolate(x, y, idx, img_mean);
+			float v = SampleInterpolated(images, x,y, idx, img_mean);
 			sum += v;
 		}
 
@@ -452,7 +439,6 @@ static __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, f
 
 __global__ void QI_ComputeProfile(int count, cudaImageListf images, float3* positions, float* quadrants, float2* profiles, float2* reverseProfiles, float* img_means, QIParams params)
 {
-//ComputeQuadrantProfile(cudaImageListf& images, int idx, float* dst, const QIParams& params, int quadrant, float2 center)
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
 	if (idx < count) {
 		int fftlen = params.radialSteps*2;
@@ -587,14 +573,7 @@ __global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* po
 			float ang = 0.5f*3.141593f*a/(float)params.angularSteps;
 			float x = pos.x + mx*params.radialgrid[a].x * r;
 			float y = pos.y + my*params.radialgrid[a].y * r;
-			sum += images.interpolate(x, y, jobIdx, mean);
-			/*
-			float v;
-			if (x < 0 || x > images.w-1 || y < 0 || y > images.h-1)
-				v = 0.0f;
-			else 
-				v = tex2D(qi_image_texture, x,y + jobIdx*images.h);
-			sum += v;*/
+			sum += SampleInterpolated(images, x,y,jobIdx, mean);
 		}
 		qdr[rIdx] = sum/params.angularSteps-mean;
 	}
@@ -737,7 +716,8 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 	cmpdata_gpu.assign(hprofptr, hprofptr+hprof.size());
 #endif
 	float pixelsPerProfLen = (cfg.qi_maxradius-cfg.qi_minradius)/cfg.qi_radialsteps;
-	QI_OffsetPositions<<<blocks(njobs), threads(), sizeof(float)*qi_FFT_length*numThreads, s->stream>>>(njobs, initial->data, newpos->data, prof, qi_FFT_length, d_offsets, pixelsPerProfLen);
+	QI_OffsetPositions<<<blocks(njobs), threads(), sizeof(float)*qi_FFT_length*numThreads, s->stream>>>
+		(njobs, initial->data, newpos->data, prof, qi_FFT_length, d_offsets, pixelsPerProfLen);
 
 #ifdef QI_DBG_EXPORT
 	cudaDeviceSynchronize();

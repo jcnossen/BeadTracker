@@ -282,7 +282,6 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 		std::vector<std::complex<float> > tmp(nr*4);
 		std::copy(concat0, concat0+nr*2,tmp.begin());
 #endif
-		
 		float offsetX = QI_ComputeOffset(concat0, nr, 0);
 
 		// Build Iy = [ qB(-r)  qT(r) ]

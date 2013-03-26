@@ -248,7 +248,7 @@ void QTrkTest()
 			Sleep(10);
 	}
 	
-	for (int i=0;i<cmpdata_cpu.size();i++) {
+	for (int i=0;i<std::min(cmpdata_cpu.size(),cmpdata_gpu.size());i++) {
 		dbgprintf("[%d]: GPU: %+f, CPU: %+f, Diff: %+g\n", i, cmpdata_gpu[i].real(), cmpdata_cpu[i].real(), cmpdata_cpu[i].real()-cmpdata_gpu[i].real());
 	}
 	
