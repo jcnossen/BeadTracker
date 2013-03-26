@@ -17,7 +17,6 @@ template<typename T>
 class device_vec {
 public:
 	device_vec() {
-	//	dbgprintf("%p device_vec()\n", this);
 		data = 0;
 		size = 0;
 	}
@@ -26,33 +25,28 @@ public:
 		data = 0;
 		size = 0;
 		init(N);
-//dbgprintf("%p. device_vec(emulate=%s, N=%d)\n",this, emulate?"true":"false", N);
 	}
 	device_vec(const device_vec<T>& src) {
 		data = 0; size = 0;
 		init(src.size);
-	//	dbgprintf("%p. copy constructor: %p to %p. Host emulate=%d\n", this, src.data, data, host_emulate?1:0);
 		cudaMemcpy(data, src.data, sizeof(T)*size, cudaMemcpyDeviceToDevice);
 	}
 	device_vec(const std::vector<T>& src) {
-	//	dbgprintf("%p. operator=(vector)\n", this);
 		data=0; size=0; 
 		init(src.size());
 		cudaMemcpy(data, &src[0], sizeof(T)*size, cudaMemcpyHostToDevice);
 	}
 	~device_vec(){
-//dbgprintf("%p: ~device_vec. size=%d\n", this, size);
-		cudaFree(data); 
-		data=0;
+		free();
 	}
 	void init(int s) {
 		if(size != s) {
-			clear();
+			free();
 			if (s!=0) cudaMalloc(&data, sizeof(T)*s);
 		}
 		size = s;
 	}
-	void clear() {
+	void free() {
 		if (data) {
 			cudaFree(data);
 			data=0;
@@ -64,13 +58,11 @@ public:
 		return dst;
 	}
 	device_vec<T>& operator=(const std::vector<T>& src) {
-	//	dbgprintf("%p. operator=(vector)\n", this);
 		init(src.size());
 		cudaMemcpy(data, &src[0], sizeof(T)*size, cudaMemcpyHostToDevice);
 		return *this;
 	}
 	device_vec<T>& operator=(const device_vec<T>& src) {
-	//	dbgprintf("%p. operator=(device_vec)\n", this);
 		clear();
 		init(src.size);
 		cudaMemcpy(data, src.data, sizeof(T)*size, cudaMemcpyDeviceToDevice);

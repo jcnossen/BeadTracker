@@ -77,7 +77,7 @@ void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDa
 		break;
 	case LocalizeQI:
 		result.firstGuess = com;
-		result.pos = tracker->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
+		result.pos = tracker->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angsteps_per_quadrant, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
 		break;
 	}
 

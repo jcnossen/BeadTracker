@@ -36,30 +36,6 @@ CDLL_EXPORT void DLL_CALLCONV destroy_tracker(CPUTracker* tracker)
 	}
 }
 
-template<typename T>
-void copyToLVArray (LVArray<T>**& r, const std::vector<T>& a)
-{
-	ResizeLVArray(r, a.size());
-	for (size_t x=0;x<a.size();x++)
-		(*r)->elem[x] = a[x];
-}
-
-CDLL_EXPORT void DLL_CALLCONV copy_crosscorrelation_result(CPUTracker* tracker, LVArray<float>** x_result, LVArray<float>** y_result, LVArray<float>** x_xc, LVArray<float>** y_xc)
-{
-	try {
-		std::vector<xcor_t> xprof, yprof, xconv, yconv;
-		if (tracker->GetLastXCorProfiles(xprof, yprof, xconv, yconv)) {
-			if (x_result) copyToLVArray (x_result, xconv);
-			if (y_result) copyToLVArray (y_result, yconv);
-			if (x_xc) copyToLVArray (x_xc, xprof);
-			if (y_xc) copyToLVArray (y_xc, yprof);
-		}
-	}
-	catch(const std::exception& e)
-	{
-		dbgout("Exception: " + std::string(e.what()) + "\n");
-	}
-}
 
 CDLL_EXPORT void DLL_CALLCONV compute_com(CPUTracker* tracker, float* out)
 {

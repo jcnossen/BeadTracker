@@ -89,7 +89,7 @@ private:
 };
 
 
-
+// Computes the interpolated maximum position
 template<typename T, int numPts=7>
 class ComputeMaxInterp {
 public:

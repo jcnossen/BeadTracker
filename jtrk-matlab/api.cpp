@@ -247,7 +247,7 @@ static void map_QTrkSettings(QTrkSettings *cfg, bool get, std::map<std::string, 
 
 	CFGITEM(qi_iterations);
 	CFGITEM(qi_radialsteps);
-	CFGITEM(qi_angularsteps);
+	CFGITEM(qi_angsteps_per_quadrant);
 	CFGITEM(qi_minradius);
 	CFGITEM(qi_maxradius);
 

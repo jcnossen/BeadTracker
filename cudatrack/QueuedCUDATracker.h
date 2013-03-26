@@ -168,7 +168,7 @@ protected:
 	cudaDeviceProp deviceProp;
 	KernelParams kernelParams;
 
-	int zlut_count, zlut_planes;
+	int zlut_count;
 	cudaImageListf zlut;
 	device_vec<float> zcompareWindow;
 	device_vec<float2> d_qiradialgrid;

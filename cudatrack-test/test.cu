@@ -141,39 +141,39 @@ void TestSharedMem()
 }
 
 
-extern std::vector< std::complex<float> > cmpdata_gpu;
-extern std::vector< std::complex<float> > cmpdata_cpu;
-
-
 void QTrkTest()
 {
 	QTrkSettings cfg;
-	cfg.width = cfg.height = 60;
+	cfg.width = cfg.height = 120;
 	cfg.qi_iterations = 1;
 	cfg.qi_maxradius = 25;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
+	cfg.zlut_maxradius = 30;
 	cfg.zlut_radialsteps = 64;
-	bool haveZLUT = true;
+	cfg.zlut_angularsteps = 128;
+	bool haveZLUT = false;
 #ifdef _DEBUG
 	cfg.qi_radialsteps=16;
 	cfg.numThreads = 2;
 	cfg.qi_iterations=1;
-	int total= 5;
+	int total= 1;
 	int batchSize = 1;
-	haveZLUT=false;
+	haveZLUT=true;
 #else
 	cfg.numThreads = 4;
 	int total = 30000;
-	int batchSize = 1024;
+	int batchSize = 512;
 #endif
 
 	QueuedCUDATracker qtrk(&cfg, batchSize);
 	QueuedCPUTracker qtrkcpu(&cfg);
 	float *image = new float[cfg.width*cfg.height];
 	bool cpucmp = true;
+
+	srand(1);
 
 	// Generate ZLUT
 	int zplanes=100;
@@ -208,6 +208,9 @@ void QTrkTest()
 	float* zlut = qtrk.GetZLUT(0,0);
 	if (cpucmp) { 
 		float* zlutcpu = qtrkcpu.GetZLUT(0,0);
+
+		WriteImageAsCSV("zlut-cpu.txt", zlutcpu, cfg.zlut_radialsteps, zplanes);
+		WriteImageAsCSV("zlut-gpu.txt", zlut, cfg.zlut_radialsteps, zplanes);
 	}
 	qtrk.ClearResults();
 	if (cpucmp) qtrkcpu.ClearResults();
@@ -242,18 +245,16 @@ void QTrkTest()
 		}
 		Sleep(10);
 	} while (rc != total);
+	
+	// Measure speed
+	double tend = getPreciseTime();
+
 	if (cpucmp) {
 		dbgprintf("waiting for cpu results..\n");
 		while (total != qtrkcpu.GetResultCount())
 			Sleep(10);
 	}
 	
-	for (int i=0;i<std::min(cmpdata_cpu.size(),cmpdata_gpu.size());i++) {
-		dbgprintf("[%d]: GPU: %+f, CPU: %+f, Diff: %+g\n", i, cmpdata_gpu[i].real(), cmpdata_cpu[i].real(), cmpdata_cpu[i].real()-cmpdata_gpu[i].real());
-	}
-	
-	// Measure speed
-	double tend = getPreciseTime();
 
 	delete[] image;
 
