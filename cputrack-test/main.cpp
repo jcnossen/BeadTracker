@@ -341,6 +341,9 @@ void QTrkTest()
 	cfg.width = cfg.height = 80;
 	cfg.qi_iterations = 3;
 	cfg.qi_maxradius = 40;
+	cfg.qi_radialsteps = 32;
+	cfg.qi_angularsteps = 128;
+	cfg.zlut_radialsteps = 32;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1; // direct processing, dont use queue
@@ -352,7 +355,7 @@ void QTrkTest()
 	int radialSteps=64, zplanes=100;
 	float zmin=0.5,zmax=2.5;
 	bool haveZLUT = false;
-	qtrk.SetZLUT(0, 1, zplanes, radialSteps, 0);
+	qtrk.SetZLUT(NULL, 1, zplanes, 0);
 	if (haveZLUT) {
 		for (int x=0;x<zplanes;x++)  {
 			vector2f center = { cfg.width/2, cfg.height/2 };
@@ -367,7 +370,7 @@ void QTrkTest()
 			Sleep(100);
 			dbgprintf(".");
 		}
-		float* zlut = qtrk.GetZLUT(0,0,0);
+		float* zlut = qtrk.GetZLUT(0,0);
 		qtrk.ClearResults();
 		uchar* zlut_bytes = floatToNormalizedInt(zlut, radialSteps, zplanes, (uchar)255);
 		WriteJPEGFile(zlut_bytes, radialSteps, zplanes, "qtrkzlut.jpg", 99);
