@@ -15,6 +15,7 @@
       <Filter>fastjpeg</Filter>
     </ClInclude>
     <ClInclude Include="..\cputrack\cpu_tracker.h" />
+    <ClInclude Include="..\cputrack\QueuedTracker.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="test.cu" />

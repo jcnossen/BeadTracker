@@ -10,6 +10,7 @@ CPU only tracker
 
 // 
 //#define QI_DBG_EXPORT
+#define ZLUT_CMPDATA
 
 #pragma warning(disable: 4996) // Function call with parameters that may be unsafe
 
@@ -22,6 +23,7 @@ CPU only tracker
 #include "../cudatrack/simplefft.h"
 
 const float XCorScale = 1.0f; // keep this at 1, because linear oversampling was obviously a bad idea..
+
 
 static int round(xcor_t f) { return (int)(f+0.5f); }
 template<typename T>
@@ -219,8 +221,6 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 	return pos;
 }
 
-std::vector< std::complex<float> > cmpdata_cpu;
-
 vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQ, float minRadius, float maxRadius, bool& boundaryHit)
 {
 	int nr=radialSteps;
@@ -282,7 +282,6 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 		std::vector<std::complex<float> > tmp(nr*4);
 		std::copy(concat0, concat0+nr*2,tmp.begin());
 #endif
-		
 		float offsetX = QI_ComputeOffset(concat0, nr, 0);
 
 		// Build Iy = [ qB(-r)  qT(r) ]
@@ -330,22 +329,14 @@ CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr
 	for(int x=0;x<nr*2;x++)
 		reverse[x] = profile[nr*2-1-x];
 
-//	WriteComplexImageAsCSV("qiprofile.txt", profile, nr*2, 1);
-//	WriteComplexImageAsCSV("qiprofilerev.txt", reverse, nr*2, 1);
 	qi_fft_forward->transform(profile, fft_out);
 	qi_fft_forward->transform(reverse, fft_out2); // fft_out2 contains fourier-domain version of reverse profile
-//	WriteComplexImageAsCSV("qiprofilefft.txt", fft_out, nr*2, 1);
 
 	// multiply with conjugate
 	for(int x=0;x<nr*2;x++)
 		fft_out[x] *= conjugate(fft_out2[x]);
 
-//	WriteComplexImageAsCSV("qifftmul.txt", fft_out, nr*2, 1);
-
 	qi_fft_backward->transform(fft_out, fft_out2);
-
-	cmpdata_cpu.resize(4*nr);
-	std::copy(fft_out2, fft_out2 + nr*2, cmpdata_cpu.begin() + axisForDebug*nr*2);
 
 	// fft_out2 now contains the autoconvolution
 	// convert it to float
@@ -353,8 +344,6 @@ CPUTracker::qi_t CPUTracker::QI_ComputeOffset(CPUTracker::qic_t* profile, int nr
 	for(int x=0;x<nr*2;x++)  {
 		autoconv[x] = fft_out2[(x+nr)%(nr*2)].real();
 	}
-
-//	WriteImageAsCSV("qiautoconv.txt", autoconv, nr*2, 1);
 
 	float maxPos = ComputeMaxInterp<xcor_t>::Compute(autoconv, nr*2);
 	return (maxPos - nr) / (3.14159265359f * 0.5f);
@@ -433,7 +422,7 @@ void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, 
 			MARKPIXELI(x,y);
 		}
 
-		dst[i] = sum/angularSteps-mean ;
+		dst[i] = sum/angularSteps-mean;
 		total += dst[i];
 	}
 }
@@ -534,6 +523,8 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, boo
 	ComputeRadialProfile(rprof, zlut_res, angularSteps, zlut_minradius, zlut_maxradius, center, crp, boundaryHit);
 	if (profile) std::copy(rprof, rprof+zlut_res, profile);
 
+	//WriteImageAsCSV("zlutradprof-cpu.txt", rprof, zlut_res, 1);
+
 	// Now compare the radial profile to the profiles stored in Z
 
 	float* zlut_sel = getZLUT(zlutIndex);
@@ -559,6 +550,8 @@ float CPUTracker::ComputeZ(vector2f center, int angularSteps, int zlutIndex, boo
 		//cmpProf->resize(zlut_planes);
 		std::copy(rprof_diff, rprof_diff+zlut_planes, cmpProf);
 	}
+
+	//WriteImageAsCSV("zlutcmp-cpu.txt", rprof_diff, zlut_planes, 1);
 
 	float z = ComputeMaxInterp<xcor_t>::Compute(rprof_diff, zlut_planes);
 	return z;

@@ -204,7 +204,7 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 		break;
 	case LocalizeQI:
 		result.firstGuess = com;
-		result.pos = trk->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angularsteps, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
+		result.pos = trk->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angsteps_per_quadrant, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
 		break;
 	case LocalizeGaussian2D:
 		result.firstGuess = com;
@@ -354,7 +354,7 @@ void QueuedCPUTracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int he
 	for (int i=0;i<numROI;i++){
 		ROIPosition& pos = positions[i];
 
-		if (pos.x < 0 || pos.y < 0 || pos.x + cfg.width >= width || pos.y + cfg.height >= height)
+		if (pos.x < 0 || pos.y < 0 || pos.x + cfg.width > width || pos.y + cfg.height > height)
 			continue;
 
 		uchar *roiptr = &img[pitch * pos.y + pos.x * bpp];

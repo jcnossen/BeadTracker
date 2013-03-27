@@ -9,7 +9,7 @@ template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }
 float distance(vector2f a,vector2f b) { return distance(a.x-b.x,a.y-b.y); }
 
 
-double getPreciseTime()
+double GetPreciseTime()
 {
 	uint64_t freq, time;
 
@@ -53,17 +53,17 @@ void SpeedTest()
 	double tcom = 0.0, tgen=0.0, tz = 0.0, tqi=0.0, txcor=0.0;
 	for (int k=0;k<N;k++)
 	{
-		double t0 = getPreciseTime();
+		double t0 = GetPreciseTime();
 		float xp = tracker->GetWidth()/2+(rand_uniform<float>() - 0.5) * 5;
 		float yp = tracker->GetHeight()/2+(rand_uniform<float>() - 0.5) * 5;
 		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
 
 		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), xp, yp, z, 0);
 
-		double t1 = getPreciseTime();
+		double t1 = GetPreciseTime();
 		vector2f com = tracker->ComputeBgCorrectedCOM();
 		vector2f initial = {com.x, com.y};
-		double t2 = getPreciseTime();
+		double t2 = GetPreciseTime();
 		bool boundaryHit = false;
 		vector2f xcor = tracker->ComputeXCorInterpolated(initial, xcor_iterations, 16, boundaryHit);
 /*		if (k == 1) {
@@ -78,12 +78,12 @@ void SpeedTest()
 
 		xcordist.x +=fabsf(xcor.x - xp);
 		xcordist.y +=fabsf(xcor.y - yp);
-		double t3 = getPreciseTime();
+		double t3 = GetPreciseTime();
 		boundaryHit = false;
 		vector2f qi = tracker->ComputeQI(initial, qi_iterations, 64, 16, 5,50, boundaryHit);
 		qidist.x += fabsf(qi.x - xp);
 		qidist.y += fabsf(qi.y - yp);
-		double t4 = getPreciseTime();
+		double t4 = GetPreciseTime();
 		if (boundaryHit)
 			dbgprintf("qi boundaryhit!!\n");
 
@@ -94,7 +94,7 @@ void SpeedTest()
 
 		if (boundaryHit)
 			dbgprintf("computeZ boundaryhit!!\n");
-		double t5 = getPreciseTime();
+		double t5 = GetPreciseTime();
 	//	dbgout(SPrintf("xpos:%f, COM err: %f, XCor err: %f\n", xp, com.x-xp, xcor.x-xp));
 		if (k>0) { // skip first initialization round
 			tgen+=t1-t0;
@@ -308,17 +308,17 @@ void Test2DTracking()
 
 		GenerateTestImage(tracker.srcImage, tracker.GetWidth(), tracker.GetHeight(), xp, yp, z, 50000);
 
-		double t0 = getPreciseTime();
+		double t0 = GetPreciseTime();
 		vector2f xcor2D = tracker.ComputeXCor2D();
 		if (k==0) {
 			float * results = tracker.tracker2D->GetAutoConvResults();
 			writeImageAsCSV("xcor2d-autoconv-img.csv", results, tracker.GetWidth(), tracker.GetHeight());
 		}
 
-		double t1 = getPreciseTime();
+		double t1 = GetPreciseTime();
 		vector2f com = tracker.ComputeBgCorrectedCOM();
 		vector2f xcor1D = tracker.ComputeXCorInterpolated(com, 2);
-		double t2 = getPreciseTime();
+		double t2 = GetPreciseTime();
 
 		dist1D += distance(xp-xcor1D.x,yp-xcor1D.y);
 		dist2D += distance(xp-xcor2D.x,yp-xcor2D.y);
@@ -390,7 +390,7 @@ void QTrkTest()
 	qtrk.ClearResults();
 	qtrk.Break(true);
 	for (int n=0;n<NumImages;n++) {
-		double t1 = getPreciseTime();
+		double t1 = GetPreciseTime();
 		float xp = cfg.width/2+(rand_uniform<float>() - 0.5) * 5;
 		float yp = cfg.height/2+(rand_uniform<float>() - 0.5) * 5;
 		float z = zmin + 0.1f + (zmax-zmin-0.2f) * rand_uniform<float>();
@@ -399,10 +399,10 @@ void QTrkTest()
 		truepos[n*3+2] = z;
 
 		GenerateTestImage(ImageData(image, cfg.width, cfg.height), xp, yp, z, 10000);
-		double t2 = getPreciseTime();
+		double t2 = GetPreciseTime();
 		for (int k=0;k<JobsPerImg;k++)
 			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI| (haveZLUT ? LocalizeZ : 0)), n, 0, 0, 0);
-		double t3 = getPreciseTime();
+		double t3 = GetPreciseTime();
 		tgen += t2-t1;
 		tschedule += t3-t2;
 	}
@@ -411,7 +411,7 @@ void QTrkTest()
 
 	// Measure speed
 	dbgprintf("Localizing on %d images...\n", NumImages*JobsPerImg);
-	double tstart = getPreciseTime();
+	double tstart = GetPreciseTime();
 	int total = NumImages*JobsPerImg;
 	int rc = qtrk.GetResultCount(), displayrc=0;
 	qtrk.Break(false);
@@ -424,7 +424,7 @@ void QTrkTest()
 		Sleep(10);
 	} while (rc != total);
 
-	double tend = getPreciseTime();
+	double tend = GetPreciseTime();
 
 	// Wait for last jobs
 	rc = NumImages*JobsPerImg;

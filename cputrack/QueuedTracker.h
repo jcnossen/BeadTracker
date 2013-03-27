@@ -48,11 +48,11 @@ struct QTrkSettings {
 		xc1_profileWidth = 32;
 		xc1_iterations = 2;
 		zlut_minradius = 5.0f; zlut_maxradius = 60;
-		zlut_angularsteps = 64;
+		zlut_angularsteps = 128;
 		zlut_radialsteps = 32;
 		qi_iterations = 2;
 		qi_radialsteps = 32; 
-		qi_angularsteps = 64;
+		qi_angsteps_per_quadrant = 32;
 		qi_minradius = 5; qi_maxradius = 60;
 		cuda_device = -1;
 		com_bgcorrection = 0.0f;
@@ -70,7 +70,8 @@ struct QTrkSettings {
 	int zlut_angularsteps;
 
 	int qi_iterations;
-	int qi_radialsteps, qi_angularsteps;
+	int qi_radialsteps; 
+	int qi_angsteps_per_quadrant;// Per quadrant
 	float qi_minradius, qi_maxradius;
 
 	int cuda_device;
