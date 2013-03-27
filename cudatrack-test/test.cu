@@ -368,7 +368,7 @@ float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool ha
 
 void SpeedCompareTest()
 {
-	int count = 10000;
+	int count = 20000;
 	bool haveZLUT = false;
 	LocalizeType locType = LocalizeQI;
 
@@ -385,7 +385,7 @@ void SpeedCompareTest()
 	cfg.zlut_angularsteps = 128;
 
 	QueuedCPUTracker *cputrk = new QueuedCPUTracker(&cfg);
-	float cpuspeed = 0; //SpeedTest(cfg, cputrk, count, haveZLUT, locType);
+	float cpuspeed = SpeedTest(cfg, cputrk, count, haveZLUT, locType);
 	delete cputrk;
 
 	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(&cfg, 256);

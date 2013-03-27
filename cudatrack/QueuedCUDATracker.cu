@@ -116,29 +116,41 @@ void CheckCUDAError()
 	}
 }
 
+static int GetBestCUDADevice()
+{
+	int bestScore;
+	int bestDev;
+	int numDev;
+	cudaGetDeviceCount(&numDev);
+	for (int a=0;a<numDev;a++) {
+		int score;
+		cudaDeviceProp prop;
+		cudaGetDeviceProperties(&prop, a);
+		score = prop.multiProcessorCount * prop.clockRate;
+		if (a==0 || bestScore < score) {
+			bestScore = score;
+			bestDev = a;
+		}
+	}
+	return bestDev;
+}
+
 QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize, bool debugStream)
 {
 	this->cfg = *cfg;
 
+	int numDevices;
+	cudaGetDeviceCount(&numDevices);
+
 	// Select the most powerful one
-	if (cfg->cuda_device < 0) {
-		int numDev;
-		cudaGetDeviceCount(&numDev);
-
-		int bestScore;
-		int bestDev;
-		for (int a=0;a<numDev;a++) {
-			int score;
-			cudaDeviceProp prop;
-			cudaGetDeviceProperties(&prop, a);
-			score = prop.multiProcessorCount * prop.clockRate;
-			if (a==0 || bestScore < score) {
-				bestScore = score;
-				bestDev = a;
-			}
-		}
-
-		cfg->cuda_device = bestDev;
+	if (cfg->cuda_device == -1) {
+		cfg->cuda_device = GetBestCUDADevice();
+	} else if(cfg->cuda_device == -2) {
+		// Use all devices
+	} else {
+		Device* dev = new Device();
+		dev->index = cfg->cuda_device;
+		devices.push_back (dev);
 	}
 
 	// We take numThreads to be the number of CUDA streams
@@ -205,7 +217,7 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize, bool debu
 	
 	streams.resize(cfg->numThreads);
 	for (int i=0;i<streams.size();i++) {
-		streams[i] = CreateStream();
+		streams[i] = CreateStream(i%numDevices);
 	}
 	currentStream=streams[0];
 	int memUsePerStream = streams[0]->CalcMemoryUse();
@@ -271,6 +283,7 @@ __global__ void BgCorrectedCOM(int count, cudaImageListf images,float3* d_com, f
 
 QueuedCUDATracker::Stream::Stream()
 { 
+	device = 0;
 	hostImageBuf = 0; 
 	images.data=0; 
 	stream=0;
@@ -308,9 +321,11 @@ int QueuedCUDATracker::Stream::GetJobCount()
 	return jc;
 }
 
-QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream()
+QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream(Device* device)
 {
 	Stream* s = new Stream();
+	s->device = device;
+	cudaSetDevice(device->index);
 
 	if (debugStream)
 		s->stream = 0;

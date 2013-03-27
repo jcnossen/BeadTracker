@@ -98,6 +98,14 @@ public:
 
 protected:
 
+	struct Device {
+		cudaImageListf zlut;
+		device_vec<float> zcompareWindow;
+		device_vec<float2> d_qiradialgrid;
+		device_vec<float2> d_zlutradialgrid;
+		int index;
+	};
+
 	struct Stream {
 		Stream();
 		~Stream();
@@ -126,12 +134,13 @@ protected:
 		device_vec<float2> d_QIprofiles;
 		device_vec<float2> d_QIprofiles_reverse;
 		device_vec<float> d_quadrants;
-
+		
 		device_vec<float> d_radialprofiles;// [ radialsteps * njobs ] for Z computation
 		device_vec<float> d_zlutcmpscores; // [ zlutplanes * njobs ]
 		device_vec<float> d_imgmeans; // image mean value [njobs]
 
 		uint localizeFlags; // Indicates whether kernels should be ran for building zlut, z computing, or QI
+		Device* device;
 
 		Threads::Mutex mutex; // Mutex to lock when queing jobs or copying results
 		void lock() { mutex.lock(); }
@@ -143,7 +152,7 @@ protected:
 		};
 		volatile State state; // I'm assuming this variable is atomic
 	};
-	Stream* CreateStream();
+	Stream* CreateStream(Device* device);
 	void CopyStreamResults(Stream* s);
 
 	bool debugStream;
@@ -163,17 +172,12 @@ protected:
 	std::vector<Stream*> streams;
 	Stream* currentStream;
 	std::list<LocalizationResult> results;
+	std::vector<Device*> devices;
 	
 	// QI profiles need to have power-of-two dimensions. qiProfileLen stores the closest power-of-two value that is bigger than cfg.qi_radialsteps
-	int qi_FFT_length ;
+	int qi_FFT_length;
 	cudaDeviceProp deviceProp;
 	KernelParams kernelParams;
-
-	int zlut_count;
-	cudaImageListf zlut;
-	device_vec<float> zcompareWindow;
-	device_vec<float2> d_qiradialgrid;
-	device_vec<float2> d_zlutradialgrid;
 
 	int FetchResults();
 	void ExecuteBatch(Stream *s);

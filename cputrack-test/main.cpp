@@ -9,16 +9,6 @@ template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }
 float distance(vector2f a,vector2f b) { return distance(a.x-b.x,a.y-b.y); }
 
 
-double GetPreciseTime()
-{
-	uint64_t freq, time;
-
-	QueryPerformanceCounter((LARGE_INTEGER*)&time);
-	QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
-
-	return (double)time / (double)freq;
-}
-
 
 void SpeedTest()
 {
@@ -342,8 +332,9 @@ void QTrkTest()
 	cfg.qi_iterations = 3;
 	cfg.qi_maxradius = 40;
 	cfg.qi_radialsteps = 32;
-	cfg.qi_angularsteps = 128;
+	cfg.qi_angsteps_per_quadrant = 32;
 	cfg.zlut_radialsteps = 32;
+	cfg.zlut_angularsteps = 128;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1; // direct processing, dont use queue
@@ -352,7 +343,7 @@ void QTrkTest()
 	float *image = new float[cfg.width*cfg.height];
 
 	// Generate ZLUT
-	int radialSteps=64, zplanes=100;
+	int zplanes=100;
 	float zmin=0.5,zmax=2.5;
 	bool haveZLUT = false;
 	qtrk.SetZLUT(NULL, 1, zplanes, 0);
@@ -372,8 +363,8 @@ void QTrkTest()
 		}
 		float* zlut = qtrk.GetZLUT(0,0);
 		qtrk.ClearResults();
-		uchar* zlut_bytes = floatToNormalizedInt(zlut, radialSteps, zplanes, (uchar)255);
-		WriteJPEGFile(zlut_bytes, radialSteps, zplanes, "qtrkzlut.jpg", 99);
+		uchar* zlut_bytes = floatToNormalizedInt(zlut, cfg.zlut_radialsteps, zplanes, (uchar)255);
+		WriteJPEGFile(zlut_bytes, cfg.zlut_radialsteps, zplanes, "qtrkzlut.jpg", 99);
 		delete[] zlut; delete[] zlut_bytes;
 		qtrk.Break(true);
 	}
