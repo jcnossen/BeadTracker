@@ -376,6 +376,7 @@ void SpeedCompareTest()
 	cfg.width = cfg.height = 120;
 	cfg.qi_iterations = 1;
 	cfg.qi_maxradius = 40;
+	cfg.cuda_device = QTrkCUDA_UseAll;
 	cfg.qi_angsteps_per_quadrant = 32;
 	cfg.qi_radialsteps = 32;
 	cfg.numThreads = -1;
@@ -385,10 +386,10 @@ void SpeedCompareTest()
 	cfg.zlut_angularsteps = 128;
 
 	QueuedCPUTracker *cputrk = new QueuedCPUTracker(&cfg);
-	float cpuspeed = SpeedTest(cfg, cputrk, count, haveZLUT, locType);
+	float cpuspeed = 0;//= SpeedTest(cfg, cputrk, count, haveZLUT, locType);
 	delete cputrk;
 
-	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(&cfg, 256);
+	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(&cfg, 512);
 	float gpuspeed = SpeedTest(cfg, cudatrk, count, haveZLUT, locType);
 	delete cudatrk;
 

@@ -72,7 +72,7 @@ struct CUDATrackerJob {
 
 class QueuedCUDATracker : public QueuedTracker {
 public:
-	QueuedCUDATracker(QTrkSettings* cfg, int batchSize=-1, bool debugStream=false);
+	QueuedCUDATracker(QTrkSettings* cfg, int batchSize=-1);
 	~QueuedCUDATracker();
 
 	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane) override;
@@ -99,6 +99,10 @@ public:
 protected:
 
 	struct Device {
+		Device() {index=0; zlut=cudaImageListf::empty(); }
+		~Device() { zlut.free(); }
+		void SetZLUT(float *data, int radialsteps, int planes, int numLUTs, float* zcmp);
+
 		cudaImageListf zlut;
 		device_vec<float> zcompareWindow;
 		device_vec<float2> d_qiradialgrid;
@@ -155,7 +159,6 @@ protected:
 	Stream* CreateStream(Device* device);
 	void CopyStreamResults(Stream* s);
 
-	bool debugStream;
 	int numThreads;
 	int batchSize;
 
@@ -184,6 +187,7 @@ protected:
 	Stream* GetReadyStream(); // get a stream that not currently executing, and still has room for images
 	void QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s);
 	bool CheckAllStreams(Stream::State state);
+	void InitializeDeviceList();
 
 public:
 	typedef std::map<const char*, std::pair<int, double> > ProfileResults;

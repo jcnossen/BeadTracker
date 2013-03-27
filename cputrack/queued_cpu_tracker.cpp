@@ -5,6 +5,8 @@
 QueuedTracker* CreateQueuedTracker(QTrkSettings* s) {
 	return new QueuedCPUTracker(s);
 }
+void SetCUDADevices(std::vector<int> devices) {
+}
 #endif
 
 static int PDT_BytesPerPixel(QTRK_PixelDataType pdt) {

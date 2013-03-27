@@ -273,18 +273,16 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_generate_image_from_lut(LVArray2D<float>** im
 }
 
 
+CDLL_EXPORT void qtrk_set_cuda_device_list(LVArray<int>** devices)
+{
+	std::vector<int> devlist( (*devices)->elem, (*devices)->elem + (*devices)->dimSize );
+	SetCUDADevices(devlist);
+}
+
 CDLL_EXPORT void qtrk_dump_memleaks()
 {
 #ifdef USE_MEMDBG
 	_CrtDumpMemoryLeaks();
 #endif
 }
-
-
-
-CDLL_EXPORT void test_struct_pass(ErrorCluster* e, QueueImageParams* d1)
-{
-
-}
-
 

@@ -57,7 +57,7 @@ struct cudaImageList {
 
 	void free()
 	{
-		cudaFree(data);
+		if(data) cudaFree(data);
 	}
 
 	void copyToHost(T* dst, bool async) {

@@ -77,6 +77,10 @@ Issues:
 typedef float qivalue_t;
 typedef sfft::complex<qivalue_t> qicomplex_t;
 
+static std::vector<int> cudaDeviceList; 
+void SetCUDADevices(std::vector<int> devices) {
+	cudaDeviceList = devices;
+}
 
 // According to this, textures bindings can be switched after the asynchronous kernel is launched
 // https://devtalk.nvidia.com/default/topic/392245/texture-binding-and-stream/
@@ -135,30 +139,47 @@ static int GetBestCUDADevice()
 	return bestDev;
 }
 
-QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize, bool debugStream)
+void QueuedCUDATracker::InitializeDeviceList()
 {
-	this->cfg = *cfg;
-
 	int numDevices;
 	cudaGetDeviceCount(&numDevices);
 
 	// Select the most powerful one
-	if (cfg->cuda_device == -1) {
-		cfg->cuda_device = GetBestCUDADevice();
-	} else if(cfg->cuda_device == -2) {
+	if (cfg.cuda_device == QTrkCUDA_UseBest) {
+		cfg.cuda_device = GetBestCUDADevice();
+	} else if(cfg.cuda_device == QTrkCUDA_UseAll) {
 		// Use all devices
+		for (int i=0;i<numDevices;i++) {
+			Device* dev = new Device();
+			dev->index = i;
+			devices.push_back(dev);
+		}
+	} else if (cfg.cuda_device == QTrkCUDA_UseList) {
+		for (int i=0;i<cudaDeviceList.size();i++) {
+			Device* dev = new Device();
+			dev->index = cudaDeviceList[i];
+			devices.push_back(dev);
+		}
 	} else {
 		Device* dev = new Device();
-		dev->index = cfg->cuda_device;
+		dev->index = cfg.cuda_device;
 		devices.push_back (dev);
 	}
+}
+
+
+QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
+{
+	this->cfg = *cfg;
+
+	InitializeDeviceList();
 
 	// We take numThreads to be the number of CUDA streams
 	if (cfg->numThreads < 1) {
 		cfg->numThreads = 4;
 	}
 
-	cudaGetDeviceProperties(&deviceProp, cfg->cuda_device);
+	cudaGetDeviceProperties(&deviceProp, devices[0]->index);
 	numThreads = deviceProp.warpSize;
 	
 	if(batchSize<0) batchSize = 512;
@@ -193,31 +214,29 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize, bool debu
 	qi.maxRadius = cfg->qi_maxradius;
 	qi.minRadius = cfg->qi_minradius;
 	qi.radialSteps = cfg->qi_radialsteps;
-	std::vector<float2> radialgrid(qi.angularSteps);
+	std::vector<float2> qi_radialgrid(qi.angularSteps);
 	for (int i=0;i<qi.angularSteps;i++)  {
 		float ang = 0.5f*3.141593f*i/(float)qi.angularSteps;
-		radialgrid[i]=make_float2(cos(ang), sin(ang));
+		qi_radialgrid[i]=make_float2(cos(ang), sin(ang));
 	}
-	d_qiradialgrid=radialgrid;
-	qi.radialgrid=d_qiradialgrid.data;
 
-	radialgrid.resize(cfg->zlut_angularsteps);
+	std::vector<float2> zlut_radialgrid(cfg->zlut_angularsteps);
 	for (int i=0;i<cfg->zlut_angularsteps;i++) {
 		float ang = 2*3.141593f*i/(float)cfg->zlut_angularsteps;
-		radialgrid[i]=make_float2(cos(ang),sin(ang));
+		zlut_radialgrid[i]=make_float2(cos(ang),sin(ang));
 	}
-	d_zlutradialgrid = radialgrid;
-	kernelParams.zlut.radialgrid = d_zlutradialgrid.data; 
-	
-	zlut = cudaImageListf::empty();
-	kernelParams.zlut.img = zlut;
 
-//	results.reserve(50000);
-	this->debugStream = debugStream;
+	for (int i=0;i<devices.size();i++) {
+		Device* d = devices[i];
+		d->d_qiradialgrid=qi_radialgrid;
+		d->d_zlutradialgrid = zlut_radialgrid;
+	}
+	
+	kernelParams.zlut.img = cudaImageListf::empty();
 	
 	streams.resize(cfg->numThreads);
 	for (int i=0;i<streams.size();i++) {
-		streams[i] = CreateStream(i%numDevices);
+		streams[i] = CreateStream( devices[i%devices.size()] );
 	}
 	currentStream=streams[0];
 	int memUsePerStream = streams[0]->CalcMemoryUse();
@@ -226,9 +245,7 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize, bool debu
 
 QueuedCUDATracker::~QueuedCUDATracker()
 {
-	if (zlut.data)
-		zlut.free();
-	
+	DeleteAllElems(devices);	
 	DeleteAllElems(streams);
 }
 
@@ -276,7 +293,10 @@ static __device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float co
 __global__ void BgCorrectedCOM(int count, cudaImageListf images,float3* d_com, float* d_means, float bgCorrectionFactor) {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
 	if (idx < count) {
-		float2 com = BgCorrectedCOM(idx, images, bgCorrectionFactor, &d_means[idx]);
+		float mean;
+		float2 com = BgCorrectedCOM(idx, images, bgCorrectionFactor, &mean);
+
+		d_means[idx] = mean;
 		d_com[idx] = make_float3(com.x,com.y,0.0f);
 	}
 }
@@ -294,6 +314,7 @@ QueuedCUDATracker::Stream::Stream()
 
 QueuedCUDATracker::Stream::~Stream() 
 {
+	cudaSetDevice(device->index);
 	if (stream)
 		cudaStreamDestroy(stream); // stream can be zero if in debugStream mode.
 
@@ -305,12 +326,14 @@ QueuedCUDATracker::Stream::~Stream()
 
 bool QueuedCUDATracker::Stream::IsExecutionDone()
 {
+	cudaSetDevice(device->index);
 	return cudaEventQuery(localizationDone) == cudaSuccess;
 }
 
 int QueuedCUDATracker::Stream::CalcMemoryUse()
 {
-	return d_com.memsize() + d_jobs.memsize() + d_QIprofiles.memsize() + d_quadrants.memsize() + d_resultpos.memsize();
+	return d_com.memsize() + d_jobs.memsize() + d_QIprofiles.memsize() + d_QIprofiles_reverse.memsize() + d_radialprofiles.memsize() + d_imgmeans.memsize() +
+		d_quadrants.memsize() + d_resultpos.memsize() + d_zlutcmpscores.memsize();
 }
 
 int QueuedCUDATracker::Stream::GetJobCount()
@@ -326,11 +349,7 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream(Device* device)
 	Stream* s = new Stream();
 	s->device = device;
 	cudaSetDevice(device->index);
-
-	if (debugStream)
-		s->stream = 0;
-	else
-		cudaStreamCreate(&s->stream);
+	cudaStreamCreate(&s->stream);
 
 	uint hostBufSize = sizeof(float)* cfg.width*cfg.height*batchSize;
 	s->hostImageBuf.init(hostBufSize);
@@ -851,6 +870,13 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	- Unbind image
 	*/
 
+	Device *d = s->device;
+	cudaSetDevice(d->index);
+	kernelParams.qi.radialgrid = d->d_qiradialgrid.data;
+	kernelParams.zlut.img = d->zlut;
+	kernelParams.zlut.radialgrid = d->d_zlutradialgrid.data;
+	kernelParams.zlut.zcmpwindow = d->zcompareWindow.data;
+
 	{ ProfileBlock p("image to gpu");
 	cudaMemcpy2DAsync( s->images.data, s->images.pitch, s->hostImageBuf.data(), sizeof(float)*s->images.w, s->images.w*sizeof(float), s->images.h * s->jobCount, cudaMemcpyHostToDevice, s->stream); }
 	{ ProfileBlock p("jobs to gpu");
@@ -973,37 +999,42 @@ int QueuedCUDATracker::PollFinished(LocalizationResult* dstResults, int maxResul
 void QueuedCUDATracker::SetZLUT(float* data,  int numLUTs, int planes, float* zcmp) 
 {
 	kernelParams.zlut.planes = planes;
-	zlut_count = numLUTs;
 
 	for (int i=0;i<streams.size();i++) {
 		streams[i]->d_zlutcmpscores.init(planes * batchSize);
 	}
 
-	if (zcmp) {
-		zcompareWindow.copyToDevice(zcmp, cfg.zlut_radialsteps, false);
-		kernelParams.zlut.zcmpwindow = zcompareWindow.data;
-	} else {
-		zcompareWindow.free();
-		kernelParams.zlut.zcmpwindow = 0;
+	for (int i=0;i<devices.size();i++) {
+		devices[i]->SetZLUT(data, cfg.zlut_radialsteps, planes, numLUTs, zcmp);
 	}
+}
 
-	zlut = cudaImageListf::alloc(cfg.zlut_radialsteps, planes, numLUTs);
+void QueuedCUDATracker::Device::SetZLUT(float *data, int radialsteps, int planes, int numLUTs, float* zcmp)
+{
+	cudaSetDevice(index);
+
+	if (zcmp)
+		zcompareWindow.copyToDevice(zcmp, radialsteps, false);
+	else 
+		zcompareWindow.free();
+
+	zlut = cudaImageListf::alloc(radialsteps, planes, numLUTs);
 	if (data) zlut.copyToDevice(data, false);
 	else zlut.clear();
-	kernelParams.zlut.img = zlut;
-}
+}	
 
 // delete[] memory afterwards
 float* QueuedCUDATracker::GetZLUT(int *count, int* planes)
 {
-	float* data = new float[kernelParams.zlut.planes * cfg.zlut_radialsteps * zlut_count];
-	if (zlut.data)
-		zlut.copyToHost(data, false);
+	cudaImageListf* zlut = &devices[0]->zlut;
+	float* data = new float[zlut->h * cfg.zlut_radialsteps * zlut->count];
+	if (zlut->data)
+		zlut->copyToHost(data, false);
 	else
-		std::fill(data, data+(cfg.zlut_radialsteps*kernelParams.zlut.planes*zlut_count), 0.0f);
+		std::fill(data, data+(cfg.zlut_radialsteps*zlut->h*zlut->count), 0.0f);
 
-	if (planes) *planes = kernelParams.zlut.planes;
-	if (count) *count = zlut_count;
+	if (planes) *planes = zlut->h;
+	if (count) *count = zlut->count;
 
 	return data;
 }

@@ -74,7 +74,13 @@ struct QTrkSettings {
 	int qi_angsteps_per_quadrant;// Per quadrant
 	float qi_minradius, qi_maxradius;
 
+#define QTrkCUDA_UseList -3   // Use list defined by SetCUDADevices
+#define QTrkCUDA_UseAll -2
+#define QTrkCUDA_UseBest -1
+	// cuda_device < 0: use flags above
+	// cuda_device >= 0: use as hardware device index
 	int cuda_device;
+
 	float com_bgcorrection; // 0.0f to disable
 	int zlut_radialsteps;
 	int gauss2D_iterations;
@@ -116,4 +122,5 @@ public:
 
 void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelDataType pdt, float* dst);
 QueuedTracker* CreateQueuedTracker(QTrkSettings* s);
+void SetCUDADevices(std::vector<int> devices); // empty for CPU tracker
 
