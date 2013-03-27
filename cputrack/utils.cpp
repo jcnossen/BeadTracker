@@ -320,3 +320,16 @@ void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelD
 		}
 	}
 }
+
+
+
+double GetPreciseTime()
+{
+	uint64_t freq, time;
+
+	QueryPerformanceCounter((LARGE_INTEGER*)&time);
+	QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
+
+	return (double)time / (double)freq;
+}
+

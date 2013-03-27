@@ -19,15 +19,6 @@
 #include "QueuedCUDATracker.h"
 #include "queued_cpu_tracker.h"
 
-double getPreciseTime()
-{
-	uint64_t freq, time;
-
-	QueryPerformanceCounter((LARGE_INTEGER*)&time);
-	QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
-
-	return (double)time / (double)freq;
-}
 
 
 std::string getPath(const char *file)
@@ -49,37 +40,10 @@ inline __device__ float2 mul_conjugate(float2 a, float2 b)
 	return r;
 }
 
-texture<float, cudaTextureType2D, cudaReadModeElementType> smpImgRef(0, cudaFilterModeLinear);
-
-
 
 void ShowCUDAError() {
 	cudaError_t err = cudaGetLastError();
 	dbgprintf("Cuda error: %s\n", cudaGetErrorString(err));
-}
-
-__global__ void testJobPassing(CUDATrackerJob job, CUDATrackerJob* a)
-{
-	CUDATrackerJob* a0 = &a[0];
-	CUDATrackerJob* a1 = &a[1];
-}
-
-void TestJobPassing()
-{
-	CUDATrackerJob job;
-	job.id = 1;
-	job.initialPos.x = 2;
-	job.initialPos.y = 3;
-	job.initialPos.z = 4;
-	job.zlut = 5;
-	job.zlutPlane = 6;
-	job.locType = LocalizeBuildZLUT;
-
-	std::vector<CUDATrackerJob> jobs;
-	jobs.push_back(job);
-	jobs.push_back(job);
-
-	testJobPassing<<<dim3(),dim3()>>>(job, device_vec<CUDATrackerJob> (jobs).data);
 }
 
 __shared__ float cudaSharedMem[];
@@ -124,13 +88,13 @@ void TestSharedMem()
 	device_vec<float> buf(n*s);
 	device_vec<float> result_s(n), result_g(n);
 
-	double t0 = getPreciseTime();
+	double t0 = GetPreciseTime();
 	testWithGlobal<<<nblocks,nthreads>>>(n,s,result_g.data,buf.data);
 	cudaDeviceSynchronize();
-	double t1 = getPreciseTime();
+	double t1 = GetPreciseTime();
 	testWithShared <<<nblocks,nthreads,s*sizeof(float)*nthreads.x>>>(n,s,result_s.data);
 	cudaDeviceSynchronize();
-	double t2 = getPreciseTime();
+	double t2 = GetPreciseTime();
 
 	std::vector<float> rs = result_s, rg = result_g;
 	for (int x=0;x<n;x++) {
@@ -221,7 +185,7 @@ void QTrkTest()
 	// Schedule images to localize on
 	dbgprintf("Benchmarking...\n", total);
 	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2, cfg.height/2, (zmin+zmax)/2, 0);
-	double tstart = getPreciseTime();
+	double tstart = GetPreciseTime();
 	int rc = 0, displayrc=0;
 	for (int n=0;n<total;n++) {
 		LocalizeType flags = (LocalizeType)(LocalizeQI| (haveZLUT ? LocalizeZ : 0) );
@@ -247,7 +211,7 @@ void QTrkTest()
 	} while (rc != total);
 	
 	// Measure speed
-	double tend = getPreciseTime();
+	double tend = GetPreciseTime();
 
 	if (cpucmp) {
 		dbgprintf("waiting for cpu results..\n");
@@ -338,24 +302,112 @@ void TestAsync()
 }
 
 __global__ void emptyKernel()
-{
+{}
 
+float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool haveZLUT, LocalizeType locType)
+{
+	float *image = new float[cfg.width*cfg.height];
+	srand(1);
+
+	// Generate ZLUT
+	int zplanes=100;
+	float zmin=0.5,zmax=3;
+	qtrk->SetZLUT(0, 1, zplanes);
+	if (haveZLUT) {
+		for (int x=0;x<zplanes;x++)  {
+			vector2f center = { cfg.width/2, cfg.height/2 };
+			float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
+			GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
+			LocalizeType flags = (LocalizeType)(LocalizeBuildZLUT|LocalizeOnlyCOM);
+			qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat,flags , x, 0, 0, x);
+		}
+		qtrk->Flush();
+		// wait to finish ZLUT
+		while(true) {
+			int rc = qtrk->GetResultCount();
+			if (rc == zplanes) break;
+			Sleep(100);
+			dbgprintf(".");
+		}
+	}
+	qtrk->ClearResults();
+	
+	// Schedule images to localize on
+	dbgprintf("Benchmarking...\n", count);
+	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2, cfg.height/2, (zmin+zmax)/2, 0);
+	double tstart = GetPreciseTime();
+	int rc = 0, displayrc=0;
+	for (int n=0;n<count;n++) {
+		LocalizeType flags = (LocalizeType)(locType| (haveZLUT ? LocalizeZ : 0) );
+		qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, flags, n, 0, 0, 0);
+		if (n % 10 == 0) {
+			rc = qtrk->GetResultCount();
+			while (displayrc<rc) {
+				if( displayrc%(count/10)==0) dbgprintf("Done: %d / %d\n", displayrc, count);
+				displayrc++;
+			}
+		}
+	}
+	qtrk->Flush();
+	do {
+		rc = qtrk->GetResultCount();
+		while (displayrc<rc) {
+			if( displayrc%std::max(1,count/10)==0) dbgprintf("Done: %d / %d\n", displayrc, count);
+			displayrc++;
+		}
+		Sleep(10);
+	} while (rc != count);
+	
+	// Measure speed
+	double tend = GetPreciseTime();
+	delete[] image;
+
+	return count/(tend-tstart);
+}
+
+
+void SpeedCompareTest()
+{
+	int count = 10000;
+	bool haveZLUT = false;
+	LocalizeType locType = LocalizeQI;
+
+	QTrkSettings cfg;
+	cfg.width = cfg.height = 120;
+	cfg.qi_iterations = 1;
+	cfg.qi_maxradius = 40;
+	cfg.qi_angsteps_per_quadrant = 32;
+	cfg.qi_radialsteps = 32;
+	cfg.numThreads = -1;
+	cfg.com_bgcorrection = 0.0f;
+	cfg.zlut_maxradius = 40;
+	cfg.zlut_radialsteps = 64;
+	cfg.zlut_angularsteps = 128;
+
+	QueuedCPUTracker *cputrk = new QueuedCPUTracker(&cfg);
+	float cpuspeed = 0; //SpeedTest(cfg, cputrk, count, haveZLUT, locType);
+	delete cputrk;
+
+	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(&cfg, 256);
+	float gpuspeed = SpeedTest(cfg, cudatrk, count, haveZLUT, locType);
+	delete cudatrk;
+
+	auto profiling = QueuedCUDATracker::GetProfilingResults();
+	for (auto i = profiling.begin(); i != profiling.end(); ++i) {
+		auto r = i->second;
+		dbgprintf("%s took %f ms on average\n", i->first, 1000*r.second/r.first);
+	}
+
+	dbgprintf("CPU tracking speed: %d img/s\n", (int)cpuspeed);
+	dbgprintf("GPU tracking speed: %d img/s\n", (int)gpuspeed);
 }
 
 
 int main(int argc, char *argv[])
 {
 //	testLinearArray();
-
-	emptyKernel<<<dim3(10,1,1), dim3() >>> ();
-
-	//TestJobPassing();
-	//TestLocalization();
-//	TestSimpleFFT();
-	//TestKernelFFT();
-//	TestSharedMem();
-	//TestAsync();
-	QTrkTest();
+	
+	SpeedCompareTest();
 
 	listDevices();
 	return 0;

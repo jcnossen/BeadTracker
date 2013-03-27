@@ -83,7 +83,7 @@ int ReadJPEGFile(uchar* srcbuf, int srclen, uchar** data, int* width, int*height
 void WriteJPEGFile(uchar* data,int w,int h, const char * filename, int quality);
 
 std::vector<uchar> ReadToByteBuffer(const char* filename);
-
+double GetPreciseTime();
 
 template<typename T>
 void floatToNormalizedInt(T* dst, float *src, uint w,uint h, T maxValue)
@@ -118,3 +118,4 @@ T ComputeStdDev(T* data, int len)
 	T mean = sum / len;
 	return sqrt(sum2 / len- mean * mean);
 }
+

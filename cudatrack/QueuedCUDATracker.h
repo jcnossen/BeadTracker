@@ -13,6 +13,7 @@
 #include <cufft.h>
 #include <list>
 #include <vector>
+#include <map>
 #include "gpu_utils.h"
 
 template<typename T>
@@ -179,7 +180,10 @@ protected:
 	Stream* GetReadyStream(); // get a stream that not currently executing, and still has room for images
 	void QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s);
 	bool CheckAllStreams(Stream::State state);
-};
 
+public:
+	typedef std::map<const char*, std::pair<int, double> > ProfileResults;
+	static ProfileResults GetProfilingResults();
+};
 
 
