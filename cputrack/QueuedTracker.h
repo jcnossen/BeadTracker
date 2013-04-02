@@ -127,6 +127,8 @@ public:
 	virtual bool IsQueueFilled() = 0;
 	virtual bool IsIdle() = 0;
 
+	virtual std::string GetProfileReport() { return ""; }
+
 	QTrkSettings cfg;
 
 	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint frame, uint timestamp, vector3f* initial, uint zlutIndex, uint zlutPlane) {

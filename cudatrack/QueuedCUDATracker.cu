@@ -87,23 +87,40 @@ void SetCUDADevices(std::vector<int> devices) {
 texture<float, cudaTextureType2D, cudaReadModeElementType> qi_image_texture(0,  cudaFilterModeLinear); // Un-normalized
 
 
-// All interpolated texture/images fetches go through here
-__device__ float SampleInterpolated(cudaImageListf& images, float x,float y, int img, float imgmean)
-{
-	return images.interpolate(x,y,img, imgmean);
+class PixelSampler_MemCopy {
+public:
+	// All interpolated texture/images fetches go through here
+	static __device__ float Interpolated(cudaImageListf& images, float x,float y, int img, float imgmean)
+	{
+		return images.interpolate(x,y,img, imgmean);
+	}
 
-/*	float v;
-	if (x < 0 || x > images.w-1 || y < 0 || y > images.h-1)
-		v = imgmean;
-	else 
-		v = tex2D(qi_image_texture, x,y + img*images.h);
-	return v;*/
-}
+	// Assumes pixel is always within image bounds
+	static __device__ float Index(cudaImageListf& images, int x,int y, int img)
+	{
+		return images.pixel(x, y, img);
+	}
+};
 
-__device__ float SamplePixel(cudaImageListf& images, int x,int y, int img, float imgmean)
-{
-	return images.pixel(x, y, img, imgmean);
-}
+class PixelSampler_TextureRead {
+public:
+	// All interpolated texture/images fetches go through here
+	static __device__ float Interpolated(cudaImageListf& images, float x,float y, int img, float imgmean)
+	{
+		float v;
+		if (x < 0 || x > images.w-1 || y < 0 || y > images.h-1)
+			v = imgmean;
+		else 
+			v = tex2D(qi_image_texture, x,y + img*images.h);
+		return v;
+	}
+
+	// Assumes pixel is always within image bounds
+	static __device__ float Index(cudaImageListf& images, int x,int y, int img)
+	{
+		return tex2D(qi_image_texture, x,y + img*images.h);
+	}
+};
 
 
 QueuedTracker* CreateQueuedTracker(QTrkSettings* cfg)
@@ -241,15 +258,20 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	currentStream=streams[0];
 	int memUsePerStream = streams[0]->CalcMemoryUse();
 	dbgprintf("Stream memory use: %d kb", memUsePerStream/1024);
+
+	batchesDone = 0;
+	time_QI = time_COM = time_ZCompute = time_imageCopy = 0.0;
+	useTextureCache = false;
 }
 
 QueuedCUDATracker::~QueuedCUDATracker()
 {
-	DeleteAllElems(devices);	
 	DeleteAllElems(streams);
+	DeleteAllElems(devices);	
 }
 
-static __device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float correctionFactor, float* pMean)
+template<typename TImageSampler>
+__device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float correctionFactor, float* pMean)
 {
 	int imgsize = images.w*images.h;
 	float sum=0, sum2=0;
@@ -258,8 +280,7 @@ static __device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float co
 
 	for (int y=0;y<images.h;y++)
 		for (int x=0;x<images.w;x++) {
-			//float v = tex2D(qi_image_texture, x, y + idx*images.h);
-			float v = images.pixel(x,y,idx);
+			float v = TImageSampler::Index(images, x, y, idx);
 			sum += v;
 			sum2 += v*v;
 		}
@@ -272,8 +293,7 @@ static __device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float co
 	for (int y=0;y<images.h;y++)
 		for(int x=0;x<images.w;x++)
 		{
-			//float v = tex2D(qi_image_texture, x, y + idx*images.h);
-			float v = images.pixel(x,y,idx);
+			float v = TImageSampler::Index(images, x,y,idx);
 			v = fabsf(v-mean)-correctionFactor*stdev;
 			if(v<0.0f) v=0.0f;
 			sum += v;
@@ -290,11 +310,12 @@ static __device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float co
 	return com;
 }
 
+template<typename TImageSampler>
 __global__ void BgCorrectedCOM(int count, cudaImageListf images,float3* d_com, float* d_means, float bgCorrectionFactor) {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
 	if (idx < count) {
 		float mean;
-		float2 com = BgCorrectedCOM(idx, images, bgCorrectionFactor, &mean);
+		float2 com = BgCorrectedCOM<TImageSampler> (idx, images, bgCorrectionFactor, &mean);
 
 		d_means[idx] = mean;
 		d_com[idx] = make_float3(com.x,com.y,0.0f);
@@ -321,6 +342,11 @@ QueuedCUDATracker::Stream::~Stream()
 
 	if(images.data) images.free();
 	cudaEventDestroy(localizationDone);
+	cudaEventDestroy(qiDone);
+	cudaEventDestroy(comDone);
+	cudaEventDestroy(imageCopyDone);
+	cudaEventDestroy(zcomputeDone);
+	cudaEventDestroy(batchStart);
 }
 
 bool QueuedCUDATracker::Stream::IsExecutionDone()
@@ -372,6 +398,11 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream(Device* device)
 	cufftSetStream(s->fftPlan, s->stream);
 
 	cudaEventCreate(&s->localizationDone);
+	cudaEventCreate(&s->comDone);
+	cudaEventCreate(&s->imageCopyDone);
+	cudaEventCreate(&s->zcomputeDone);
+	cudaEventCreate(&s->qiDone);
+	cudaEventCreate(&s->batchStart);
 	return s;
 }
 
@@ -453,16 +484,34 @@ void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 //	delete[] tmp;
 
 	// If batch is filled, copy the image to video memory asynchronously, and start the localization
-	if (s->jobs.size() == batchSize)
-		ExecuteBatch(s);
+	if (s->jobs.size() == batchSize) {
+		if (useTextureCache)
+			ExecuteBatch<PixelSampler_TextureRead> (s);
+		else
+			ExecuteBatch<PixelSampler_MemCopy> (s);
+	}
 
 	s->unlock();
+}
+
+
+void QueuedCUDATracker::Flush()
+{
+	if (currentStream && currentStream->state == Stream::StreamIdle) {
+		currentStream->lock();
+
+		if (useTextureCache) ExecuteBatch<PixelSampler_TextureRead> (currentStream);
+		else ExecuteBatch<PixelSampler_MemCopy> (currentStream);
+		currentStream->unlock();
+		currentStream = 0;
+	}
 }
 
 template<typename T>
 static __device__ T interpolate(T a, T b, float x) { return a + (b-a)*x; }
 
-static __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, float* dst, const QIParams& params, int quadrant, float img_mean, float2 center)
+template<typename TImageSampler>
+__device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, float* dst, const QIParams& params, int quadrant, float img_mean, float2 center)
 {
 	const int qmat[] = {
 		1, 1,
@@ -485,7 +534,7 @@ static __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, f
 		for (int a=0;a<params.angularSteps;a++) {
 			float x = center.x + mx*params.radialgrid[a].x * r;
 			float y = center.y + my*params.radialgrid[a].y * r;
-			float v = SampleInterpolated(images, x,y, idx, img_mean);
+			float v = TImageSampler::Interpolated(images, x,y, idx, img_mean);
 			sum += v;
 		}
 
@@ -495,6 +544,7 @@ static __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, f
 	}
 }
 
+template<typename TImageSampler>
 __global__ void QI_ComputeProfile(int count, cudaImageListf images, float3* positions, float* quadrants, float2* profiles, float2* reverseProfiles, float* img_means, QIParams params)
 {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
@@ -502,7 +552,7 @@ __global__ void QI_ComputeProfile(int count, cudaImageListf images, float3* posi
 		int fftlen = params.radialSteps*2;
 		float* img_qdr = &quadrants[ idx * params.radialSteps * 4 ];
 		for (int q=0;q<4;q++)
-			ComputeQuadrantProfile(images, idx, &img_qdr[q*params.radialSteps], params, q, img_means[idx], make_float2(positions[idx].x, positions[idx].y));
+			ComputeQuadrantProfile<TImageSampler> (images, idx, &img_qdr[q*params.radialSteps], params, q, img_means[idx], make_float2(positions[idx].x, positions[idx].y));
 
 		int nr = params.radialSteps;
 		qicomplex_t* imgprof = (qicomplex_t*) &profiles[idx * fftlen*2];
@@ -603,6 +653,7 @@ __global__ void QI_OffsetPositions(int njobs, float3* current, float3* dst, cuff
 
 	kernel gets called with dim3(images.count, radialsteps*4) elements
 */
+template<typename TImageSampler>
 __global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* positions, float* dst_quadrants, float* imgmeans, const QIParams params)
 {
 	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -628,10 +679,9 @@ __global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* po
 		float mean = imgmeans[jobIdx];
 
 		for (int a=0;a<params.angularSteps;a++) {
-			float ang = 0.5f*3.141593f*a/(float)params.angularSteps;
 			float x = pos.x + mx*params.radialgrid[a].x * r;
 			float y = pos.y + my*params.radialgrid[a].y * r;
-			sum += SampleInterpolated(images, x,y,jobIdx, mean);
+			sum += TImageSampler::Interpolated(images, x,y,jobIdx, mean);
 		}
 		qdr[rIdx] = sum/params.angularSteps-mean;
 	}
@@ -712,20 +762,21 @@ void checksum(T* data, int elemsize, int numelem, const char *name)
 #endif
 }
 
+template<typename TImageSampler>
 void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s)
 {
 	int njobs = s->jobs.size();
 	dim3 qdrThreads(16, 16);
 
 	if (0) {
-		QI_ComputeQuadrants <<< dim3( (njobs + qdrThreads.x - 1) / qdrThreads.x, (4*cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y ), qdrThreads, 0, s->stream >>> 
+		QI_ComputeQuadrants<TImageSampler> <<< dim3( (njobs + qdrThreads.x - 1) / qdrThreads.x, (4*cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y ), qdrThreads, 0, s->stream >>> 
 			(njobs, s->images, initial->data, s->d_quadrants.data, s->d_imgmeans.data, kernelParams.qi);
 
 		QI_QuadrantsToProfiles <<< blocks(njobs), threads(), 0, s->stream >>> 
 			(njobs, s->images, s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, kernelParams.qi);
 	}
 	else {
-		QI_ComputeProfile <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
+		QI_ComputeProfile <TImageSampler> <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
 			s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, s->d_imgmeans.data,  kernelParams.qi);
 	}
 	checksum(s->d_quadrants.data, qi_FFT_length * 2, njobs, "quadrant");
@@ -767,6 +818,7 @@ __global__ void ZLUT_ProfilesToZLUT(int njobs, cudaImageListf images, ZLUTParams
 
 
 // Compute a single ZLUT radial profile element (looping through all the pixels at constant radial distance)
+template<typename TImageSampler>
 __global__ void ZLUT_RadialProfileKernel(int njobs, cudaImageListf images, ZLUTParams params, float3* positions, float* profiles, float* imgmeans)
 {
 	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -784,7 +836,7 @@ __global__ void ZLUT_RadialProfileKernel(int njobs, cudaImageListf images, ZLUTP
 		float x = positions[jobIdx].x + params.radialgrid[i].x * r;
 		float y = positions[jobIdx].y + params.radialgrid[i].y * r;
 
-		sum += images.interpolate(x,y, jobIdx, imgmean);
+		sum += TImageSampler::Interpolated(images, x,y, jobIdx, imgmean);
 	}
 	dstprof [radialIdx] = sum/params.angularSteps-imgmean;
 }
@@ -802,7 +854,7 @@ __global__ void ZLUT_ComputeZ (int njobs, ZLUTParams params, float3* positions, 
 	}
 }
 
-__global__ void ZLUT_ComputeProfileMatchScores(int njobs, ZLUTParams params, float *profiles, float* imgmeans, float* compareScoreBuf, ZLUTMapping* zlutmap)
+__global__ void ZLUT_ComputeProfileMatchScores(int njobs, ZLUTParams params, float *profiles, float* compareScoreBuf, ZLUTMapping* zlutmap)
 {
 	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
 	int zPlaneIdx = threadIdx.y + blockIdx.y * blockDim.y;
@@ -815,7 +867,7 @@ __global__ void ZLUT_ComputeProfileMatchScores(int njobs, ZLUTParams params, flo
 	if (mapping.locType & LocalizeZ) {
 		float diffsum = 0.0f;
 		for (int r=0;r<params.radialSteps();r++) {
-			float d = prof[r] - params.img.pixel(r, zPlaneIdx, zlutmap[jobIdx].zlutIndex, imgmeans[jobIdx]);
+			float d = prof[r] - params.img.pixel(r, zPlaneIdx, zlutmap[jobIdx].zlutIndex);
 			if (params.zcmpwindow)
 				d *= params.zcmpwindow[r];
 			diffsum += d*d;
@@ -843,6 +895,7 @@ __global__ void ZLUT_NormalizeProfiles(int njobs, ZLUTParams params, float* prof
 
 
 
+template<typename TImageSampler>
 void QueuedCUDATracker::ExecuteBatch(Stream *s)
 {
 	if (s->JobCount()==0)
@@ -868,15 +921,20 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	kernelParams.zlut.radialgrid = d->d_zlutradialgrid.data;
 	kernelParams.zlut.zcmpwindow = d->zcompareWindow.data;
 
+	cudaEventRecord(s->batchStart, s->stream);
+
 	{ ProfileBlock p("image to gpu");
 	cudaMemcpy2DAsync( s->images.data, s->images.pitch, s->hostImageBuf.data(), sizeof(float)*s->images.w, s->images.w*sizeof(float), s->images.h * s->JobCount(), cudaMemcpyHostToDevice, s->stream); }
 	//{ ProfileBlock p("jobs to gpu");
 	//s->d_jobs.copyToDevice(s->jobs.data(), s->jobCount, true, s->stream); }
-//	s->images.bind(qi_image_texture);
+	cudaEventRecord(s->imageCopyDone, s->stream);
+	s->images.bind(qi_image_texture);
 	{ ProfileBlock p("COM");
-	BgCorrectedCOM <<< blocks(s->JobCount()), threads(), 0, s->stream >>> (s->JobCount(), s->images, s->d_com.data, s->d_imgmeans.data, cfg.com_bgcorrection);
+	BgCorrectedCOM<TImageSampler> <<< blocks(s->JobCount()), threads(), 0, s->stream >>> 
+		(s->JobCount(), s->images, s->d_com.data, s->d_imgmeans.data, cfg.com_bgcorrection);
 	checksum(s->d_com.data, 1, s->JobCount(), "com");
 	}
+	cudaEventRecord(s->comDone, s->stream);
 
 //	{ ProfileBlock p("COM results to host");
 //	s->d_com.copyToHost(s->com.data(), true, s->stream);}
@@ -885,17 +943,18 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	if (s->localizeFlags & LocalizeQI) {
 		ProfileBlock p("QI");
 		for (int a=0;a<cfg.qi_iterations;a++) {
-			QI_Iterate(curpos, &s->d_resultpos, s);
+			QI_Iterate<TImageSampler> (curpos, &s->d_resultpos, s);
 			curpos = &s->d_resultpos;
 		}
 	}
+	cudaEventRecord(s->qiDone, s->stream);
 
 	// Compute radial profiles
 	if (s->localizeFlags & (LocalizeZ | LocalizeBuildZLUT)) {
 		dim3 numThreads(16, 16);
 		dim3 numBlocks( (s->JobCount() + numThreads.x - 1) / numThreads.x, (cfg.zlut_radialsteps + numThreads.y - 1) / numThreads.y);
 		{ ProfileBlock p("ZLUT radial profile");
-		ZLUT_RadialProfileKernel<<< numBlocks , numThreads, 0, s->stream >>>
+		ZLUT_RadialProfileKernel<TImageSampler> <<< numBlocks , numThreads, 0, s->stream >>>
 			(s->JobCount(), s->images, kernelParams.zlut, curpos->data, s->d_radialprofiles.data,  s->d_imgmeans.data); }
 
 		{ ProfileBlock p("ZLUT normalize profiles");
@@ -914,30 +973,22 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 		dim3 numThreads(8, 16);
 		{ ProfileBlock p("ZLUT compute Z");
 		ZLUT_ComputeProfileMatchScores <<< dim3( (s->JobCount() + numThreads.x - 1) / numThreads.x, (zplanes  + numThreads.y - 1) / numThreads.y), numThreads, 0, s->stream >>> 
-			(s->JobCount(), kernelParams.zlut, s->d_radialprofiles.data, s->d_imgmeans.data, s->d_zlutcmpscores.data, s->d_zlutmapping.data);
+			(s->JobCount(), kernelParams.zlut, s->d_radialprofiles.data, s->d_zlutcmpscores.data, s->d_zlutmapping.data);
 		ZLUT_ComputeZ <<< blocks(s->JobCount()), threads(), 0, s->stream >>> (s->JobCount(), kernelParams.zlut, curpos->data, s->d_zlutcmpscores.data, s->d_zlutmapping.data);
 		}
 	}
-	//s->images.unbind(qi_image_texture);
+	s->images.unbind(qi_image_texture);
+	cudaEventRecord(s->zcomputeDone, s->stream);
 
 	{ ProfileBlock p("Results to host");
 	curpos->copyToHost(s->results.data(), true, s->stream);}
 
 	// Make sure we can query the all done signal
-	cudaEventRecord(s->localizationDone);
+	cudaEventRecord(s->localizationDone, s->stream);
 
 	s->state = Stream::StreamExecuting;
 }
 
-void QueuedCUDATracker::Flush()
-{
-	if (currentStream && currentStream->state == Stream::StreamIdle) {
-		currentStream->lock();
-		ExecuteBatch(currentStream);
-		currentStream->unlock();
-		currentStream = 0;
-	}
-}
 
 int QueuedCUDATracker::FetchResults()
 {
@@ -966,6 +1017,19 @@ void QueuedCUDATracker::CopyStreamResults(Stream *s)
 
 		results.push_back(r);
 	}
+
+	// Update times
+	float qi, com, imagecopy, zcomp;
+	cudaEventElapsedTime(&imagecopy, s->batchStart, s->imageCopyDone);
+	cudaEventElapsedTime(&com, s->imageCopyDone, s->comDone);
+	cudaEventElapsedTime(&qi, s->comDone, s->qiDone);
+	cudaEventElapsedTime(&zcomp, s->qiDone, s->zcomputeDone);
+	time_COM += com;
+	time_QI += qi;
+	time_imageCopy += imagecopy;
+	time_ZCompute += zcomp;
+	batchesDone ++;
+	
 	s->jobs.clear();
 	s->localizeFlags = 0; // reset this for the next batch
 }
@@ -1052,3 +1116,16 @@ void QueuedCUDATracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int h
 		ScheduleLocalization(roiptr, pitch, pdt, &job);
 	}
 }
+
+std::string QueuedCUDATracker::GetProfileReport()
+{
+	float f = 1.0f/batchesDone;
+
+	return "CUDA tracker report: " + SPrintf("%d batches done of size %d", batchesDone, batchSize ) + "\n" +
+		SPrintf("Image copying: %f ms per image\n", time_imageCopy*f) +
+		SPrintf("QI: %f ms per image\n", time_QI*f) +
+		SPrintf("COM: %f ms per image\n", time_COM*f) +
+		SPrintf("Z Computing: %f ms per image\n", time_ZCompute*f);
+}
+
+

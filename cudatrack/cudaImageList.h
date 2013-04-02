@@ -28,10 +28,15 @@ struct cudaImageList {
 		return (T*)(((char*)data) + pitch*h*i);
 	}
 
-	CUBOTH T pixel(int x,int y, int imgIndex, T border=0.0f) {
+	CUBOTH T pixel_oobcheck(int x,int y, int imgIndex, T border=0.0f) {
 		if (x < 0 || x >= w || y < 0 || y >= h)
 			return border;
 
+		T* row = (T*) ( (char*)data + (h*imgIndex+y)*pitch );
+		return row[x];
+	}
+
+	CUBOTH T pixel(int x,int y, int imgIndex) {
 		T* row = (T*) ( (char*)data + (h*imgIndex+y)*pitch );
 		return row[x];
 	}
@@ -86,10 +91,10 @@ struct cudaImageList {
 	{
 		int rx=x, ry=y;
 
-		T v00 = pixel(rx, ry, idx, border);
-		T v10 = pixel(rx+1, ry, idx, border);
-		T v01 = pixel(rx, ry+1, idx, border);
-		T v11 = pixel(rx+1, ry+1, idx, border);
+		T v00 = pixel_oobcheck(rx, ry, idx, border);
+		T v10 = pixel_oobcheck(rx+1, ry, idx, border);
+		T v01 = pixel_oobcheck(rx, ry+1, idx, border);
+		T v11 = pixel_oobcheck(rx+1, ry+1, idx, border);
 
 		T v0 = interp (v00, v10, x-rx);
 		T v1 = interp (v01, v11, x-rx);

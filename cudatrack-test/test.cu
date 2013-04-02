@@ -373,32 +373,44 @@ float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool ha
 	return count/(tend-tstart);
 }
 
+int NearestPowerOfTwo(int v)
+{
+	int r=1;
+	while (r < v) 
+		r *= 2;
+	if ( fabsf(r-v) < fabsf(r/2-v) )
+		return r;
+	return r/2;
+}
 
 void SpeedCompareTest()
 {
-	int count = 20000;
+	int count = 30000;
 	bool haveZLUT = false;
 	LocalizeType locType = LocalizeQI;
 
 	QTrkSettings cfg;
-	cfg.width = cfg.height = 120;
-	cfg.qi_iterations = 1;
-	cfg.qi_maxradius = 40;
+	cfg.width = cfg.height = 60;
+	cfg.qi_iterations = 4;
+	cfg.qi_maxradius = cfg.width/2-8;
 	cfg.cuda_device = QTrkCUDA_UseAll;
 	cfg.qi_angsteps_per_quadrant = 32;
-	cfg.qi_radialsteps = 32;
-	cfg.numThreads = -1;
+	cfg.qi_radialsteps = NearestPowerOfTwo(cfg.qi_maxradius);
+	cfg.numThreads = 4;
 	cfg.com_bgcorrection = 0.0f;
 	cfg.zlut_maxradius = 40;
 	cfg.zlut_radialsteps = 64;
 	cfg.zlut_angularsteps = 128;
+	dbgprintf("QI radius: %f, radialsteps: %d\n", cfg.qi_maxradius, cfg.qi_radialsteps);
 
 	QueuedCPUTracker *cputrk = new QueuedCPUTracker(&cfg);
-	float cpuspeed = 0;//= SpeedTest(cfg, cputrk, count, haveZLUT, locType);
+	float cpuspeed = SpeedTest(cfg, cputrk, count, haveZLUT, locType);
 	delete cputrk;
 
-	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(&cfg, 512);
+	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(&cfg, 1024);
+	cudatrk->EnableTextureCache(true);
 	float gpuspeed = SpeedTest(cfg, cudatrk, count, haveZLUT, locType);
+	std::string report = cudatrk->GetProfileReport();
 	delete cudatrk;
 
 	auto profiling = QueuedCUDATracker::GetProfilingResults();
@@ -409,6 +421,7 @@ void SpeedCompareTest()
 
 	dbgprintf("CPU tracking speed: %d img/s\n", (int)cpuspeed);
 	dbgprintf("GPU tracking speed: %d img/s\n", (int)gpuspeed);
+	dbgout(report);
 }
 
 

@@ -19,19 +19,24 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_free_all()
 }
 
 
+void SetLVString (LStrHandle str, const char *text)
+{
+	int msglen = strlen(text);
+	MgErr err = NumericArrayResize(uB, 1, (UHandle*)&str, msglen);
+	if (!err)
+	{
+		MoveBlock(text, LStrBuf(*str), msglen);
+		LStrLen(*str) = msglen;
+	}
+}
+
 MgErr FillErrorCluster(MgErr err, const char *message, ErrorCluster *error)
 {
 	if (err)
 	{
-		int msglen = strlen(message);
 		error->status = LVBooleanTrue;
 		error->code = err;
-		err = NumericArrayResize(uB, 1, (UHandle*)&(error->message), msglen);
-		if (!err)
-		{
-			MoveBlock(message, LStrBuf(*error->message), msglen);
-			LStrLen(*error->message) = msglen;
-		} 
+		SetLVString ( error->message, message );
 	}
 	return err;
 }
@@ -270,3 +275,7 @@ CDLL_EXPORT void qtrk_dump_memleaks()
 #endif
 }
 
+CDLL_EXPORT void qtrk_get_profile_report(QueuedTracker* qtrk, LStrHandle str)
+{
+	SetLVString(str, qtrk->GetProfileReport().c_str());
+}

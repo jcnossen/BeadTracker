@@ -33,6 +33,8 @@ public:
 	bool IsIdle() override { return GetJobCount() == 0; }
 	int GetResultCount() override;
 
+	std::string GetProfileReport() { return "CPU tracker currently has no profile reporting"; }
+
 private:
 	struct Thread {
 		Thread() { tracker=0; manager=0; thread=0;}

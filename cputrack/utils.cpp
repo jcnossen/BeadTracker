@@ -22,7 +22,7 @@ std::string SPrintf(const char *fmt, ...) {
 	return buf;
 }
 
-void dbgout(std::string s) {
+void dbgout(const std::string& s) {
 	OutputDebugString(s.c_str());
 	printf(s.c_str());
 }

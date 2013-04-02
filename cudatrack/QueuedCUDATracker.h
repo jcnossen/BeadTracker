@@ -60,7 +60,8 @@ class QueuedCUDATracker : public QueuedTracker {
 public:
 	QueuedCUDATracker(QTrkSettings* cfg, int batchSize=-1);
 	~QueuedCUDATracker();
-
+	void EnableTextureCache(bool useTextureCache) { this->useTextureCache=useTextureCache; }
+	
 	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo) override;
 	
 	// Schedule an entire frame at once, allowing for further optimizations
@@ -72,6 +73,8 @@ public:
 	void SetZLUT(float* data,  int numLUTs, int planes, float* zcmp=0) override; 
 	float* GetZLUT(int *count=0, int* planes=0) override; // delete[] memory afterwards
 	int PollFinished(LocalizationResult* results, int maxResults) override;
+
+	std::string GetProfileReport() override;
 
 	// Force the current waiting batch to be processed. Useful when number of localizations is not a multiple of internal batch size (almost always)
 	void Flush() override;
@@ -114,7 +117,11 @@ protected:
 		// CUDA objects
 		cudaStream_t stream; // Stream used
 		cufftHandle fftPlan; // a CUFFT plan can be used for both forward and inverse transforms
-		cudaEvent_t localizationDone;
+
+		// Events
+		cudaEvent_t localizationDone; // all done.
+		// Events for profiling
+		cudaEvent_t imageCopyDone, comDone, qiDone, zcomputeDone, batchStart;
 
 		// Intermediate data
 		device_vec<float3> d_resultpos;
@@ -160,6 +167,7 @@ protected:
 	Stream* currentStream;
 	std::list<LocalizationResult> results;
 	std::vector<Device*> devices;
+	bool useTextureCache; // speed up, but more numerical errors
 	
 	// QI profiles need to have power-of-two dimensions. qiProfileLen stores the closest power-of-two value that is bigger than cfg.qi_radialsteps
 	int qi_FFT_length;
@@ -167,15 +175,19 @@ protected:
 	KernelParams kernelParams;
 
 	int FetchResults();
-	void ExecuteBatch(Stream *s);
+	template<typename TImageSampler> void ExecuteBatch(Stream *s);
 	Stream* GetReadyStream(); // get a stream that not currently executing, and still has room for images
-	void QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s);
+	template<typename TImageSampler> void QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s);
 	bool CheckAllStreams(Stream::State state);
 	void InitializeDeviceList();
 
 public:
 	typedef std::map<const char*, std::pair<int, double> > ProfileResults;
 	static ProfileResults GetProfilingResults();
+
+	// Profiling
+	double time_COM, time_QI, time_imageCopy, time_ZCompute;
+	int batchesDone;
 };
 
 
