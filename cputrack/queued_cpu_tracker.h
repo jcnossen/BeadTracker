@@ -11,28 +11,27 @@ class QueuedCPUTracker : public QueuedTracker {
 public:
 	QueuedCPUTracker(QTrkSettings* settings);
 	~QueuedCPUTracker();
-
 	void Start();
 	void Break(bool pause);
-	void SetZLUT(float* data, int num_zluts, int planes, float* zcmp=0);
-	float* GetZLUT(int *num_zluts, int* planes);
-	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane);
+	void GenerateTestImage(float* dst, float xp, float yp, float z, float photoncount);
+	int NumThreads() { return cfg.numThreads; }
+	int GetJobCount();
+
+	// QueuedTracker interface
+	void SetZLUT(float* data, int num_zluts, int planes, float* zcmp=0) override;
+	float* GetZLUT(int *num_zluts, int* planes) override;
+	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo) override;
 	// Schedule an entire frame at once, allowing for further optimizations
 	void ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
-		LocalizeType locType, uint frame, uint zlutPlane, bool async);
-	void WaitForScheduleFrame(uchar* imgptr) {} // CPU tracker does not support asynchronous calls to ScheduleFrame
+		const LocalizationJob *jobInfo) override;
 	
-	int PollFinished(LocalizationResult* results, int maxResults);
-	void ClearResults();
-	void GenerateTestImage(float* dst, float xp, float yp, float z, float photoncount);
-	void Flush() { }
+	int PollFinished(LocalizationResult* results, int maxResults) override;
+	void ClearResults() override;
+	void Flush() override { };
 
-	bool IsQueueFilled() { return GetJobCount() >= cfg.maxQueueSize; }
-	bool IsIdle() { return GetJobCount() == 0; }
-
-	int GetResultCount();
-	int GetJobCount();
-	int NumThreads() { return cfg.numThreads; }
+	bool IsQueueFilled() override { return GetJobCount() >= cfg.maxQueueSize; }
+	bool IsIdle() override { return GetJobCount() == 0; }
+	int GetResultCount() override;
 
 private:
 	struct Thread {
@@ -43,15 +42,12 @@ private:
 	};
 
 	struct Job {
-		Job() { data=0; dataType=QTrkU8; locType=LocalizeXCor1D; id=0; zlut=0; initialPos.x=initialPos.y=initialPos.z=0.0f; zlutPlane=0; }
+		Job() { data=0; dataType=QTrkU8; }
 		~Job() { delete[] data; }
 
 		uchar* data;
 		QTRK_PixelDataType dataType;
-		LocalizeType locType;
-		uint id;
-		uint zlut, zlutPlane;
-		vector3f initialPos;
+		LocalizationJob job;
 	};
 
 	// Special no-threads mode for debugging

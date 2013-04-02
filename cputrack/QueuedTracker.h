@@ -28,13 +28,23 @@ enum QTRK_PixelDataType
 
 
 #pragma pack(push, 1)
+struct LocalizationJob {
+	LocalizationJob() {
+		locType=frame=timestamp=zlutIndex=zlutPlane=0; 
+	}
+	uint locType;
+	uint frame, timestamp;
+	uint zlutIndex; // or bead#
+	uint zlutPlane; // for ZLUT building
+	vector3f initialPos;
+	LocalizeType LocType() const { return (LocalizeType)locType; }
+};
+
 // DONT CHANGE, Mapped to labview clusters!
 struct LocalizationResult {
-	uint id;
-	int zlutIndex;
-	uint locType;
-	vector2f pos;
-	float z;
+	LocalizationJob job;
+	vector3f pos;
+	vector2f pos2D() { return vector2f(pos.x,pos.y); }
 	vector2f firstGuess;
 	uint error;
 };
@@ -98,14 +108,15 @@ public:
 	QueuedTracker() {}
 	virtual ~QueuedTracker() {}
 
-	virtual bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane) = 0;
+	// Frame and timestamp are ignored by tracking code itself, but usable for the calling code
+	// Pitch: Distance in bytes between two successive rows of pixels (e.g. address of (0,0) -  address of (0,1) )
+	// ZlutIndex: Which ZLUT to use for ComputeZ/BuildZLUT
+	virtual void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo) = 0;
 	virtual void ClearResults() = 0;
 	virtual void Flush() = 0; // stop waiting for more jobs to do, and just process the current batch
 
 	// Schedule an entire frame at once, allowing for further optimizations
-	virtual void ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
-		LocalizeType locType, uint frame, uint zlutPlane, bool async) = 0;
-	virtual void WaitForScheduleFrame(uchar* imgptr) = 0; // Wait for an asynchronous call to ScheduleFrame to be finished with the specified buffer
+	virtual void ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo) = 0;
 	
 	// data can be zero to allocate ZLUT data. zcmp has to have 'res' elements
 	virtual void SetZLUT(float* data, int count, int planes, float* zcmp=0) = 0; 
@@ -117,6 +128,18 @@ public:
 	virtual bool IsIdle() = 0;
 
 	QTrkSettings cfg;
+
+	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint frame, uint timestamp, vector3f* initial, uint zlutIndex, uint zlutPlane) {
+		LocalizationJob j;
+		j.frame= frame;
+		j.locType = locType;
+		j.timestamp = timestamp;
+		if (initial) j.initialPos = *initial;
+		j.zlutIndex = zlutIndex;
+		j.zlutPlane = zlutPlane;
+		ScheduleLocalization(data,pitch,pdt,&j);
+	}
+
 };
 
 

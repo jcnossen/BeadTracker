@@ -51,36 +51,20 @@ struct QIParamWrapper {
 	float2* d_result;
 };
 
-
-struct CUDATrackerJob {
-	CUDATrackerJob () { 
-		locType=LocalizeOnlyCOM; id=0; zlut=0; 
-		initialPos.x=initialPos.y=initialPos.z=0.0f; 
-		error=0; firstGuess.x=firstGuess.y=0.0f;
-	}
-
-	uint id;
-	uint zlut;
-	float3 initialPos;
-	uint zlutPlane;
+struct ZLUTMapping {
+	int zlutIndex, zlutPlane; // if <0 then, no zlut for this job
 	LocalizeType locType;
-	float3 resultPos;
-	float2 firstGuess;
-	uint error;
 };
-
 
 class QueuedCUDATracker : public QueuedTracker {
 public:
 	QueuedCUDATracker(QTrkSettings* cfg, int batchSize=-1);
 	~QueuedCUDATracker();
 
-	bool ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane) override;
+	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo) override;
 	
 	// Schedule an entire frame at once, allowing for further optimizations
-	void ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
-		LocalizeType locType, uint frame, uint zlutPlane, bool async) override;
-	void WaitForScheduleFrame(uchar* imgptr) override; // Wait for an asynchronous call to ScheduleFrame to be finished with the specified buffer
+	void ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo) override;
 
 	void ClearResults() override;
 
@@ -115,13 +99,13 @@ protected:
 		~Stream();
 		bool IsExecutionDone();
 		int CalcMemoryUse();
-		int GetJobCount();
+		int JobCount() { return jobs.size(); }
 		
 		pinned_array<float3> results;
 		pinned_array<float3> com;
-		pinned_array<CUDATrackerJob> jobs;
-		device_vec<CUDATrackerJob> d_jobs;
-		int jobCount;
+		pinned_array<ZLUTMapping> zlutmapping;
+		device_vec<ZLUTMapping> d_zlutmapping;
+		std::vector<LocalizationJob> jobs;
 		
 		cudaImageListf images; 
 		//pinned_array<float, cudaHostAllocWriteCombined> hostImageBuf; // original image format pixel buffer

@@ -66,8 +66,7 @@ void ComputeCRP(float* dst, int radialSteps, int angularSteps, float minradius, 
 	vector2f* radialDirs = (vector2f*)ALLOCA(sizeof(vector2f)*angularSteps);
 	for (int j=0;j<angularSteps;j++) {
 		float ang = 2*3.141593f*j/(float)angularSteps;
-		vector2f d = { cosf(ang), sinf(ang) };
-		radialDirs[j] = d;
+		radialDirs[j] = vector2f(cosf(ang), sinf(ang) );
 	}
 
 	for (int i=0;i<radialSteps;i++)
@@ -143,8 +142,7 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 	vector2f* radialDirs = (vector2f*)ALLOCA(sizeof(vector2f)*angularSteps);
 	for (int j=0;j<angularSteps;j++) {
 		float ang = 2*3.141593f*j/(float)angularSteps;
-		vector2f d = { cosf(ang), sinf(ang) };
-		radialDirs[j] = d;
+		radialDirs[j] = vector2f(cosf(ang), sinf(ang));
 	}
 
 	for (int i=0;i<radialSteps;i++)

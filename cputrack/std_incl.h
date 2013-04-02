@@ -18,10 +18,14 @@
 
 #pragma pack(push, 4)
 struct vector2f {
+	vector2f() {x=y=0.0f; }
+	vector2f(float X,float Y) { x=X;y=Y; }
 	float x,y;
 };
 
 struct vector3f {
+	vector3f() { x=y=z=0.0f; }
+	vector3f(float X,float Y,float Z) { x=X; y=Y; z=Z; }
 	float x,y,z;
 };
 #pragma pack(pop)

@@ -233,8 +233,7 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 		quadrantDirs.resize(angularStepsPerQ);
 		for (int j=0;j<angularStepsPerQ;j++) {
 			float ang = 0.5*3.141593f*j/(float)angularStepsPerQ;
-			vector2f d = { cosf(ang), sinf(ang) };
-			quadrantDirs[j] = d;
+			quadrantDirs[j] = vector2f( cosf(ang), sinf(ang) );
 		}
 	}
 	if(!qi_fft_forward || qi_radialsteps != nr) {
@@ -361,8 +360,7 @@ float CPUTracker::ComputeAsymmetry(vector2f center, int radialSteps, int angular
 	vector2f* radialDirs = (vector2f*)ALLOCA(sizeof(vector2f)*angularSteps);
 	for (int j=0;j<angularSteps;j++) {
 		float ang = 2*3.141593f*j/(float)angularSteps;
-		vector2f d = { cosf(ang), sinf(ang) };
-		radialDirs[j] = d;
+		radialDirs[j] = vector2f (cosf(ang), sinf(ang));
 	}
 
 	// profile along single radial direction

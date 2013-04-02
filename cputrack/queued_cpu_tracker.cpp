@@ -187,41 +187,46 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 //	dbgprintf("Job: id %d, bead %d\n", j->id, j->zlut);
 
 	LocalizationResult result={};
-	result.id = j->id;
-	result.locType = j->locType;
-	result.zlutIndex = j->zlut;
+	result.job = j->job;
 
 	vector2f com = trk->ComputeBgCorrectedCOM(cfg.com_bgcorrection);
 
-	LocalizeType locType = (LocalizeType)(j->locType&Localize2DMask);
+	LocalizeType locType = (LocalizeType)(j->job.locType&Localize2DMask);
 	bool boundaryHit = false;
 
 	switch(locType) {
-	case LocalizeXCor1D:
+	case LocalizeXCor1D: {
 		result.firstGuess = com;
-		result.pos = trk->ComputeXCorInterpolated(com, cfg.xc1_iterations, cfg.xc1_profileWidth, boundaryHit);
-		break;
+		vector2f resultPos = trk->ComputeXCorInterpolated(com, cfg.xc1_iterations, cfg.xc1_profileWidth, boundaryHit);
+		result.pos.x = resultPos.x;
+		result.pos.y = resultPos.y;
+		break;}
 	case LocalizeOnlyCOM:
-		result.firstGuess = result.pos = com;
+		result.firstGuess.x = result.pos.x = com.x;
+		result.firstGuess.y = result.pos.y = com.y;
 		break;
-	case LocalizeQI:
+	case LocalizeQI:{
 		result.firstGuess = com;
-		result.pos = trk->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angsteps_per_quadrant, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
-		break;
-	case LocalizeGaussian2D:
+		vector2f resultPos = trk->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angsteps_per_quadrant, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
+		result.pos.x = resultPos.x;
+		result.pos.y = resultPos.y;
+		break;}
+	case LocalizeGaussian2D:{
 		result.firstGuess = com;
-		result.pos = trk->Compute2DGaussianMLE(com, cfg.gauss2D_iterations);
+		vector2f xy = trk->Compute2DGaussianMLE(com, cfg.gauss2D_iterations);
+		result.pos = vector3f(xy.x,xy.y,0.0f);
+		break;}
 	}
 
-	if(j->locType & LocalizeZ) {
-		result.z = trk->ComputeZ(result.pos, cfg.zlut_angularsteps, j->zlut, false, &boundaryHit);
-	} else if (j->locType & LocalizeBuildZLUT) {
-		float* zlut = GetZLUTByIndex(j->zlut);
-		trk->ComputeRadialProfile(&zlut[j->zlutPlane * cfg.zlut_radialsteps], cfg.zlut_radialsteps, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, result.pos, false, &boundaryHit);
+	if(j->job.LocType() & LocalizeZ) {
+		result.pos.z = trk->ComputeZ(result.pos2D(), cfg.zlut_angularsteps, j->job.zlutIndex, false, &boundaryHit);
+	} else if (j->job.LocType() & LocalizeBuildZLUT) {
+		float* zlut = GetZLUTByIndex(j->job.zlutIndex);
+		trk->ComputeRadialProfile(&zlut[j->job.zlutPlane * cfg.zlut_radialsteps], cfg.zlut_radialsteps, cfg.zlut_angularsteps, cfg.zlut_minradius, cfg.zlut_maxradius, result.pos2D(), false, &boundaryHit);
 	}
 
 #ifdef _DEBUG
-	dbgprintf("pos[%d]: x=%f, y=%f\n", result.zlutIndex, result.pos.x, result.pos.y);
+	dbgprintf("pos[%d]: x=%f, y=%f\n", result.job.zlutIndex, result.pos.x, result.pos.y);
 #endif
 
 	result.error = boundaryHit ? 1 : 0;
@@ -286,8 +291,7 @@ float* QueuedCPUTracker::GetZLUT(int *count, int* planes)
 	return cp;
 }
 
-bool QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, 
-				LocalizeType locType, uint id, vector3f* initialPos, uint zlutIndex, uint zlutPlane)
+void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo)
 {
 	if (processJobs) {
 		while(cfg.maxQueueSize != 0 && GetJobCount () >= cfg.maxQueueSize)
@@ -305,15 +309,10 @@ bool QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDa
 		memcpy(&j->data[dstPitch*y], &data[pitch*y], dstPitch);
 
 	j->dataType = pdt;
-	j->id = id;
-	j->locType = locType;
-	j->zlut = zlutIndex;
-	j->zlutPlane = zlutPlane;
-	if(initialPos) 
-		j->initialPos = *initialPos;
+	j->job = *jobInfo;
 
 #ifdef _DEBUG
-	dbgprintf("Scheduled job: frame %d, bead %d\n", j->zlutPlane, j->zlut);
+	dbgprintf("Scheduled job: frame %d, bead %d\n", j->job.zlutPlane, j->job.zlutIndex);
 #endif
 
 	AddJob(j);
@@ -323,8 +322,6 @@ bool QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDa
 		ProcessJob(noThreadTracker, j_);
 		JobFinished(j_);
 	}
-
-	return true;
 }
 
 int QueuedCPUTracker::PollFinished(LocalizationResult* dstResults, int maxResults)
@@ -348,8 +345,7 @@ void QueuedCPUTracker::GenerateTestImage(float* dst, float xp,float yp, float z,
 }
 
 
-void QueuedCPUTracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
-									LocalizeType locType, uint frame, uint zlutPlane, bool async)
+void QueuedCPUTracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo)
 {
 	uchar* img = (uchar*)imgptr;
 	int bpp = PDT_BytesPerPixel(pdt);
@@ -360,6 +356,8 @@ void QueuedCPUTracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int he
 			continue;
 
 		uchar *roiptr = &img[pitch * pos.y + pos.x * bpp];
-		ScheduleLocalization(roiptr, pitch, pdt, locType, frame, 0, i, zlutPlane);
+		LocalizationJob job = *jobInfo;
+		job.zlutIndex = i;
+		ScheduleLocalization(roiptr, pitch, pdt, &job);
 	}
 }

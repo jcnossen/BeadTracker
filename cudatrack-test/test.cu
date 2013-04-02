@@ -146,15 +146,19 @@ void QTrkTest()
 	if (cpucmp) qtrkcpu.SetZLUT(0, 1, zplanes);
 	if (haveZLUT) {
 		for (int x=0;x<zplanes;x++)  {
-			vector2f center = { cfg.width/2, cfg.height/2 };
+			vector2f center ( cfg.width/2, cfg.height/2 );
 			float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 			GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
 			uchar* zlutimg = floatToNormalizedInt(image, cfg.width,cfg.height, (uchar)255);
 			WriteJPEGFile(zlutimg, cfg.width,cfg.height, "qtrkzlutimg.jpg", 99);
 			delete[] zlutimg;
 			LocalizeType flags = (LocalizeType)(LocalizeBuildZLUT|LocalizeOnlyCOM);
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat,flags , x, 0, 0, x);
-			if (cpucmp) qtrkcpu.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, flags, x, 0, 0, x);
+			LocalizationJob jobInfo;
+			jobInfo.frame = jobInfo.zlutPlane = x;
+			jobInfo.locType = flags;
+			jobInfo.zlutIndex = 0;
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, &jobInfo);
+			if (cpucmp) qtrkcpu.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, &jobInfo);
 		}
 		qtrk.Flush();
 		if (cpucmp) qtrkcpu.Flush();
@@ -189,8 +193,12 @@ void QTrkTest()
 	int rc = 0, displayrc=0;
 	for (int n=0;n<total;n++) {
 		LocalizeType flags = (LocalizeType)(LocalizeQI| (haveZLUT ? LocalizeZ : 0) );
-		qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, flags, n, 0, 0, 0);
-		if (cpucmp) qtrkcpu.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, flags, n, 0, 0, 0);
+		LocalizationJob jobInfo;
+		jobInfo.frame = n;
+		jobInfo.locType = flags;
+		jobInfo.zlutIndex = 0;
+		qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat,&jobInfo);
+		if (cpucmp) qtrkcpu.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, &jobInfo);
 		if (n % 10 == 0) {
 			rc = qtrk.GetResultCount();
 			while (displayrc<rc) {
@@ -229,15 +237,15 @@ void QTrkTest()
 		qtrk.PollFinished(&results[i], 1);
 		if (cpucmp) qtrkcpu.PollFinished(&resultscpu[i], 1);
 	}
-	std::sort(results, results+rcount, [](LocalizationResult a, LocalizationResult b) -> bool { return a.id > b.id; });
-	if(cpucmp) std::sort(resultscpu, resultscpu+rcount, [](LocalizationResult a, LocalizationResult b) -> bool { return a.id > b.id; });
+	std::sort(results, results+rcount, [](LocalizationResult a, LocalizationResult b) -> bool { return a.job.frame > b.job.frame; });
+	if(cpucmp) std::sort(resultscpu, resultscpu+rcount, [](LocalizationResult a, LocalizationResult b) -> bool { return a.job.frame > b.job.frame; });
 	for (int i=0;i<rcount;i++) {
 		LocalizationResult& r = results[i];
-		dbgprintf("gpu [%d] x: %f, y: %f. z: %+g, COM: %f, %f\n", i,r.pos.x, r.pos.y, r.z, r.firstGuess.x, r.firstGuess.y);
+		dbgprintf("gpu [%d] x: %f, y: %f. z: %+g, COM: %f, %f\n", i,r.pos.x, r.pos.y, r.pos.z, r.firstGuess.x, r.firstGuess.y);
 
 		if (cpucmp) {
 			r = resultscpu[i];
-			dbgprintf("cpu [%d] x: %f, y: %f. z: %+g, COM: %f, %f\n", i,r.pos.x, r.pos.y, r.z, r.firstGuess.x, r.firstGuess.y);
+			dbgprintf("cpu [%d] x: %f, y: %f. z: %+g, COM: %f, %f\n", i,r.pos.x, r.pos.y, r.pos.z, r.firstGuess.x, r.firstGuess.y);
 		}
 	}
 
@@ -315,11 +323,11 @@ float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool ha
 	qtrk->SetZLUT(0, 1, zplanes);
 	if (haveZLUT) {
 		for (int x=0;x<zplanes;x++)  {
-			vector2f center = { cfg.width/2, cfg.height/2 };
+			vector2f center( cfg.width/2, cfg.height/2 );
 			float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 			GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
 			LocalizeType flags = (LocalizeType)(LocalizeBuildZLUT|LocalizeOnlyCOM);
-			qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat,flags , x, 0, 0, x);
+			qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, flags , x, 0,0, 0, x);
 		}
 		qtrk->Flush();
 		// wait to finish ZLUT
@@ -339,7 +347,7 @@ float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool ha
 	int rc = 0, displayrc=0;
 	for (int n=0;n<count;n++) {
 		LocalizeType flags = (LocalizeType)(locType| (haveZLUT ? LocalizeZ : 0) );
-		qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, flags, n, 0, 0, 0);
+		qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, flags, n,0, 0, 0, 0);
 		if (n % 10 == 0) {
 			rc = qtrk->GetResultCount();
 			while (displayrc<rc) {

@@ -8,19 +8,6 @@ Labview API for the functionality in QueuedTracker.h
 #include "threads.h" 
 
 
-#include "lv_prolog.h"
-struct QueueImageParams {
-	uint locType;
-	uint frame;
-	vector3f initialPos;
-	uint zlutIndex; // or bead#
-	uint zlutPlane; // for ZLUT building
-
-	LocalizeType LocType()  { return (LocalizeType)locType; }
-};
-#include "lv_epilog.h"
-
-
 static Threads::Mutex trackerListMutex;
 static std::vector<QueuedTracker*> trackerList;
 
@@ -154,31 +141,37 @@ bool CheckImageInput(QueuedTracker* qtrk, LVArray2D<T> **data, ErrorCluster  *er
 	return true;
 }
 
-CDLL_EXPORT void qtrk_queue_u16(QueuedTracker* qtrk, ErrorCluster* error, LVArray2D<ushort>** data, QueueImageParams* params)
+CDLL_EXPORT void qtrk_queue_u16(QueuedTracker* qtrk, ErrorCluster* error, LVArray2D<ushort>** data, const LocalizationJob *jobInfo)
+{
+	if (CheckImageInput(qtrk, data, error)) 
+	{
+		qtrk->ScheduleLocalization( (uchar*)(*data)->elem, sizeof(ushort)*(*data)->dimSizes[1], QTrkU16, jobInfo);
+	}
+}
+
+CDLL_EXPORT void qtrk_queue_u8(QueuedTracker* qtrk, ErrorCluster* error, LVArray2D<uchar>** data, const LocalizationJob *jobInfo)
 {
 	if (CheckImageInput(qtrk, data, error))
-		qtrk->ScheduleLocalization( (uchar*)(*data)->elem, sizeof(ushort)*(*data)->dimSizes[1], QTrkU16, params->LocType(), params->frame, &params->initialPos, params->zlutIndex, params->zlutPlane);
+	{
+		qtrk->ScheduleLocalization( (*data)->elem, sizeof(uchar)*(*data)->dimSizes[1], QTrkU8, jobInfo);
+	}
 }
 
-CDLL_EXPORT void qtrk_queue_u8(QueuedTracker* qtrk, ErrorCluster* error, LVArray2D<uchar>** data, QueueImageParams* params)
+CDLL_EXPORT void qtrk_queue_float(QueuedTracker* qtrk, ErrorCluster* error, LVArray2D<float>** data, const LocalizationJob *jobInfo)
 {
 	if (CheckImageInput(qtrk, data, error))
-		qtrk->ScheduleLocalization( (*data)->elem, sizeof(uchar)*(*data)->dimSizes[1], QTrkU8, params->LocType(), params->frame, &params->initialPos, params->zlutIndex, params->zlutPlane);
+	{
+		qtrk->ScheduleLocalization( (uchar*) (*data)->elem, sizeof(float)*(*data)->dimSizes[1], QTrkFloat, jobInfo);
+	}
 }
 
-CDLL_EXPORT void qtrk_queue_float(QueuedTracker* qtrk, ErrorCluster* error, LVArray2D<float>** data, QueueImageParams* params)
+
+CDLL_EXPORT void qtrk_queue_pitchedmem(QueuedTracker* qtrk, uchar* data, int pitch, uint pdt, const LocalizationJob *jobInfo)
 {
-	if (CheckImageInput(qtrk, data, error))
-		qtrk->ScheduleLocalization( (uchar*) (*data)->elem, sizeof(float)*(*data)->dimSizes[1], QTrkFloat, params->LocType(), params->frame, &params->initialPos, params->zlutIndex, params->zlutPlane);
+	qtrk->ScheduleLocalization(data, pitch, (QTRK_PixelDataType)pdt, jobInfo);
 }
 
-
-CDLL_EXPORT void qtrk_queue_pitchedmem(QueuedTracker* qtrk, uchar* data, int pitch, uint pdt, QueueImageParams* params)
-{
-	qtrk->ScheduleLocalization(data, pitch, (QTRK_PixelDataType)pdt, params->LocType(), params->frame, &params->initialPos, params->zlutIndex, params->zlutPlane);
-}
-
-CDLL_EXPORT void qtrk_queue_array(QueuedTracker* qtrk,  ErrorCluster* error,LVArray2D<uchar>** data,uint pdt,  QueueImageParams* params)
+CDLL_EXPORT void qtrk_queue_array(QueuedTracker* qtrk,  ErrorCluster* error,LVArray2D<uchar>** data,uint pdt, const LocalizationJob *jobInfo)
 {
 	uint pitch;
 
@@ -193,19 +186,14 @@ CDLL_EXPORT void qtrk_queue_array(QueuedTracker* qtrk,  ErrorCluster* error,LVAr
 
 	pitch *= (*data)->dimSizes[1]; // LVArray2D<uchar> type works for ushort and float as well
 //	dbgprintf("zlutindex: %d, zlutplane: %d\n", zlutIndex,zlutPlane);
-	qtrk_queue_pitchedmem(qtrk, (*data)->elem, pitch, pdt, params);
+	qtrk_queue_pitchedmem(qtrk, (*data)->elem, pitch, pdt, jobInfo);
 }
 
 
 CDLL_EXPORT void qtrk_queue_frame(QueuedTracker* qtrk, uchar* image, int pitch, int w,int h, 
-	uint pdt, ROIPosition* pos, int numROI, uint locType, uint frame, uint zlutPlane, bool async)
+	uint pdt, ROIPosition* pos, int numROI, const LocalizationJob *jobInfo)
 {
-	qtrk->ScheduleFrame(image, pitch, w,h, pos, numROI, (QTRK_PixelDataType)pdt, (LocalizeType)locType, frame, zlutPlane, async);
-}
-
-CDLL_EXPORT void qtrk_wait_for_queue_frame(QueuedTracker* qtrk, uchar* image)
-{
-	qtrk->WaitForScheduleFrame(image);
+	qtrk->ScheduleFrame(image, pitch, w,h, pos, numROI, (QTRK_PixelDataType)pdt, jobInfo);
 }
 
 
@@ -240,16 +228,12 @@ CDLL_EXPORT void qtrk_flush(QueuedTracker* qtrk, ErrorCluster* e)
 	}
 }
 
-static bool compareResultsByID(const LocalizationResult& a, const LocalizationResult& b) {
-	return a.id<b.id;
-}
-
 CDLL_EXPORT int qtrk_get_results(QueuedTracker* qtrk, LocalizationResult* results, int maxResults, int sortByID)
 {
 	int resultCount = qtrk->PollFinished(results, maxResults);
 
 	if (sortByID) {
-		std::sort(results, results+resultCount, compareResultsByID);
+		std::sort(results, results+resultCount, [](decltype(*results) a, decltype(*results) b) { return a.job.frame<b.job.frame; } );
 	}
 
 	return resultCount;
