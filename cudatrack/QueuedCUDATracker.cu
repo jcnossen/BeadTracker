@@ -193,7 +193,7 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 
 	// We take numThreads to be the number of CUDA streams
 	if (cfg->numThreads < 1) {
-		cfg->numThreads = 4;
+		cfg->numThreads = devices.size()*3;
 	}
 
 	cudaGetDeviceProperties(&deviceProp, devices[0]->index);
@@ -342,7 +342,6 @@ QueuedCUDATracker::Stream::Stream()
 QueuedCUDATracker::Stream::~Stream() 
 {
 	cudaSetDevice(device->index);
-
 	cufftDestroy(fftPlan);
 
 	if(images.data) images.free();
@@ -778,7 +777,7 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 	int njobs = s->jobs.size();
 	dim3 qdrThreads(16, 16);
 
-	if (0) {
+	if (1) {
 		QI_ComputeQuadrants<TImageSampler> <<< dim3( (njobs + qdrThreads.x - 1) / qdrThreads.x, (4*cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y ), qdrThreads, 0, s->stream >>> 
 			(njobs, s->images, initial->data, s->d_quadrants.data, s->d_imgmeans.data, kernelParams.qi);
 

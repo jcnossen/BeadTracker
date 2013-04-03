@@ -383,7 +383,11 @@ int NearestPowerOfTwo(int v)
 	return r/2;
 }
 
-void SpeedCompareTest()
+struct SpeedInfo {
+	float cpu, gpu, gputex;
+};
+
+SpeedInfo SpeedCompareTest(int w)
 {
 	int cudaBatchSize = 1024;
 	int count = 30000;
@@ -392,11 +396,11 @@ void SpeedCompareTest()
 	count = 100;
 	cudaBatchSize = 32;
 #endif
-	bool haveZLUT = false;
+	bool haveZLUT = true;
 	LocalizeType locType = LocalizeQI;
 
 	QTrkSettings cfg;
-	cfg.width = cfg.height = 60;
+	cfg.width = cfg.height = w;
 	cfg.qi_iterations = 4;
 	cfg.qi_maxradius = cfg.width/2-8;
 	//std::vector<int> devices(1); devices[0]=1;
@@ -404,7 +408,7 @@ void SpeedCompareTest()
 	cfg.cuda_device = QTrkCUDA_UseAll;
 	cfg.qi_angsteps_per_quadrant = 32;
 	cfg.qi_radialsteps = NearestPowerOfTwo(cfg.qi_maxradius);
-	cfg.numThreads = 4;
+	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
 	cfg.zlut_maxradius = 40;
 	cfg.zlut_radialsteps = 64;
@@ -417,7 +421,7 @@ void SpeedCompareTest()
 
 	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(&cfg, cudaBatchSize);
 	cudatrk->EnableTextureCache(true);
-	float gpuspeed = SpeedTest(cfg, cudatrk, count, haveZLUT, locType);
+	float gputexspeed = SpeedTest(cfg, cudatrk, count, haveZLUT, locType);
 	std::string report = cudatrk->GetProfileReport();
 	delete cudatrk;
 
@@ -427,18 +431,40 @@ void SpeedCompareTest()
 		dbgprintf("%s took %f ms on average\n", i->first, 1000*r.second/r.first);
 	}
 
+	cudatrk = new QueuedCUDATracker(&cfg, cudaBatchSize);
+	cudatrk->EnableTextureCache(false);
+	float gpuspeed = SpeedTest(cfg, cudatrk, count, haveZLUT, locType);
+	delete cudatrk;
+
 	dbgprintf("CPU tracking speed: %d img/s\n", (int)cpuspeed);
-	dbgprintf("GPU tracking speed: %d img/s\n", (int)gpuspeed);
+	dbgprintf("GPU tracking speed: %d img/s\n", (int)gputexspeed);
 	dbgout(report);
+
+	SpeedInfo info;
+	info.cpu = cpuspeed;
+	info.gpu = gpuspeed;
+	info.gputex = gputexspeed;
+	return info;
 }
 
 
 int main(int argc, char *argv[])
 {
-//	testLinearArray();
-	
-	SpeedCompareTest();
-
 	listDevices();
+//	testLinearArray();
+
+	int N=12;
+	float* values = new float[N*3];
+
+	for (int i=0;i<N;i++) {
+		int roi = 40+i*10;
+		SpeedInfo info = SpeedCompareTest(roi);
+		values[i*3+0] = info.cpu;
+		values[i*3+1] = info.gpu;
+		values[i*3+2] = info.gputex;
+	}
+
+	WriteImageAsCSV("speeds.txt", values, 3, N);
+	delete[] values;
 	return 0;
 }

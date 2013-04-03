@@ -328,6 +328,7 @@
 			<Item Name="nivissvc.dll" Type="Document" URL="nivissvc.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
+			<Item Name="QTrkLocalizationJob.ctl" Type="VI" URL="../QTrk.llb/QTrkLocalizationJob.ctl"/>
 			<Item Name="SelectBeads.vi" Type="VI" URL="../BeadTracker2.llb/SelectBeads.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
