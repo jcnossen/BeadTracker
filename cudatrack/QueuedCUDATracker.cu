@@ -33,6 +33,7 @@ Issues:
 #include "simplefft.h"
 #include "gpu_utils.h"
 
+// Do CPU-side profiling of kernel launches?
 //#define TRK_PROFILE
 
 #ifdef TRK_PROFILE
@@ -164,23 +165,16 @@ void QueuedCUDATracker::InitializeDeviceList()
 	// Select the most powerful one
 	if (cfg.cuda_device == QTrkCUDA_UseBest) {
 		cfg.cuda_device = GetBestCUDADevice();
+		devices.push_back(new Device(cfg.cuda_device));
 	} else if(cfg.cuda_device == QTrkCUDA_UseAll) {
 		// Use all devices
-		for (int i=0;i<numDevices;i++) {
-			Device* dev = new Device();
-			dev->index = i;
-			devices.push_back(dev);
-		}
+		for (int i=0;i<numDevices;i++)
+			devices.push_back(new Device(i));
 	} else if (cfg.cuda_device == QTrkCUDA_UseList) {
-		for (int i=0;i<cudaDeviceList.size();i++) {
-			Device* dev = new Device();
-			dev->index = cudaDeviceList[i];
-			devices.push_back(dev);
-		}
+		for (int i=0;i<cudaDeviceList.size();i++)
+			devices.push_back(new Device(cudaDeviceList[i]));
 	} else {
-		Device* dev = new Device();
-		dev->index = cfg.cuda_device;
-		devices.push_back (dev);
+		devices.push_back (new Device(cfg.cuda_device));
 	}
 }
 
@@ -777,7 +771,7 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 	int njobs = s->jobs.size();
 	dim3 qdrThreads(16, 16);
 
-	if (1) {
+	if (0) {
 		QI_ComputeQuadrants<TImageSampler> <<< dim3( (njobs + qdrThreads.x - 1) / qdrThreads.x, (4*cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y ), qdrThreads, 0, s->stream >>> 
 			(njobs, s->images, initial->data, s->d_quadrants.data, s->d_imgmeans.data, kernelParams.qi);
 
@@ -946,7 +940,7 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	cudaEventRecord(s->comDone, s->stream);
 
 //	{ ProfileBlock p("COM results to host");
-//	s->d_com.copyToHost(s->com.data(), true, s->stream);}
+	s->d_com.copyToHost(s->com.data(), true, s->stream);
 
 	device_vec<float3> *curpos = &s->d_com;
 	if (s->localizeFlags & LocalizeQI) {
@@ -1021,7 +1015,7 @@ void QueuedCUDATracker::CopyStreamResults(Stream *s)
 
 		LocalizationResult r;
 		r.job = j;
-		r.firstGuess = vector2f();
+		r.firstGuess =  vector2f( s->com[a].x, s->com[a].y );
 		r.pos = vector3f( s->results[a].x , s->results[a].y, s->results[a].z);
 
 		results.push_back(r);

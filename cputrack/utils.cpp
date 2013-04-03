@@ -246,7 +246,7 @@ void WriteImageAsCSV(const char* file, float* d, int w,int h)
 	for (int y=0;y<h;y++) {
 		for (int x=0;x<w;x++)
 		{
-			fprintf(f, "%f", d[y*w+x]);
+			fprintf(f, "%.10f", d[y*w+x]);
 			if(x<w-1) fputs("\t", f); 
 		}
 		fprintf(f, "\n");

@@ -86,7 +86,7 @@ public:
 protected:
 
 	struct Device {
-		Device() {index=0; zlut=cudaImageListf::empty(); }
+		Device(int index) {this->index=index; zlut=cudaImageListf::empty(); }
 		~Device(); 
 		void SetZLUT(float *data, int radialsteps, int planes, int numLUTs, float* zcmp);
 
