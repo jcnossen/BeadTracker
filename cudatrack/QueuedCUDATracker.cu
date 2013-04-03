@@ -245,6 +245,7 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 
 	for (int i=0;i<devices.size();i++) {
 		Device* d = devices[i];
+		cudaSetDevice(d->index);
 		d->d_qiradialgrid=qi_radialgrid;
 		d->d_zlutradialgrid = zlut_radialgrid;
 	}
@@ -268,6 +269,12 @@ QueuedCUDATracker::~QueuedCUDATracker()
 {
 	DeleteAllElems(streams);
 	DeleteAllElems(devices);	
+}
+
+QueuedCUDATracker::Device::~Device()
+{
+	cudaSetDevice(index);
+	zlut.free();
 }
 
 template<typename TImageSampler>
@@ -335,8 +342,6 @@ QueuedCUDATracker::Stream::Stream()
 QueuedCUDATracker::Stream::~Stream() 
 {
 	cudaSetDevice(device->index);
-	if (stream)
-		cudaStreamDestroy(stream); // stream can be zero if in debugStream mode.
 
 	cufftDestroy(fftPlan);
 
@@ -347,7 +352,12 @@ QueuedCUDATracker::Stream::~Stream()
 	cudaEventDestroy(imageCopyDone);
 	cudaEventDestroy(zcomputeDone);
 	cudaEventDestroy(batchStart);
+
+	if (stream)
+		cudaStreamDestroy(stream); // stream can be zero if in debugStream mode.
 }
+
+
 
 bool QueuedCUDATracker::Stream::IsExecutionDone()
 {
@@ -1052,6 +1062,7 @@ void QueuedCUDATracker::SetZLUT(float* data,  int numLUTs, int planes, float* zc
 	kernelParams.zlut.planes = planes;
 
 	for (int i=0;i<streams.size();i++) {
+		cudaSetDevice(streams[i]->device->index);
 		streams[i]->d_zlutcmpscores.init(planes * batchSize);
 	}
 

@@ -385,7 +385,13 @@ int NearestPowerOfTwo(int v)
 
 void SpeedCompareTest()
 {
+	int cudaBatchSize = 1024;
 	int count = 30000;
+
+#ifdef _DEBUG
+	count = 100;
+	cudaBatchSize = 32;
+#endif
 	bool haveZLUT = false;
 	LocalizeType locType = LocalizeQI;
 
@@ -393,6 +399,8 @@ void SpeedCompareTest()
 	cfg.width = cfg.height = 60;
 	cfg.qi_iterations = 4;
 	cfg.qi_maxradius = cfg.width/2-8;
+	//std::vector<int> devices(1); devices[0]=1;
+	//SetCUDADevices(devices);
 	cfg.cuda_device = QTrkCUDA_UseAll;
 	cfg.qi_angsteps_per_quadrant = 32;
 	cfg.qi_radialsteps = NearestPowerOfTwo(cfg.qi_maxradius);
@@ -407,7 +415,7 @@ void SpeedCompareTest()
 	float cpuspeed = SpeedTest(cfg, cputrk, count, haveZLUT, locType);
 	delete cputrk;
 
-	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(&cfg, 1024);
+	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(&cfg, cudaBatchSize);
 	cudatrk->EnableTextureCache(true);
 	float gpuspeed = SpeedTest(cfg, cudatrk, count, haveZLUT, locType);
 	std::string report = cudatrk->GetProfileReport();

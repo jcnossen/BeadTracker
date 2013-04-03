@@ -87,7 +87,7 @@ protected:
 
 	struct Device {
 		Device() {index=0; zlut=cudaImageListf::empty(); }
-		~Device() { zlut.free(); }
+		~Device(); 
 		void SetZLUT(float *data, int radialsteps, int planes, int numLUTs, float* zcmp);
 
 		cudaImageListf zlut;
