@@ -236,12 +236,16 @@ void ApplyGaussianNoise(ImageData& img, float sigma)
 
 
 
-
-
-
-void WriteImageAsCSV(const char* file, float* d, int w,int h)
+void WriteImageAsCSV(const char* file, float* d, int w,int h, const char* labels[])
 {
 	FILE* f = fopen(file, "w");
+
+	if (labels) {
+		for (int i=0;i<w;i++) {
+			fprintf(f, "%s;\t", labels[i]);
+		}
+		fputs("\n", f);
+	}
 
 	for (int y=0;y<h;y++) {
 		for (int x=0;x<w;x++)

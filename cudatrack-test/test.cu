@@ -463,7 +463,8 @@ void ProfileSpeedVsROI()
 		values[i*3+2] = info.gputex;
 	}
 
-	WriteImageAsCSV("speeds.txt", values, 3, N);
+	const char *labels[] = { "CPU", "CUDA (mem)", "CUDA (tc)" };
+	WriteImageAsCSV("speeds.txt", values, 3, N, labels);
 	delete[] values;
 }
 
@@ -568,7 +569,8 @@ void CompareAccuracy ()
 			results[j * trackers.size() + i] = r[j];
 		dbgprintf("tracker %d done. \n", i);
 	}
-	WriteImageAsCSV( "cmpresults.txt" , (float*)results, trackers.size()*3, n );
+	const char *labels[] = { "CUDA(tc)", "CUDA (mem)", "CPU" };
+	WriteImageAsCSV( "cmpresults.txt" , (float*)results, trackers.size()*3, n, labels );
 
 	DeleteAllElems(trackers);
 }
@@ -579,7 +581,7 @@ int main(int argc, char *argv[])
 //	testLinearArray();
 
 	//QTrkTest();
-	//ProfileSpeedVsROI();
-	CompareAccuracy();
+	ProfileSpeedVsROI();
+	//CompareAccuracy();
 	return 0;
 }

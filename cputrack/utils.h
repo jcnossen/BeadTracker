@@ -76,8 +76,8 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float minRadius, float maxRadius, vector2f pos, float z, float M);
 void ApplyPoissonNoise(ImageData& img, float factor);
 void ApplyGaussianNoise(ImageData& img, float sigma);
-void WriteImageAsCSV(const char* file, float* d, int w,int h);
-void WriteComplexImageAsCSV(const char* file, std::complex<float>* d, int w,int h);
+void WriteImageAsCSV(const char* file, float* d, int w,int h, const char *labels[]=0);
+void WriteComplexImageAsCSV(const char* file, std::complex<float>* d, int w,int h, const char *labels[]=0);
 
 int ReadJPEGFile(uchar* srcbuf, int srclen, uchar** data, int* width, int*height);
 void WriteJPEGFile(uchar* data,int w,int h, const char * filename, int quality);

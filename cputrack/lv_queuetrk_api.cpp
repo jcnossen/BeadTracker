@@ -202,25 +202,24 @@ CDLL_EXPORT void qtrk_queue_frame(QueuedTracker* qtrk, uchar* image, int pitch, 
 }
 
 
-CDLL_EXPORT void qtrk_clear_results(QueuedTracker* qtrk)
+CDLL_EXPORT void qtrk_clear_results(QueuedTracker* qtrk, ErrorCluster* e)
 {
-	qtrk->ClearResults();
+	if (ValidateTracker(qtrk, e, "clear results")) {
+		qtrk->ClearResults();
+	}
 }
 
 
-CDLL_EXPORT int qtrk_hasfullqueue(QueuedTracker* qtrk) 
+CDLL_EXPORT int qtrk_hasfullqueue(QueuedTracker* qtrk, ErrorCluster* e)
 {
-	if (!qtrk)
-		return 0;
-
-	return qtrk->IsQueueFilled() ? 1 : 0;
+	if (ValidateTracker(qtrk, e, "fullqueue"))
+		return qtrk->IsQueueFilled() ? 1 : 0;
+	return 0;
 }
 
 CDLL_EXPORT int qtrk_resultcount(QueuedTracker* qtrk, ErrorCluster* e)
 {
 	if (ValidateTracker(qtrk, e, "resultcount")) {
-		if (!qtrk)
-			return 0;
 		return qtrk->GetResultCount();
 	} 
 	return 0;
@@ -233,20 +232,26 @@ CDLL_EXPORT void qtrk_flush(QueuedTracker* qtrk, ErrorCluster* e)
 	}
 }
 
-CDLL_EXPORT int qtrk_get_results(QueuedTracker* qtrk, LocalizationResult* results, int maxResults, int sortByID)
+CDLL_EXPORT int qtrk_get_results(QueuedTracker* qtrk, LocalizationResult* results, int maxResults, int sortByID, ErrorCluster* e)
 {
-	int resultCount = qtrk->PollFinished(results, maxResults);
+	if (ValidateTracker(qtrk, e, "get_results")) {
+		int resultCount = qtrk->PollFinished(results, maxResults);
 
-	if (sortByID) {
-		std::sort(results, results+resultCount, [](decltype(*results) a, decltype(*results) b) { return a.job.frame<b.job.frame; } );
-	}
+		if (sortByID) {
+			std::sort(results, results+resultCount, [](decltype(*results) a, decltype(*results) b) { return a.job.frame<b.job.frame; } );
+		}
 
-	return resultCount;
+		return resultCount;
+	} 
+	return 0;
 }
 
-CDLL_EXPORT int qtrk_idle(QueuedTracker* qtrk)
+
+CDLL_EXPORT int qtrk_idle(QueuedTracker* qtrk, ErrorCluster* e)
 {
-	return qtrk->IsIdle() ? 1 : 0;
+	if (ValidateTracker(qtrk, e, "is_idle"))
+		return qtrk->IsIdle() ? 1 : 0;
+	return 0;
 }
 
 CDLL_EXPORT void DLL_CALLCONV qtrk_generate_image_from_lut(LVArray2D<float>** image, LVArray2D<float>** lut, 
@@ -262,12 +267,6 @@ CDLL_EXPORT void DLL_CALLCONV qtrk_generate_image_from_lut(LVArray2D<float>** im
 }
 
 
-CDLL_EXPORT void qtrk_set_cuda_device_list(LVArray<int>** devices)
-{
-	std::vector<int> devlist( (*devices)->elem, (*devices)->elem + (*devices)->dimSize );
-	SetCUDADevices(devlist);
-}
-
 CDLL_EXPORT void qtrk_dump_memleaks()
 {
 #ifdef USE_MEMDBG
@@ -279,3 +278,63 @@ CDLL_EXPORT void qtrk_get_profile_report(QueuedTracker* qtrk, LStrHandle str)
 {
 	SetLVString(str, qtrk->GetProfileReport().c_str());
 }
+
+
+#ifdef CUDA_TRACK
+
+#include "cuda_runtime.h"
+
+CDLL_EXPORT void qtrkcuda_set_device_list(LVArray<int>** devices)
+{
+	std::vector<int> devlist( (*devices)->elem, (*devices)->elem + (*devices)->dimSize );
+	SetCUDADevices(devlist);
+}
+
+static bool CheckCUDAErrorLV(cudaError err, ErrorCluster* e)
+{
+	if (err != cudaSuccess) {
+		const char* errstr = cudaGetErrorString(err);
+		FillErrorCluster(kAppErrorBase, SPrintf("CUDA error: %s", errstr).c_str(), e);
+		return false;
+	}
+	return true;
+}
+
+#pragma pack(push,1)
+struct CUDADeviceInfo 
+{
+	LStrHandle name;
+	int clockRate;
+	int multiProcCount;
+	int major, minor;
+};
+#pragma pack(pop)
+
+CDLL_EXPORT int qtrkcuda_device_count(ErrorCluster* e) {
+	int c;
+	if (CheckCUDAErrorLV(cudaGetDeviceCount(&c), e)) {
+		return c;
+	}
+	return 0;
+}
+
+CDLL_EXPORT void qtrkcuda_get_device(int device, CUDADeviceInfo *info, ErrorCluster* e)
+{
+	cudaDeviceProp prop;
+	if (CheckCUDAErrorLV(cudaGetDeviceProperties(&prop, device), e)) {
+		info->multiProcCount = prop.multiProcessorCount;
+		info->clockRate = prop.clockRate;
+		info->major = prop.major;
+		info->minor = prop.minor;
+		SetLVString(info->name, prop.name);
+	}
+}
+
+#else
+
+
+CDLL_EXPORT int qtrkcuda_device_count(ErrorCluster* e) { return 0; }
+CDLL_EXPORT void qtrkcuda_get_device(int device, void *info, ErrorCluster* e) {}
+
+#endif
+
