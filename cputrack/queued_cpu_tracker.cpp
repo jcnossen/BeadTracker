@@ -146,6 +146,7 @@ void QueuedCPUTracker::Start()
 
 	for (int k=0;k<threads.size();k++) {
 		threads[k].thread = Threads::Create(WorkerThreadMain, &threads[k]);
+		Threads::SetBackgroundPriority(threads[k].thread, true);
 	}
 
 	processJobs = true;

@@ -68,6 +68,23 @@ struct Threads
 		return (Handle*)h;
 	}
 
+	static bool RunningVistaOrBetter ()
+	{
+		OSVERSIONINFO v;
+		GetVersionEx(&v);
+		return v.dwMajorVersion >= 6;
+	}
+
+	static void SetBackgroundPriority(Handle* thread, bool bg)
+	{
+		HANDLE h = (HANDLE)thread;
+		// >= Windows Vista
+		if (RunningVistaOrBetter())
+			SetThreadPriority(h, bg ? THREAD_MODE_BACKGROUND_BEGIN : THREAD_MODE_BACKGROUND_END);
+		else
+			SetThreadPriority(h, bg ? THREAD_PRIORITY_BELOW_NORMAL : THREAD_PRIORITY_NORMAL);
+	}
+
 	static void WaitAndClose(Handle* h) {
 		WaitForSingleObject((HANDLE)h, INFINITE);
 		CloseHandle((HANDLE)h);
