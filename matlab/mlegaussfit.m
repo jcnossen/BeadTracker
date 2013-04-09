@@ -86,7 +86,8 @@ function [img, imgcv] = makesample(Size, P)
     imgcv = poissrnd(imgcv);
     
     % Expected values
-    DeltaX = 0.5 * erf( (X-Sx + .5) / (2*Sigma^2) ) - 0.5 * erf((X-Sx - .5) / (2*Sigma^2));
+    edenom = sqrt(2*Sigma^2);
+    DeltaX = 0.5 * erf( (X-Sx + .5) * edenom ) - 0.5 * erf((X-Sx - .5) * edenom);
     DeltaY = 0.5 * erf( (Y-Sy + .5) / (2*Sigma^2) ) - 0.5 * erf((Y-Sy - .5) / (2*Sigma^2));
     img = Ibg + I0 * DeltaX .* DeltaY;
     

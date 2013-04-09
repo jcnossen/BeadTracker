@@ -189,6 +189,7 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	if (cfg->numThreads < 1) {
 		cfg->numThreads = devices.size()*3;
 	}
+	int numStreams = cfg->numThreads;
 
 	cudaGetDeviceProperties(&deviceProp, devices[0]->index);
 	numThreads = deviceProp.warpSize;
@@ -206,7 +207,7 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 //	dbgprintf("2X FFT instance requires %d bytes. Space per thread: %d\n", forward_fft->kparams_size*2, sharedSpacePerThread);
 	dbgprintf("Device: %s.\n", deviceProp.name);
 	//dbgprintf("Shared memory space:%d bytes. Per thread: %d\n", deviceProp.sharedMemPerBlock, deviceProp.sharedMemPerBlock/numThreads);
-	dbgprintf("# of CUDA processors:%d. Using %d streams\n", deviceProp.multiProcessorCount, cfg->numThreads);
+	dbgprintf("# of CUDA processors:%d. Using %d streams\n", deviceProp.multiProcessorCount, numStreams);
 	dbgprintf("Warp size: %d. Max threads: %d, Batch size: %d. QI FFT Length: %d\n", deviceProp.warpSize, deviceProp.maxThreadsPerBlock, batchSize, qi_FFT_length);
 
 	KernelParams &p = kernelParams;
@@ -243,13 +244,18 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 		d->d_qiradialgrid=qi_radialgrid;
 		d->d_zlutradialgrid = zlut_radialgrid;
 	}
-	
 	kernelParams.zlut.img = cudaImageListf::empty();
 	
-	streams.resize(cfg->numThreads);
-	for (int i=0;i<streams.size();i++) {
-		streams[i] = CreateStream( devices[i%devices.size()] );
+	streams.reserve(numStreams);
+	try {
+		for (int i=0;i<numStreams;i++)
+			streams.push_back( CreateStream( devices[i%devices.size()] ) );
 	}
+	catch(...) {
+		DeleteAllElems(streams);
+		throw;
+	}
+
 	currentStream=streams[0];
 	int memUsePerStream = streams[0]->CalcMemoryUse();
 	dbgprintf("Stream memory use: %d kb", memUsePerStream/1024);
@@ -368,44 +374,50 @@ int QueuedCUDATracker::Stream::CalcMemoryUse()
 QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream(Device* device)
 {
 	Stream* s = new Stream();
-	s->device = device;
-	cudaSetDevice(device->index);
-	cudaStreamCreate(&s->stream);
 
-	uint hostBufSize = sizeof(float)* cfg.width*cfg.height*batchSize;
-	s->hostImageBuf.init(hostBufSize);
-	s->images = cudaImageListf::alloc(cfg.width, cfg.height, batchSize);
+	try {
+		s->device = device;
+		cudaSetDevice(device->index);
+		cudaStreamCreate(&s->stream);
 
-	s->jobs.reserve(batchSize);
-	s->results.init(batchSize);
-	s->com.init(batchSize);
-	s->d_com.init(batchSize);
-	s->d_resultpos.init(batchSize);
-	s->results.init(batchSize);
-	s->zlutmapping.init(batchSize);
-	s->d_zlutmapping.init(batchSize);
-	s->d_quadrants.init(qi_FFT_length*batchSize*2);
-	s->d_QIprofiles.init(batchSize*2*qi_FFT_length); // (2 axis) * (2 radialsteps) = 8 * nr = 2 * qi_FFT_length
-	s->d_QIprofiles_reverse.init(batchSize*2*qi_FFT_length);
-	s->d_radialprofiles.init(cfg.zlut_radialsteps*batchSize);
-	s->d_imgmeans.init(batchSize);
+		uint hostBufSize = cfg.width*cfg.height*batchSize;
+		s->hostImageBuf.init(hostBufSize);
+		s->images = cudaImageListf::alloc(cfg.width, cfg.height, batchSize);
+
+		s->jobs.reserve(batchSize);
+		s->results.init(batchSize);
+		s->com.init(batchSize);
+		s->d_com.init(batchSize);
+		s->d_resultpos.init(batchSize);
+		s->results.init(batchSize);
+		s->zlutmapping.init(batchSize);
+		s->d_zlutmapping.init(batchSize);
+		s->d_quadrants.init(qi_FFT_length*batchSize*2);
+		s->d_QIprofiles.init(batchSize*2*qi_FFT_length); // (2 axis) * (2 radialsteps) = 8 * nr = 2 * qi_FFT_length
+		s->d_QIprofiles_reverse.init(batchSize*2*qi_FFT_length);
+		s->d_radialprofiles.init(cfg.zlut_radialsteps*batchSize);
+		s->d_imgmeans.init(batchSize);
 	
-	// 2* batchSize, since X & Y both need an FFT transform
-	//cufftResult_t r = cufftPlanMany(&s->fftPlan, 1, &qi_FFT_length, 0, 1, qi_FFT_length, 0, 1, qi_FFT_length, CUFFT_C2C, batchSize*4);
-	cufftResult_t r = cufftPlan1d(&s->fftPlan, qi_FFT_length, CUFFT_C2C, batchSize*2);
+		// 2* batchSize, since X & Y both need an FFT transform
+		//cufftResult_t r = cufftPlanMany(&s->fftPlan, 1, &qi_FFT_length, 0, 1, qi_FFT_length, 0, 1, qi_FFT_length, CUFFT_C2C, batchSize*4);
+		cufftResult_t r = cufftPlan1d(&s->fftPlan, qi_FFT_length, CUFFT_C2C, batchSize*2);
 
-	if(r != CUFFT_SUCCESS) {
-		throw std::runtime_error( SPrintf("CUFFT plan creation failed. FFT len: %d. Batchsize: %d\n", qi_FFT_length, batchSize*4));
+		if(r != CUFFT_SUCCESS) {
+			throw std::runtime_error( SPrintf("CUFFT plan creation failed. FFT len: %d. Batchsize: %d\n", qi_FFT_length, batchSize*4));
+		}
+		cufftSetCompatibilityMode(s->fftPlan, CUFFT_COMPATIBILITY_NATIVE);
+		cufftSetStream(s->fftPlan, s->stream);
+
+		cudaEventCreate(&s->localizationDone);
+		cudaEventCreate(&s->comDone);
+		cudaEventCreate(&s->imageCopyDone);
+		cudaEventCreate(&s->zcomputeDone);
+		cudaEventCreate(&s->qiDone);
+		cudaEventCreate(&s->batchStart);
+	} catch (const std::exception& e) {
+		delete s;
+		throw;
 	}
-	cufftSetCompatibilityMode(s->fftPlan, CUFFT_COMPATIBILITY_NATIVE);
-	cufftSetStream(s->fftPlan, s->stream);
-
-	cudaEventCreate(&s->localizationDone);
-	cudaEventCreate(&s->comDone);
-	cudaEventCreate(&s->imageCopyDone);
-	cudaEventCreate(&s->zcomputeDone);
-	cudaEventCreate(&s->qiDone);
-	cudaEventCreate(&s->batchStart);
 	return s;
 }
 

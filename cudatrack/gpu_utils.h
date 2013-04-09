@@ -42,9 +42,13 @@ public:
 	void init(int s) {
 		if(size != s) {
 			free();
-			if (s!=0) cudaMalloc(&data, sizeof(T)*s);
 		}
-		size = s;
+		if (s!=0) {
+			if (cudaMalloc(&data, sizeof(T)*s) != cudaSuccess) {
+				throw std::bad_alloc(SPrintf("device_vec<%s> init %d elements failed", typeid(T).name(), s).c_str());
+			}
+			size = s;
+		}
 	}
 	void free() {
 		if (data) {
@@ -171,7 +175,9 @@ public:
 	void init(int n) {
 		if (d) free();
 		this->n = n;
-		cudaMallocHost(&d, sizeof(T)*n, flags);
+		if (cudaMallocHost(&d, sizeof(T)*n, flags) != cudaSuccess) {
+			throw std::bad_alloc(SPrintf("pinned_array<%s> init %d elements failed", typeid(T).name(), n).c_str());
+		}
 	}
 	T& operator[](int i) {  return d[i]; }
 	const T&operator[](int i) const { return d[i];}

@@ -20,7 +20,9 @@ struct cudaImageList {
 		cudaImageList imgl;
 		imgl.w = w; imgl.h = h;
 		imgl.count = amount;
-		cudaMallocPitch(&imgl.data, &imgl.pitch, sizeof(T)*w, h*amount);
+		if (cudaMallocPitch(&imgl.data, &imgl.pitch, sizeof(T)*w, h*amount) != cudaSuccess) {
+			throw std::bad_alloc(SPrintf("cudaImageListf<%s> alloc %dx%dx%d failed", typeid(T).name(), w, h, amount).c_str());
+		}
 		return imgl;
 	}
 
