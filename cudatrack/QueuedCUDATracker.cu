@@ -1123,7 +1123,7 @@ int QueuedCUDATracker::GetResultCount()
 
 
 // TODO: Let GPU copy frames from frames to GPU 
-void QueuedCUDATracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob* jobInfo )
+void QueuedCUDATracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob* jobInfo)
 {
 	uchar* img = (uchar*)imgptr;
 	int bpp = sizeof(float);
@@ -1136,7 +1136,7 @@ void QueuedCUDATracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int h
 
 		uchar *roiptr = &img[pitch * pos.y + pos.x * bpp];
 		LocalizationJob job = *jobInfo;
-		job.zlutIndex = i;
+		job.zlutIndex = i + jobInfo->zlutIndex;
 		ScheduleLocalization(roiptr, pitch, pdt, &job);
 	}
 }

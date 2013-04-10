@@ -358,7 +358,7 @@ void QueuedCPUTracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int he
 
 		uchar *roiptr = &img[pitch * pos.y + pos.x * bpp];
 		LocalizationJob job = *jobInfo;
-		job.zlutIndex = i;
+		job.zlutIndex = i + jobInfo->zlutIndex; // used as offset
 		ScheduleLocalization(roiptr, pitch, pdt, &job);
 	}
 }
