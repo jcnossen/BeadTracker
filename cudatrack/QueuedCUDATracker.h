@@ -101,7 +101,7 @@ protected:
 		Stream();
 		~Stream();
 		bool IsExecutionDone();
-		int CalcMemoryUse();
+		void OutputMemoryUse();
 		int JobCount() { return jobs.size(); }
 		
 		pinned_array<float3> results;

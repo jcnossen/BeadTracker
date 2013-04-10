@@ -257,8 +257,7 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	}
 
 	currentStream=streams[0];
-	int memUsePerStream = streams[0]->CalcMemoryUse();
-	dbgprintf("Stream memory use: %d kb", memUsePerStream/1024);
+	streams[0]->OutputMemoryUse();
 
 	batchesDone = 0;
 	time_QI = time_COM = time_ZCompute = time_imageCopy = 0.0;
@@ -364,10 +363,15 @@ bool QueuedCUDATracker::Stream::IsExecutionDone()
 	return cudaEventQuery(localizationDone) == cudaSuccess;
 }
 
-int QueuedCUDATracker::Stream::CalcMemoryUse()
+
+void QueuedCUDATracker::Stream::OutputMemoryUse()
 {
-	return d_com.memsize() + d_zlutmapping.memsize() + d_QIprofiles.memsize() + d_QIprofiles_reverse.memsize() + d_radialprofiles.memsize() + d_imgmeans.memsize() +
-		d_quadrants.memsize() + d_resultpos.memsize() + d_zlutcmpscores.memsize();
+	int deviceMem = d_com.memsize() + d_zlutmapping.memsize() + d_QIprofiles.memsize() + d_QIprofiles_reverse.memsize() + d_radialprofiles.memsize() + d_imgmeans.memsize() +
+		d_quadrants.memsize() + d_resultpos.memsize() + d_zlutcmpscores.memsize() + images.totalNumBytes();
+
+	int hostMem = hostImageBuf.memsize() + com.memsize() + zlutmapping.memsize() + results.memsize();
+
+	dbgprintf("Stream memory use: %d kb pinned on host, %d kb device memory (%d for images). \n", hostMem / 1024, deviceMem/1024, images.totalNumBytes()/1024);
 }
 
 

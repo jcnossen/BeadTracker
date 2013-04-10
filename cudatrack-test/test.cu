@@ -534,7 +534,7 @@ void CompareAccuracy ()
 	cfg.qi_radialsteps = NearestPowerOfTwo(cfg.qi_maxradius);
 	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
-	cfg.zlut_maxradius = 40;
+	cfg.zlut_maxradius = cfg.qi_maxradius;
 	cfg.zlut_radialsteps = 64;
 	cfg.zlut_angularsteps = 128;
 
@@ -569,7 +569,7 @@ void CompareAccuracy ()
 			results[j * trackers.size() + i] = r[j];
 		dbgprintf("tracker %d done. \n", i);
 	}
-	const char *labels[] = { "CUDA(tc)", "CUDA (mem)", "CPU" };
+	const char *labels[] = { "cudatcx","cudatcy","cudatcz", "cudax","cuday","cudaz", "cpux", "cpuy", "cpuz"};
 	WriteImageAsCSV( "cmpresults.txt" , (float*)results, trackers.size()*3, n, labels );
 
 	DeleteAllElems(trackers);
@@ -581,7 +581,7 @@ int main(int argc, char *argv[])
 //	testLinearArray();
 
 	//QTrkTest();
-	ProfileSpeedVsROI();
-	//CompareAccuracy();
+	//ProfileSpeedVsROI();
+	CompareAccuracy();
 	return 0;
 }
