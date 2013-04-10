@@ -488,9 +488,13 @@ void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 	s->lock();
 
 	int jobIndex = s->jobs.size();
-	s->jobs.push_back(*jobInfo);
-	s->localizeFlags |= jobInfo->LocType(); // which kernels to run
-	s->zlutmapping[jobIndex].locType = jobInfo->LocType();
+	LocalizationJob job = *jobInfo;
+	job.locType = jobInfo->LocType();
+	if (s->device->zlut.count == 0)  // dont do ZLUT commands when no ZLUT has been set
+		job.locType &= ~(LocalizeZ | LocalizeBuildZLUT);
+	s->jobs.push_back(job);
+	s->localizeFlags |= job.locType; // which kernels to run
+	s->zlutmapping[jobIndex].locType = job.LocType();
 	s->zlutmapping[jobIndex].zlutIndex = jobInfo->zlutIndex;
 	s->zlutmapping[jobIndex].zlutPlane = jobInfo->zlutPlane;
 

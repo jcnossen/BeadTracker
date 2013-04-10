@@ -194,10 +194,30 @@ CDLL_EXPORT void qtrk_queue_array(QueuedTracker* qtrk,  ErrorCluster* error,LVAr
 }
 
 
-CDLL_EXPORT void qtrk_queue_frame(QueuedTracker* qtrk, uchar* image, int pitch, int w,int h, 
-	uint pdt, ROIPosition* pos, int numROI, const LocalizationJob *jobInfo)
+enum QueueFrameFlags {
+	QFF_ReadTimestampFromFrame = 1,
+	QFF_ReadTimestampFromFrameRev = 2,
+	QFF_Force32Bit = 0x7fffffff
+};
+
+CDLL_EXPORT uint qtrk_queue_frame(QueuedTracker* qtrk, uchar* image, int pitch, int w,int h, 
+	uint pdt, ROIPosition* pos, int numROI, const LocalizationJob *pJobInfo, QueueFrameFlags flags)
 {
-	qtrk->ScheduleFrame(image, pitch, w,h, pos, numROI, (QTRK_PixelDataType)pdt, jobInfo);
+	int s = sizeof(QueueFrameFlags);
+	
+	LocalizationJob jobInfo = *pJobInfo;
+	uchar *timestamp = (uchar*)&jobInfo.timestamp;
+	if (flags & QFF_ReadTimestampFromFrame) {
+		// Assume little endian only
+		for (int i=0;i<4;i++)
+			timestamp[i] = image[i];
+	} else if (flags & QFF_ReadTimestampFromFrameRev) {
+		for (int i=0;i<4;i++)
+			timestamp[i] = image[3-i];
+	}
+
+	qtrk->ScheduleFrame(image, pitch, w,h, pos, numROI, (QTRK_PixelDataType)pdt, &jobInfo);
+	return jobInfo.timestamp;
 }
 
 
