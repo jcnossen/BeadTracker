@@ -49,7 +49,6 @@
 		<Item Name="LoadImageForDisplay.vi" Type="VI" URL="../OfflineQTrk.llb/LoadImageForDisplay.vi"/>
 		<Item Name="LUTInfo.ctl" Type="VI" URL="../OfflineQTrk.llb/LUTInfo.ctl"/>
 		<Item Name="OfflineQTrk.vi" Type="VI" URL="../OfflineQTrk.llb/OfflineQTrk.vi"/>
-		<Item Name="ProcessImageFile.vi" Type="VI" URL="../OfflineQTrk.llb/ProcessImageFile.vi"/>
 		<Item Name="QueueSingleFrame.vi" Type="VI" URL="../OfflineQTrk.llb/QueueSingleFrame.vi"/>
 		<Item Name="ReadImageToArray.vi" Type="VI" URL="../OfflineQTrk.llb/ReadImageToArray.vi"/>
 		<Item Name="RunJob.vi" Type="VI" URL="../OfflineQTrk.llb/RunJob.vi"/>
@@ -60,6 +59,7 @@
 		<Item Name="SaveResults.vi" Type="VI" URL="../OfflineQTrk.llb/SaveResults.vi"/>
 		<Item Name="ScalePixelsToMicrons.vi" Type="VI" URL="../OfflineQTrk.llb/ScalePixelsToMicrons.vi"/>
 		<Item Name="SelectBeads.vi" Type="VI" URL="../OfflineQTrk.llb/SelectBeads.vi"/>
+		<Item Name="TryReadImageFile.vi" Type="VI" URL="../OfflineQTrk.llb/TryReadImageFile.vi"/>
 		<Item Name="XYZf.ctl" Type="VI" URL="../QTrk.llb/XYZf.ctl"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
