@@ -7,6 +7,7 @@ Labview API for the functionality in QueuedTracker.h
 #include "QueuedTracker.h"
 #include "threads.h" 
 
+#include "lv_qtrk_api.h"
 
 static Threads::Mutex trackerListMutex;
 static std::vector<QueuedTracker*> trackerList;
@@ -194,12 +195,6 @@ CDLL_EXPORT void qtrk_queue_array(QueuedTracker* qtrk,  ErrorCluster* error,LVAr
 }
 
 
-enum QueueFrameFlags {
-	QFF_ReadTimestampFromFrame = 1,
-	QFF_ReadTimestampFromFrameRev = 2,
-	QFF_Force32Bit = 0x7fffffff
-};
-
 CDLL_EXPORT uint qtrk_queue_frame(QueuedTracker* qtrk, uchar* image, int pitch, int w,int h, 
 	uint pdt, ROIPosition* pos, int numROI, const LocalizationJob *pJobInfo, QueueFrameFlags flags)
 {
@@ -305,8 +300,7 @@ CDLL_EXPORT void qtrk_get_profile_report(QueuedTracker* qtrk, LStrHandle str)
 
 CDLL_EXPORT void qtrkcuda_set_device_list(LVArray<int>** devices)
 {
-	std::vector<int> devlist( (*devices)->elem, (*devices)->elem + (*devices)->dimSize );
-	SetCUDADevices(devlist);
+	SetCUDADevices( (*devices)->elem, (*devices)->dimSize );
 }
 
 static bool CheckCUDAErrorLV(cudaError err, ErrorCluster* e)
@@ -318,16 +312,6 @@ static bool CheckCUDAErrorLV(cudaError err, ErrorCluster* e)
 	}
 	return true;
 }
-
-#pragma pack(push,1)
-struct CUDADeviceInfo 
-{
-	LStrHandle name;
-	int clockRate;
-	int multiProcCount;
-	int major, minor;
-};
-#pragma pack(pop)
 
 CDLL_EXPORT int qtrkcuda_device_count(ErrorCluster* e) {
 	int c;

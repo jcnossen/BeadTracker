@@ -67,5 +67,9 @@ typedef unsigned char uchar;
 #define ALLOCA_ARRAY(T, N) ((T*)ALLOCA(sizeof(T) * N))
 
 #define DLL_CALLCONV __cdecl
-#define CDLL_EXPORT extern "C" __declspec(dllexport) 
-#define DLL_EXPORT __declspec(dllexport) 
+#ifdef QTRK_EXPORTS
+	#define DLL_EXPORT __declspec(dllexport) 
+#else
+	#define DLL_EXPORT __declspec(dllimport)
+#endif
+#define CDLL_EXPORT extern "C" DLL_EXPORT

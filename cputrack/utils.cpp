@@ -11,6 +11,15 @@
 #include "LsqQuadraticFit.h"
 #include "QueuedTracker.h"
 
+// For some reason, abstract virtual destructors need to have an implementation in C++
+QueuedTracker::~QueuedTracker() {}
+
+CDLL_EXPORT void DestroyQueuedTracker(QueuedTracker* qtrk)
+{
+	delete qtrk;
+}
+
+
 std::string SPrintf(const char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
@@ -27,7 +36,7 @@ void dbgout(const std::string& s) {
 	printf(s.c_str());
 }
 
-void dbgprintf(const char *fmt,...) {
+CDLL_EXPORT void dbgprintf(const char *fmt,...) {
 	va_list ap;
 	va_start(ap, fmt);
 
@@ -260,9 +269,16 @@ void WriteImageAsCSV(const char* file, float* d, int w,int h, const char* labels
 }
 
 
-void WriteComplexImageAsCSV(const char* file, std::complex<float>* d, int w,int h)
+void WriteComplexImageAsCSV(const char* file, std::complex<float>* d, int w,int h, const char* labels[])
 {
 	FILE* f = fopen(file, "w");
+
+	if (labels) {
+		for (int i=0;i<w;i++) {
+			fprintf(f, "%s;\t", labels[i]);
+		}
+		fputs("\n", f);
+	}
 
 	for (int y=0;y<h;y++) {
 		for (int x=0;x<w;x++)
@@ -295,7 +311,7 @@ std::vector<uchar> ReadToByteBuffer(const char *filename)
 	return buf;
 }
 
-void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelDataType pdt, float* dst)
+CDLL_EXPORT void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelDataType pdt, float* dst)
 {
 	if (pdt == QTrkU8) {
 		for (int y=0;y<height;y++) {
@@ -334,4 +350,6 @@ double GetPreciseTime()
 
 	return (double)time / (double)freq;
 }
+
+
 

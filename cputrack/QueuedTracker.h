@@ -106,7 +106,7 @@ class QueuedTracker
 {
 public:
 	QueuedTracker() {}
-	virtual ~QueuedTracker() {}
+	virtual ~QueuedTracker();
 
 	// Frame and timestamp are ignored by tracking code itself, but usable for the calling code
 	// Pitch: Distance in bytes between two successive rows of pixels (e.g. address of (0,0) -  address of (0,1) )
@@ -144,8 +144,9 @@ public:
 
 };
 
-
-void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelDataType pdt, float* dst);
-QueuedTracker* CreateQueuedTracker(QTrkSettings* s);
-void SetCUDADevices(std::vector<int> devices); // empty for CPU tracker
+CDLL_EXPORT void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelDataType pdt, float* dst);
+CDLL_EXPORT QueuedTracker* CreateQueuedTracker(QTrkSettings* s);
+// if the tracker code is in a different DLL, you cannot call delete on the tracker instance. (DLLs do not share the memory heap with the host app)
+CDLL_EXPORT void DestroyQueuedTracker(QueuedTracker* qtrk); 
+CDLL_EXPORT void SetCUDADevices(int *devices, int numdev); // empty for CPU tracker
 

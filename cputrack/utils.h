@@ -6,9 +6,9 @@ template<typename T> bool isNAN(const T& v) {
 	return !(v == v); 
 }
 
-DLL_EXPORT void dbgout(const std::string& s);
-DLL_EXPORT std::string SPrintf(const char *fmt, ...);
-DLL_EXPORT void dbgprintf(const char *fmt,...);
+void dbgout(const std::string& s);
+std::string SPrintf(const char *fmt, ...);
+CDLL_EXPORT void dbgprintf(const char *fmt,...);
 
 template<typename T>
 void DeleteAllElems(T& c) {

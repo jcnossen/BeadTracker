@@ -130,7 +130,7 @@ void QTrkTest()
 	cfg.numThreads = 2;
 	cfg.qi_iterations=1;
 	int total= 10;
-	int batchSize = 1;
+	int batchSize = 2;
 	haveZLUT=true;
 #else
 	cfg.numThreads = 4;
@@ -393,13 +393,13 @@ struct SpeedInfo {
 SpeedInfo SpeedCompareTest(int w)
 {
 	int cudaBatchSize = 1024;
-	int count = 30000;
+	int count = 50000;
 
 #ifdef _DEBUG
 	count = 100;
 	cudaBatchSize = 32;
 #endif
-	bool haveZLUT = true;
+	bool haveZLUT = false;
 	LocalizeType locType = LocalizeQI;
 
 	QTrkSettings cfg;
@@ -440,7 +440,8 @@ SpeedInfo SpeedCompareTest(int w)
 	delete cudatrk;
 
 	dbgprintf("CPU tracking speed: %d img/s\n", (int)cpuspeed);
-	dbgprintf("GPU tracking speed: %d img/s\n", (int)gputexspeed);
+	dbgprintf("GPU (tc) tracking speed: %d img/s\n", (int)gputexspeed);
+	dbgprintf("GPU tracking speed: %d img/s\n", (int)gpuspeed);
 	dbgout(report);
 
 	SpeedInfo info;
@@ -540,9 +541,9 @@ void CompareAccuracy ()
 
 	int n = 5000;
 #ifdef _DEBUG
-	n = 50;
+	n = 2;
 #endif
-	bool haveZLUT = true;
+	bool haveZLUT = false;
 
 	std::vector<vector3f> truePos (n);
 	for (int i=0;i<n;i++) {
@@ -564,10 +565,13 @@ void CompareAccuracy ()
 	auto results = new vector3f[ trackers.size() * n ];
 
 	for (int i=0;i<trackers.size();i++) {
-		auto r = LocalizeGeneratedImages(cfg, trackers[i], haveZLUT, LocalizeQI, truePos);
+		double t0 = GetPreciseTime();
+		auto r = LocalizeGeneratedImages(cfg, trackers[i], haveZLUT, LocalizeOnlyCOM, truePos);
 		for (int j=0;j<n;j++) 
 			results[j * trackers.size() + i] = r[j];
-		dbgprintf("tracker %d done. \n", i);
+		double t1 = GetPreciseTime();
+		dbgprintf("tracker %d done. (%1.2f s) \n", i, t1-t0);
+		dbgout( trackers[i]->GetProfileReport() );
 	}
 	const char *labels[] = { "cudatcx","cudatcy","cudatcz", "cudax","cuday","cudaz", "cpux", "cpuy", "cpuz"};
 	WriteImageAsCSV( "cmpresults.txt" , (float*)results, trackers.size()*3, n, labels );
@@ -582,6 +586,8 @@ int main(int argc, char *argv[])
 
 	//QTrkTest();
 	//ProfileSpeedVsROI();
-	CompareAccuracy();
+//	CompareAccuracy();
+	auto info = SpeedCompareTest(80);
+	dbgprintf("CPU: %f, GPU: %f, GPU(tc): %f\n", info.cpu, info.gpu, info.gputex); 
 	return 0;
 }

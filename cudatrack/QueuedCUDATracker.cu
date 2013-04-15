@@ -79,8 +79,8 @@ typedef float qivalue_t;
 typedef sfft::complex<qivalue_t> qicomplex_t;
 
 static std::vector<int> cudaDeviceList; 
-void SetCUDADevices(std::vector<int> devices) {
-	cudaDeviceList = devices;
+void SetCUDADevices(int* dev, int numdev) {
+	cudaDeviceList.assign(dev,dev+numdev);
 }
 
 // According to this, textures bindings can be switched after the asynchronous kernel is launched
@@ -708,6 +708,8 @@ __global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* po
 	}
 }
 
+
+
 __global__ void QI_QuadrantsToProfiles(int njobs, cudaImageListf images, float* quadrants, float2* profiles, float2* reverseProfiles,  const QIParams params)
 {
 //ComputeQuadrantProfile(cudaImageListf& images, int idx, float* dst, const QIParams& params, int quadrant, float2 center)
@@ -715,6 +717,8 @@ __global__ void QI_QuadrantsToProfiles(int njobs, cudaImageListf images, float* 
 	if (idx < njobs) {
 		int fftlen = params.radialSteps*2;
 		float* img_qdr = &quadrants[ idx * params.radialSteps * 4 ];
+	//	for (int q=0;q<4;q++)
+			//ComputeQuadrantProfile<TImageSampler> (images, idx, &img_qdr[q*params.radialSteps], params, q, img_means[idx], make_float2(positions[idx].x, positions[idx].y));
 
 		int nr = params.radialSteps;
 		qicomplex_t* imgprof = (qicomplex_t*) &profiles[idx * fftlen*2];
@@ -747,10 +751,12 @@ __global__ void QI_QuadrantsToProfiles(int njobs, cudaImageListf images, float* 
 			y0[nr-r-1] = qicomplex_t(q2[r]+q3[r]);
 		}
 
+
 		for(int r=0;r<nr*2;r++)
 			xrev[r] = x0[nr*2-r-1];
 		for(int r=0;r<nr*2;r++)
 			yrev[r] = y0[nr*2-r-1];
+
 	}
 }
 
@@ -789,27 +795,6 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 	int njobs = s->jobs.size();
 	dim3 qdrThreads(16, 8);
 
-	dim3 qdrDim( (njobs + qdrThreads.x - 1) / qdrThreads.x, (cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y, 4 );
-	QI_ComputeQuadrants<TImageSampler> <<< qdrDim , qdrThreads, 0, s->stream >>> 
-		(njobs, s->images, initial->data, s->d_quadrants.data, s->d_imgmeans.data, kernelParams.qi);
-
-	QI_QuadrantsToProfiles <<< blocks(njobs), threads(), 0, s->stream >>> 
-		(njobs, s->images, s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, kernelParams.qi);
-
-	cudaStreamSynchronize(s->stream);
-	auto p0 = s->d_QIprofiles.toVector();
-
-	QI_ComputeProfile <TImageSampler> <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
-		s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, s->d_imgmeans.data,  kernelParams.qi);
-	cudaStreamSynchronize(s->stream);
-	auto p1 = s->d_QIprofiles.toVector();
-
-	for (int j=0;j<njobs;j++) {
-		float2* r1 = &p1[j * cfg.qi_radialsteps * 4];
-		float2* r0 = &p0[j * cfg.qi_radialsteps * 4];
-
-	}
-
 
 	if (0) {
 		dim3 qdrDim( (njobs + qdrThreads.x - 1) / qdrThreads.x, (cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y, 4 );
@@ -820,9 +805,44 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 			(njobs, s->images, s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, kernelParams.qi);
 	}
 	else {
-	//	QI_ComputeProfile <TImageSampler> <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
-	//		s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, s->d_imgmeans.data,  kernelParams.qi);
+		QI_ComputeProfile <TImageSampler> <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
+			s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, s->d_imgmeans.data,  kernelParams.qi);
 	}
+
+/*	cudaStreamSynchronize(s->stream);
+	auto q0 = s->d_quadrants.toVector();
+	auto p0 = s->d_QIprofiles.toVector();
+
+	QI_ComputeProfile <TImageSampler> <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
+		s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, s->d_imgmeans.data,  kernelParams.qi);
+	cudaStreamSynchronize(s->stream);
+	auto q1 = s->d_quadrants.toVector();
+	auto p1 = s->d_QIprofiles.toVector();
+
+	WriteImageAsCSV("qi-q1.txt", &q1[0], cfg.qi_radialsteps * 4, njobs);
+	WriteImageAsCSV("qi-q0.txt", &q0[0], cfg.qi_radialsteps * 4, njobs);
+
+	WriteComplexImageAsCSV("qi-p0.txt", (std::complex<float>*)&p0[0], 2*qi_FFT_length, njobs);
+	WriteComplexImageAsCSV("qi-p1.txt", (std::complex<float>*) &p1[0], 2*qi_FFT_length, njobs);
+
+	for (int j=0;j<njobs;j++) {
+		float2* r1 = &p1[j * cfg.qi_radialsteps * 4];
+		float2* r0 = &p0[j * cfg.qi_radialsteps * 4];
+
+		float* s1 = &q1[j * cfg.qi_radialsteps * 4];
+		float* s0 = &q0[j * cfg.qi_radialsteps * 4];
+
+		for (int q=0;q<4;q++) {
+			for (int r=0;r<cfg.qi_radialsteps;r++) {
+
+				s1 ++;
+				s0 ++;
+			}
+		}
+
+
+	}
+	*/
 	checksum(s->d_quadrants.data, qi_FFT_length * 2, njobs, "quadrant");
 	checksum(s->d_QIprofiles.data, qi_FFT_length * 2, njobs, "prof");
 	checksum(s->d_QIprofiles_reverse.data, qi_FFT_length * 2, njobs, "revprof");
@@ -986,6 +1006,7 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	device_vec<float3> *curpos = &s->d_com;
 	if (s->localizeFlags & LocalizeQI) {
 		ProfileBlock p("QI");
+		//dbgprintf("QI... %d iterations\n", cfg.qi_iterations);
 		for (int a=0;a<cfg.qi_iterations;a++) {
 			QI_Iterate<TImageSampler> (curpos, &s->d_resultpos, s);
 			curpos = &s->d_resultpos;
@@ -1102,7 +1123,6 @@ void QueuedCUDATracker::SetZLUT(float* data,  int numLUTs, int planes, float* zc
 	for (int i=0;i<streams.size();i++) {
 		StreamUpdateZLUTSize(streams[i]);
 	}
-
 }
 
 void QueuedCUDATracker::StreamUpdateZLUTSize(Stream* s)

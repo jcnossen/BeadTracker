@@ -1,0 +1,59 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fastcamgrab", "fastcamgrab.vcxproj", "{EB197F7F-7573-48A9-9177-A98F554D1DAC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B} = {1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cputrack", "..\cputrack\cputrack.vcxproj", "{1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cudatrack", "..\cudatrack\cudatrack.vcxproj", "{ABB7D1D8-B6AD-4225-B2BB-345F1794BA88}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lvfastcamgrab", "lvfastcamgrab.vcxproj", "{EE628A7B-E3ED-4858-B5E8-AA588FADD042}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug-Single|Win32 = Debug-Single|Win32
+		Release|Win32 = Release|Win32
+		Release-Single|Win32 = Release-Single|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EB197F7F-7573-48A9-9177-A98F554D1DAC}.Debug|Win32.ActiveCfg = Debug|Win32
+		{EB197F7F-7573-48A9-9177-A98F554D1DAC}.Debug|Win32.Build.0 = Debug|Win32
+		{EB197F7F-7573-48A9-9177-A98F554D1DAC}.Debug-Single|Win32.ActiveCfg = Debug|Win32
+		{EB197F7F-7573-48A9-9177-A98F554D1DAC}.Debug-Single|Win32.Build.0 = Debug|Win32
+		{EB197F7F-7573-48A9-9177-A98F554D1DAC}.Release|Win32.ActiveCfg = Release|Win32
+		{EB197F7F-7573-48A9-9177-A98F554D1DAC}.Release|Win32.Build.0 = Release|Win32
+		{EB197F7F-7573-48A9-9177-A98F554D1DAC}.Release-Single|Win32.ActiveCfg = Release|Win32
+		{EB197F7F-7573-48A9-9177-A98F554D1DAC}.Release-Single|Win32.Build.0 = Release|Win32
+		{1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B}.Debug|Win32.ActiveCfg = Debug-Single|Win32
+		{1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B}.Debug|Win32.Build.0 = Debug-Single|Win32
+		{1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B}.Debug-Single|Win32.ActiveCfg = Debug-Single|Win32
+		{1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B}.Debug-Single|Win32.Build.0 = Debug-Single|Win32
+		{1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B}.Release|Win32.ActiveCfg = Release-Single|Win32
+		{1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B}.Release|Win32.Build.0 = Release-Single|Win32
+		{1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B}.Release-Single|Win32.ActiveCfg = Release-Single|Win32
+		{1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B}.Release-Single|Win32.Build.0 = Release-Single|Win32
+		{ABB7D1D8-B6AD-4225-B2BB-345F1794BA88}.Debug|Win32.ActiveCfg = Debug|Win32
+		{ABB7D1D8-B6AD-4225-B2BB-345F1794BA88}.Debug|Win32.Build.0 = Debug|Win32
+		{ABB7D1D8-B6AD-4225-B2BB-345F1794BA88}.Debug-Single|Win32.ActiveCfg = Debug|Win32
+		{ABB7D1D8-B6AD-4225-B2BB-345F1794BA88}.Debug-Single|Win32.Build.0 = Debug|Win32
+		{ABB7D1D8-B6AD-4225-B2BB-345F1794BA88}.Release|Win32.ActiveCfg = Release|Win32
+		{ABB7D1D8-B6AD-4225-B2BB-345F1794BA88}.Release|Win32.Build.0 = Release|Win32
+		{ABB7D1D8-B6AD-4225-B2BB-345F1794BA88}.Release-Single|Win32.ActiveCfg = Release|Win32
+		{ABB7D1D8-B6AD-4225-B2BB-345F1794BA88}.Release-Single|Win32.Build.0 = Release|Win32
+		{EE628A7B-E3ED-4858-B5E8-AA588FADD042}.Debug|Win32.ActiveCfg = Debug|Win32
+		{EE628A7B-E3ED-4858-B5E8-AA588FADD042}.Debug|Win32.Build.0 = Debug|Win32
+		{EE628A7B-E3ED-4858-B5E8-AA588FADD042}.Debug-Single|Win32.ActiveCfg = Debug|Win32
+		{EE628A7B-E3ED-4858-B5E8-AA588FADD042}.Debug-Single|Win32.Build.0 = Debug|Win32
+		{EE628A7B-E3ED-4858-B5E8-AA588FADD042}.Release|Win32.ActiveCfg = Release|Win32
+		{EE628A7B-E3ED-4858-B5E8-AA588FADD042}.Release|Win32.Build.0 = Release|Win32
+		{EE628A7B-E3ED-4858-B5E8-AA588FADD042}.Release-Single|Win32.ActiveCfg = Release|Win32
+		{EE628A7B-E3ED-4858-B5E8-AA588FADD042}.Release-Single|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

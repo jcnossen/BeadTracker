@@ -2,10 +2,10 @@
 #include "queued_cpu_tracker.h"
 
 #ifndef CUDA_TRACK
-QueuedTracker* CreateQueuedTracker(QTrkSettings* s) {
+CDLL_EXPORT QueuedTracker* CreateQueuedTracker(QTrkSettings* s) {
 	return new QueuedCPUTracker(s);
 }
-void SetCUDADevices(std::vector<int> devices) {
+CDLL_EXPORT void SetCUDADevices(int* dev, int ndev) {
 }
 #endif
 
