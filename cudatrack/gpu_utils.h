@@ -94,6 +94,12 @@ public:
 		else
 			cudaMemcpy(data, first, sizeof(T) * size, cudaMemcpyHostToDevice);
 	}
+	// debugging util. Be sure to synchronize before
+	std::vector<T> toVector() {
+		std::vector<T> v (size);
+		cudaMemcpy(&v[0], data, sizeof(T)*size, cudaMemcpyDeviceToHost);
+		return v;
+	}
 	size_t memsize() { return size*sizeof(T); }
 	size_t size;
 	T* data;

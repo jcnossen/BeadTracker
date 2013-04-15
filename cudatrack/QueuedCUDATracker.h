@@ -134,6 +134,8 @@ protected:
 		device_vec<float> d_zlutcmpscores; // [ zlutplanes * njobs ]
 		device_vec<float> d_imgmeans; // image mean value [njobs]
 
+		device_vec<float> d_shiftbuffer; // [ max(QI_fftlength, zlutplanes) * njobs ] ComputeMaxInterp temp space
+
 		uint localizeFlags; // Indicates whether kernels should be ran for building zlut, z computing, or QI
 		Device* device;
 
@@ -147,8 +149,6 @@ protected:
 		};
 		volatile State state; // I'm assuming this variable is atomic
 	};
-	Stream* CreateStream(Device* device);
-	void CopyStreamResults(Stream* s);
 
 	int numThreads;
 	int batchSize;
@@ -180,6 +180,9 @@ protected:
 	template<typename TImageSampler> void QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s);
 	bool CheckAllStreams(Stream::State state);
 	void InitializeDeviceList();
+	Stream* CreateStream(Device* device);
+	void CopyStreamResults(Stream* s);
+	void StreamUpdateZLUTSize(Stream *s);
 
 public:
 	typedef std::map<const char*, std::pair<int, double> > ProfileResults;
