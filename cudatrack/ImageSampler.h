@@ -1,0 +1,78 @@
+#pragma once
+#include "cudaImageList.h"
+
+class PixelSampler_MemCopy {
+public:
+	static void BindTexture(cudaImageListf& images) { }
+	static void UnbindTexture(cudaImageListf& images) { }
+
+	// All interpolated texture/images fetches go through here
+	static __device__ float Interpolated(cudaImageListf& images, float x,float y, int img, float imgmean)
+	{
+		return images.interpolate(x,y,img, imgmean);
+	}
+
+	// Assumes pixel is always within image bounds
+	static __device__ float Index(cudaImageListf& images, int x,int y, int img)
+	{
+		return images.pixel(x, y, img);
+	}
+};
+
+texture<float, cudaTextureType2D, cudaReadModeElementType> qi_image_texture_linear(0, cudaFilterModeLinear); // Un-normalized
+
+// Using the lower-accuracy interpolation of texture hardware
+class PixelSampler_SimpleTextureRead {
+public:
+	static void BindTexture(cudaImageListf& images) { images.bind(qi_image_texture_linear); }
+	static void UnbindTexture(cudaImageListf& images) { images.unbind(qi_image_texture_linear);  }
+
+	// All interpolated texture/images fetches go through here
+	static __device__ float Interpolated(cudaImageListf& images, float x,float y, int img, float imgmean)
+	{
+		float v;
+		if (x < 0 || x >= images.w-1 || y < 0 || y >= images.h-1)
+			v = imgmean;
+		else 
+			v = tex2D(qi_image_texture_linear, ofs(x),ofs(y) + img*images.h);
+		return v;
+	}
+
+	// Assumes pixel is always within image bounds
+	static __device__ float Index(cudaImageListf& images, int x,int y, int img)
+	{
+		return tex2D(qi_image_texture_linear, ofs(x),ofs(y) + img*images.h);
+	}
+
+private:
+	static __device__ float ofs(float x) { return x+0.5f; }
+};
+
+// According to this, textures bindings can be switched after the asynchronous kernel is launched
+// https://devtalk.nvidia.com/default/topic/392245/texture-binding-and-stream/
+texture<float, cudaTextureType2D, cudaReadModeElementType> qi_image_texture_nearest(0, cudaFilterModePoint); // Un-normalized
+
+// Using 4 texture fetches + standard 32 bit interpolation
+class PixelSampler_InterpolatedTexture {
+public:
+	static void BindTexture(cudaImageListf& images) { images.bind(qi_image_texture_nearest); }
+	static void UnbindTexture(cudaImageListf& images) { images.unbind(qi_image_texture_nearest);  }
+
+	// All interpolated texture/images fetches go through here
+	static __device__ float Interpolated(cudaImageListf& images, float x,float y, int img, float imgmean)
+	{
+		float v;
+		images.interpolateFromTexture (qi_image_texture_nearest, x, y, img, imgmean);
+		return v;
+	}
+
+	// Assumes pixel is always within image bounds
+	static __device__ float Index(cudaImageListf& images, int x,int y, int img)
+	{
+		return tex2D(qi_image_texture_nearest, x+0.5f,y+0.5f + img*images.h);
+	}
+};
+
+
+//typedef PixelSampler_InterpolatedTexture PixelSampler_Tex;
+typedef PixelSampler_SimpleTextureRead PixelSampler_Tex;

@@ -4,8 +4,6 @@
 #include <vector>
 #include <cstdarg>
 
-#include "simplefft.h"
-
 #define LSQFIT_FUNC __device__ __host__
 #include "LsqQuadraticFit.h"
 

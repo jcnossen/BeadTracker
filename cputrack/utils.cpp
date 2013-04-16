@@ -200,7 +200,7 @@ void GenerateImageFromLUT(ImageData* image, ImageData* zlut, float lutminRadius,
 		float* zlut1 = &zlut->data [ ((int)z + 1) * zlut->w ];
 		zinterp = (float*)ALLOCA(sizeof(float)*zlut->w);
 		for (int r=0;r<zlut->w;r++) 
-			zinterp[r] = interp(zlut0[r], zlut1[r], z-iz);
+			zinterp[r] = Lerp(zlut0[r], zlut1[r], z-iz);
 	}
 
 	const int len=5;

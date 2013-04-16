@@ -8,6 +8,7 @@
     <ClInclude Include="gpu_utils.h" />
     <ClInclude Include="simplefft.h" />
     <ClInclude Include="..\cputrack\std_incl.h" />
+    <ClInclude Include="QueuedCUDATrackerKernels.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="QueuedCUDATracker.cu" />

@@ -67,7 +67,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <CodeGeneration>compute_20,sm_20</CodeGeneration>
       <Include>../cputrack;../cudatrack</Include>
       <CInterleavedPTX>true</CInterleavedPTX>
-      <GenerateLineInfo>false</GenerateLineInfo>
+      <GenerateLineInfo>true</GenerateLineInfo>
     </CudaCompile>
     <CudaLink>
       <GPUDebugInfo>true</GPUDebugInfo>

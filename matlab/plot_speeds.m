@@ -4,14 +4,14 @@ function plot_speeds()
     s570=dlmread('speeds-geforce570.txt');
     
     %s = [ s690(:,[1 3]) s560(:,3) s570(:,3) ];
-    s = s570(:,[1 2]);
+    s = s570(:,[1 2 3]);
 
     figure();
-    x = 40 + ((0:11)*10);
+    x = 40 + ((0:23)*5);
     plot(x,s);
     set(gca,'FontSize', 15);
     title('Tracking speed vs ROI size');
     xlabel('ROI size [pixels]');
     
     %legend( '12 core CPU', 'Geforce 690', 'Geforce 560', '4 core cpu', 'Geforce 560 (bad parallel code)');
-    legend( 'CPU', 'GPU(mem)' );
+    legend( 'CPU', 'GPU(mem)', 'GPU(tc)' );

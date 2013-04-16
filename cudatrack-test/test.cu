@@ -131,7 +131,7 @@ void QTrkTest()
 	cfg.qi_iterations=1;
 	int total= 10;
 	int batchSize = 2;
-	haveZLUT=true;
+	haveZLUT=false;
 #else
 	cfg.numThreads = 4;
 	int total = 30000;
@@ -142,6 +142,8 @@ void QTrkTest()
 	QueuedCPUTracker qtrkcpu(&cfg);
 	float *image = new float[cfg.width*cfg.height];
 	bool cpucmp = true;
+
+	qtrk.EnableTextureCache(true);
 
 	srand(1);
 
@@ -453,11 +455,11 @@ SpeedInfo SpeedCompareTest(int w)
 
 void ProfileSpeedVsROI()
 {
-	int N=12;
+	int N=24;
 	float* values = new float[N*3];
 
 	for (int i=0;i<N;i++) {
-		int roi = 40+i*10;
+		int roi = 40+i*5;
 		SpeedInfo info = SpeedCompareTest(roi);
 		values[i*3+0] = info.cpu;
 		values[i*3+1] = info.gpu;
@@ -543,7 +545,7 @@ void CompareAccuracy ()
 #ifdef _DEBUG
 	n = 2;
 #endif
-	bool haveZLUT = false;
+	bool haveZLUT = true;
 
 	std::vector<vector3f> truePos (n);
 	for (int i=0;i<n;i++) {
@@ -566,12 +568,12 @@ void CompareAccuracy ()
 
 	for (int i=0;i<trackers.size();i++) {
 		double t0 = GetPreciseTime();
-		auto r = LocalizeGeneratedImages(cfg, trackers[i], haveZLUT, LocalizeOnlyCOM, truePos);
+		auto r = LocalizeGeneratedImages(cfg, trackers[i], haveZLUT, LocalizeQI, truePos);
 		for (int j=0;j<n;j++) 
 			results[j * trackers.size() + i] = r[j];
 		double t1 = GetPreciseTime();
 		dbgprintf("tracker %d done. (%1.2f s) \n", i, t1-t0);
-		dbgout( trackers[i]->GetProfileReport() );
+		//dbgout( trackers[i]->GetProfileReport() );
 	}
 	const char *labels[] = { "cudatcx","cudatcy","cudatcz", "cudax","cuday","cudaz", "cpux", "cpuy", "cpuz"};
 	WriteImageAsCSV( "cmpresults.txt" , (float*)results, trackers.size()*3, n, labels );
@@ -579,14 +581,100 @@ void CompareAccuracy ()
 	DeleteAllElems(trackers);
 }
 
+
+texture<float, cudaTextureType2D, cudaReadModeElementType> test_tex(0, cudaFilterModePoint); // Un-normalized
+texture<float, cudaTextureType2D, cudaReadModeElementType> test_tex_lin(0, cudaFilterModeLinear); // Un-normalized
+
+__device__ inline float interp(float a, float b, float x) { return a + (b-a)*x; }
+
+__device__ float interpolateFromTex(float x ,float y)
+{
+	float fx = x-floor(x);
+	float fy = y-floor(y);
+	//x += 0.5f;
+	//y += 0.5f;
+	float ix = floor(x);
+	float iy = floor(y);
+	float v00 = tex2D(test_tex, ix, iy);
+	float v10 = tex2D(test_tex, ix+1, iy);
+	float v01 = tex2D(test_tex, ix, iy+1);
+	float v11 = tex2D(test_tex, ix+1, iy+1);
+
+	float v0 = interp (v00, v10, fx);
+	float v1 = interp (v01, v11, fx);
+
+	return interp (v0, v1, fy);
+}
+
+__device__ float interpolateFromTexGather(float x ,float y)
+{
+	float4 g = tex2Dgather(test_tex_lin,x+0.5f,y+0.5f,3);
+
+	float v0 = interp (g.x, g.y, x-floor(x));
+	float v1 = interp (g.z, g.w, x-floor(x));
+
+	return interp (v0, v1, y-floor(y));
+}
+
+
+
+__global__ void testTexFetchKernel(cudaImageListf img, float *rtex,float *rtex2, float *rmem, float2 offset, int rw, int rh)
+{
+	int x = threadIdx.x + blockDim.x * blockIdx.x;
+	int y = threadIdx.y + blockDim.y * blockIdx.y;
+	if (x < rw && y < rh) {
+		float2 p={x + offset.x, y + offset.y};
+		rmem [y*rw+x] = img.interpolate(p.x,p.y, 0);
+		rtex [y*rw+x] = tex2D(test_tex_lin, p.x+0.5f,p.y+0.5f);
+		//rtex [y*rw+x] = tex2D(test_tex_lin, p.x,p.y);
+		//rtex2[ y*rw+x] = interpolateFromTex(p.x, p.y);
+		rtex2[ y*rw+x] = img.interpolateFromTexture(test_tex, p.x, p.y, 0);
+	}
+}
+
+void TestTextureFetch()
+{
+	int w=8,h=4;
+	cudaImageListf img = cudaImageListf::alloc(w,h,1);
+	float* himg = new float[w*h];
+
+	srand(1);
+	for (int i=0;i<w*h;i++)
+		himg[i]=i;
+
+	img.copyToDevice(himg,false);
+	img.bind(test_tex);
+	img.bind(test_tex_lin);
+	int rw=w-1,rh=h-1;
+	device_vec<float> rtex(rw*rh),rmem(rw*rh),rtex2(rw*rh);
+	testTexFetchKernel<<<dim3(rw,rh), dim3()>>>(img, rtex.data,rtex2.data, rmem.data,make_float2(0.6f,0.6f), rw,rh);
+	img.unbind(test_tex_lin);
+	img.unbind(test_tex);
+
+	auto hmem = rmem.toVector();
+	auto htex = rtex.toVector();
+	auto htex2 = rtex2.toVector();
+	for (int y=0;y<h-1;y++) {
+		for (int x=0;x<w-1;x++) {
+			int i = y*(w-1)+x;
+			dbgprintf("[%d,%d]: %f (tex), %f(tex2),  %f (mem).  tex-mem: %f,  tex2-mem: %f\n",
+				x,y,			htex[i], htex2[i],	hmem[i],	htex[i]-hmem[i],htex2[i]-hmem[i]);
+		}
+	}
+}
+
+
+
 int main(int argc, char *argv[])
 {
 	listDevices();
 //	testLinearArray();
 
-	//QTrkTest();
-	ProfileSpeedVsROI();
-//	CompareAccuracy();
+	//TestTextureFetch();
+
+	QTrkTest();
+	//ProfileSpeedVsROI();
+	//CompareAccuracy();
 ///	auto info = SpeedCompareTest(80);
 	//dbgprintf("CPU: %f, GPU: %f, GPU(tc): %f\n", info.cpu, info.gpu, info.gputex); 
 	return 0;

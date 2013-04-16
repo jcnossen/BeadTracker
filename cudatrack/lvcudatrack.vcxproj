@@ -108,6 +108,8 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="..\cputrack\utils.h" />
     <ClInclude Include="cudaImageList.h" />
     <ClInclude Include="gpu_utils.h" />
+    <ClInclude Include="ImageSampler.h" />
+    <ClInclude Include="Kernels.h" />
     <ClInclude Include="QueuedCUDATracker.h" />
     <ClInclude Include="simplefft.h" />
   </ItemGroup>

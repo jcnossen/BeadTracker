@@ -94,10 +94,13 @@ struct cudaImageList {
 	{
 		int rx=x, ry=y;
 
-		T v00 = pixel_oobcheck(rx, ry, idx, border);
-		T v10 = pixel_oobcheck(rx+1, ry, idx, border);
-		T v01 = pixel_oobcheck(rx, ry+1, idx, border);
-		T v11 = pixel_oobcheck(rx+1, ry+1, idx, border);
+		if (rx < 0 || ry < 0 || rx >= w-1 || ry >= h-1)
+			return border;
+
+		T v00 = pixel(rx, ry, idx);
+		T v10 = pixel(rx+1, ry, idx);
+		T v01 = pixel(rx, ry+1, idx);
+		T v11 = pixel(rx+1, ry+1, idx);
 
 		T v0 = interp (v00, v10, x-rx);
 		T v1 = interp (v01, v11, x-rx);
@@ -105,12 +108,33 @@ struct cudaImageList {
 		return interp (v0, v1, y-ry);
 	}
 
-	void bind(texture<float, cudaTextureType2D, cudaReadModeElementType>& texref) {
-		cudaChannelFormatDesc desc = cudaCreateChannelDesc<float>();
+	void bind(texture<T, cudaTextureType2D, cudaReadModeElementType>& texref) {
+		cudaChannelFormatDesc desc = cudaCreateChannelDesc<T>();
 		cudaBindTexture2D(NULL, &texref, data, &desc, w, h*count, pitch);
 	}
-	void unbind(texture<float, cudaTextureType2D, cudaReadModeElementType>& texref) {
+	void unbind(texture<T, cudaTextureType2D, cudaReadModeElementType>& texref) {
 		cudaUnbindTexture(&texref);
+	}
+
+	// Using the texture cache can result in significant speedups
+	__device__ T interpolateFromTexture(texture<T, cudaTextureType2D, cudaReadModeElementType> texref, float x,float y, int idx, float border=0.0f)
+	{
+		int rx=x, ry=y;
+
+		if (rx < 0 || ry < 0 || rx >= w-1 || ry >= h-1)
+			return border;
+
+		ry += idx * h;
+
+		T v00 = tex2D(texref, rx, ry);
+		T v10 = tex2D(texref, rx+1, ry);
+		T v01 = tex2D(texref, rx, ry+1);
+		T v11 = tex2D(texref, rx+1, ry+1);
+
+		T v0 = interp (v00, v10, x-rx);
+		T v1 = interp (v01, v11, x-rx);
+
+		return interp (v0, v1, y-ry);
 	}
 };
 

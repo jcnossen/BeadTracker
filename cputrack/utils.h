@@ -31,7 +31,7 @@ void normalize(TPixel* d, uint w,uint h)
 		d[k]=(d[k]-minv)/(maxv-minv);
 }
 
-inline float interp(float a, float b, float x) { return a + (b-a)*x; }
+inline float Lerp(float a, float b, float x) { return a + (b-a)*x; }
 
 inline float Interpolate(float* image, int width, int height, float x,float y, float paddingValue=0.0f)
 {
@@ -44,10 +44,10 @@ inline float Interpolate(float* image, int width, int height, float x,float y, f
 	float v01 = image[width*(ry+1)+rx];
 	float v11 = image[width*(ry+1)+rx+1];
 
-	float v0 = interp (v00, v10, x-rx);
-	float v1 = interp (v01, v11, x-rx);
+	float v0 = Lerp(v00, v10, x-rx);
+	float v1 = Lerp(v01, v11, x-rx);
 
-	return interp (v0, v1, y-ry);
+	return Lerp(v0, v1, y-ry);
 }
 
 
