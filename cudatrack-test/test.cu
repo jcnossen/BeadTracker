@@ -416,7 +416,7 @@ SpeedInfo SpeedCompareTest(int w)
 	cfg.zlut_maxradius = 40;
 	cfg.zlut_radialsteps = 64;
 	cfg.zlut_angularsteps = 128;
-	dbgprintf("QI radius: %f, radialsteps: %d\n", cfg.qi_maxradius, cfg.qi_radialsteps);
+	dbgprintf("Width: %d, QI radius: %f, radialsteps: %d\n", w, cfg.qi_maxradius, cfg.qi_radialsteps);
 
 	QueuedCPUTracker *cputrk = new QueuedCPUTracker(&cfg);
 	float cpuspeed = SpeedTest(cfg, cputrk, count, haveZLUT, locType);
@@ -442,7 +442,7 @@ SpeedInfo SpeedCompareTest(int w)
 	dbgprintf("CPU tracking speed: %d img/s\n", (int)cpuspeed);
 	dbgprintf("GPU (tc) tracking speed: %d img/s\n", (int)gputexspeed);
 	dbgprintf("GPU tracking speed: %d img/s\n", (int)gpuspeed);
-	dbgout(report);
+//	dbgout(report);
 
 	SpeedInfo info;
 	info.cpu = cpuspeed;
@@ -585,9 +585,9 @@ int main(int argc, char *argv[])
 //	testLinearArray();
 
 	//QTrkTest();
-	//ProfileSpeedVsROI();
+	ProfileSpeedVsROI();
 //	CompareAccuracy();
-	auto info = SpeedCompareTest(80);
-	dbgprintf("CPU: %f, GPU: %f, GPU(tc): %f\n", info.cpu, info.gpu, info.gputex); 
+///	auto info = SpeedCompareTest(80);
+	//dbgprintf("CPU: %f, GPU: %f, GPU(tc): %f\n", info.cpu, info.gpu, info.gputex); 
 	return 0;
 }

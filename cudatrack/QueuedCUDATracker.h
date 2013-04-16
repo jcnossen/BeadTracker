@@ -134,7 +134,7 @@ protected:
 		device_vec<float> d_zlutcmpscores; // [ zlutplanes * njobs ]
 		device_vec<float> d_imgmeans; // image mean value [njobs]
 
-		device_vec<float> d_shiftbuffer; // [ max(QI_fftlength, zlutplanes) * njobs ] ComputeMaxInterp temp space
+		device_vec<float> d_shiftbuffer; // [QI_fftlength * njobs] ComputeMaxInterp temp space
 
 		uint localizeFlags; // Indicates whether kernels should be ran for building zlut, z computing, or QI
 		Device* device;

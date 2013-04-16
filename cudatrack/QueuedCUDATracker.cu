@@ -176,6 +176,12 @@ void QueuedCUDATracker::InitializeDeviceList()
 	} else {
 		devices.push_back (new Device(cfg.cuda_device));
 	}
+	dbgprintf("Using devices: ");
+	for (int i=0;i<devices.size();i++) {
+		cudaDeviceProp p; 
+		cudaGetDeviceProperties(&p, devices[i]->index);
+		dbgprintf("%s%s", p.name, i<devices.size()-1?", ":"\n");
+	}
 }
 
 
@@ -187,7 +193,7 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 
 	// We take numThreads to be the number of CUDA streams
 	if (cfg->numThreads < 1) {
-		cfg->numThreads = devices.size()*3;
+		cfg->numThreads = devices.size()*4;
 	}
 	int numStreams = cfg->numThreads;
 
@@ -203,10 +209,6 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	qi_FFT_length = 1;
 	while (qi_FFT_length < cfg->qi_radialsteps*2) qi_FFT_length *= 2;
 
-	//int sharedSpacePerThread = (prop.sharedMemPerBlock-forward_fft->kparams_size*2) / numThreads;
-//	dbgprintf("2X FFT instance requires %d bytes. Space per thread: %d\n", forward_fft->kparams_size*2, sharedSpacePerThread);
-	dbgprintf("Device: %s.\n", deviceProp.name);
-	//dbgprintf("Shared memory space:%d bytes. Per thread: %d\n", deviceProp.sharedMemPerBlock, deviceProp.sharedMemPerBlock/numThreads);
 	dbgprintf("# of CUDA processors:%d. Using %d streams\n", deviceProp.multiProcessorCount, numStreams);
 	dbgprintf("Warp size: %d. Max threads: %d, Batch size: %d. QI FFT Length: %d\n", deviceProp.warpSize, deviceProp.maxThreadsPerBlock, batchSize, qi_FFT_length);
 
