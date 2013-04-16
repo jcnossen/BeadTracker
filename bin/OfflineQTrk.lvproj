@@ -41,11 +41,13 @@
 		</Item>
 		<Item Name="BeadPos.ctl" Type="VI" URL="../OfflineQTrk.llb/BeadPos.ctl"/>
 		<Item Name="BuildZLUT.vi" Type="VI" URL="../OfflineQTrk.llb/BuildZLUT.vi"/>
+		<Item Name="FetchAndSaveResults.vi" Type="VI" URL="../OfflineQTrk.llb/FetchAndSaveResults.vi"/>
 		<Item Name="FormatTimespan.vi" Type="VI" URL="../OfflineQTrk.llb/FormatTimespan.vi"/>
 		<Item Name="GetBeadImage.vi" Type="VI" URL="../OfflineQTrk.llb/GetBeadImage.vi"/>
 		<Item Name="GetFrametimes.vi" Type="VI" URL="../OfflineQTrk.llb/GetFrametimes.vi"/>
 		<Item Name="GetResultsFilename.vi" Type="VI" URL="../OfflineQTrk.llb/GetResultsFilename.vi"/>
 		<Item Name="GetTopLeftBeadPositions.vi" Type="VI" URL="../OfflineQTrk.llb/GetTopLeftBeadPositions.vi"/>
+		<Item Name="InitializeSaveState.vi" Type="VI" URL="../OfflineQTrk.llb/InitializeSaveState.vi"/>
 		<Item Name="LoadImageForDisplay.vi" Type="VI" URL="../OfflineQTrk.llb/LoadImageForDisplay.vi"/>
 		<Item Name="LUTInfo.ctl" Type="VI" URL="../OfflineQTrk.llb/LUTInfo.ctl"/>
 		<Item Name="OfflineQTrk.vi" Type="VI" URL="../OfflineQTrk.llb/OfflineQTrk.vi"/>
@@ -57,6 +59,8 @@
 		<Item Name="SaveOrLoadBeadlist.vi" Type="VI" URL="../OfflineQTrk.llb/SaveOrLoadBeadlist.vi"/>
 		<Item Name="SaveOrLoadQTrkSettings.vi" Type="VI" URL="../OfflineQTrk.llb/SaveOrLoadQTrkSettings.vi"/>
 		<Item Name="SaveResults.vi" Type="VI" URL="../OfflineQTrk.llb/SaveResults.vi"/>
+		<Item Name="SaveResultsIncremental.vi" Type="VI" URL="../OfflineQTrk.llb/SaveResultsIncremental.vi"/>
+		<Item Name="SaveState.ctl" Type="VI" URL="../OfflineQTrk.llb/SaveState.ctl"/>
 		<Item Name="ScalePixelsToMicrons.vi" Type="VI" URL="../OfflineQTrk.llb/ScalePixelsToMicrons.vi"/>
 		<Item Name="SelectBeads.vi" Type="VI" URL="../OfflineQTrk.llb/SelectBeads.vi"/>
 		<Item Name="TryReadImageFile.vi" Type="VI" URL="../OfflineQTrk.llb/TryReadImageFile.vi"/>
