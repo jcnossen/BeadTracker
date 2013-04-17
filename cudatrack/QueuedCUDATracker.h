@@ -15,6 +15,7 @@
 #include <vector>
 #include <map>
 #include "gpu_utils.h"
+#include "cudaImageList.h"
 
 template<typename T>
 struct cudaImageList;
@@ -86,7 +87,7 @@ public:
 protected:
 
 	struct Device {
-		Device(int index) {this->index=index; zlut=cudaImageListf::empty(); }
+		Device(int index) {this->index=index; zlut=cudaImageListf::emptyList(); }
 		~Device(); 
 		void SetZLUT(float *data, int radialsteps, int planes, int numLUTs, float* zcmp);
 

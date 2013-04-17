@@ -9,8 +9,6 @@
 
 #define CUBOTH __device__ __host__
 
-#include "cudaImageList.h"
-
 template<typename T>
 class device_vec {
 public:

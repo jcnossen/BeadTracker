@@ -1,29 +1,52 @@
 #pragma once
 
+#include "gpu_utils.h"
+
+//cudaImageList stores a large number of small images into a single large memory space, allocated using cudaMallocPitch. 
+// It has no constructor/destructor, so it can be passed to CUDA kernels. 
+// It allows binding to a texture
 template<typename T>
 struct cudaImageList {
 	// No constructor used to allow passing as CUDA kernel argument
 	T* data;
 	size_t pitch;
 	int w,h;
+	int rows, cols; // number of rows and columns [in images]
 	int count;
 
-	static cudaImageList<T> empty() {
+	enum { MaxImageWidth = 8192 };
+
+	CUBOTH int capacity() { return rows*cols; }
+	CUBOTH int fullwidth() { return cols * w; }
+	CUBOTH int fullheight() { return rows * h; }
+	CUBOTH int numpixels() { return w*h*rows*cols; }
+
+	static cudaImageList<T> emptyList() {
 		cudaImageList imgl;
 		imgl.data = 0;
 		imgl.pitch = 0;
-		imgl.w = imgl.h = imgl.count = 0;
+		imgl.w = imgl.h = imgl.rows = imgl.cols = 0;
 		return imgl;
 	}
+
+	CUBOTH bool isEmpty() { return data==0; }
 
 	static cudaImageList<T> alloc(int w,int h, int amount) {
 		cudaImageList imgl;
 		imgl.w = w; imgl.h = h;
+		imgl.cols = 1;//MaxImageWidth / w;
+		imgl.rows = (amount + imgl.cols - 1) / imgl.cols;
 		imgl.count = amount;
-		if (cudaMallocPitch(&imgl.data, &imgl.pitch, sizeof(T)*w, h*amount) != cudaSuccess) {
+
+		if (cudaMallocPitch(&imgl.data, &imgl.pitch, sizeof(T)*imgl.fullwidth(), imgl.fullheight()) != cudaSuccess) {
 			throw std::bad_alloc(SPrintf("cudaImageListf<%s> alloc %dx%dx%d failed", typeid(T).name(), w, h, amount).c_str());
 		}
 		return imgl;
+	}
+
+	template<int Flags>
+	void allocateHostImageBuffer(pinned_array<T, Flags>& hostImgBuf) {
+		hostImgBuf.init( numpixels() );
 	}
 
 	CUBOTH T* get(int i) {
@@ -46,9 +69,6 @@ struct cudaImageList {
 	}
 
 	CUBOTH T* pixelAddress(int x,int y, int imgIndex) {
-		if (x < 0 || x >= w || y < 0 || y >= h)
-			return 0;
-
 		computeImagePos(x,y,imgIndex);
 		T* row = (T*) ( (char*)data + y*pitch );
 		return row + x;
@@ -70,14 +90,33 @@ struct cudaImageList {
 		if(data) cudaFree(data);
 	}
 
-	void copyToHost(T* dst, bool async) {
+	// Copy a single subimage to the host
+	void copyImageToHost(int img, T* dst, bool async=false, cudaStream_t s=0) {
+		T* src = pixelAddress (0,0, img); 
+
+		if (async)
+			cudaMemcpy2DAsync(dst, sizeof(T)*w, src, pitch, w*sizeof(T), h, cudaMemcpyDeviceToHost, s);
+		else
+			cudaMemcpy2D(dst, sizeof(T)*w, src, pitch, w*sizeof(T), h, cudaMemcpyDeviceToHost);
+	}
+	// Copy a single subimage to the device
+	void copyImageToDevice(int img, T* src, bool async=false, cudaStream_t s=0) {
+		T* dst = pixelAddress (0,0, img); 
+
+		if (async)
+			cudaMemcpy2DAsync(dst, pitch, src, w*sizeof(T), w*sizeof(T), h, cudaMemcpyHostToDevice, s);
+		else
+			cudaMemcpy2D(dst, pitch, src, w*sizeof(T), w*sizeof(T), h, cudaMemcpyHostToDevice);
+	}
+
+	void copyToHost(T* dst, bool async=false, cudaStream_t s=0) {
 		if (async)
 			cudaMemcpy2DAsync(dst, sizeof(T)*w, data, pitch, w*sizeof(T), count*h, cudaMemcpyDeviceToHost);
 		else
 			cudaMemcpy2D(dst, sizeof(T)*w, data, pitch, w*sizeof(T), count*h, cudaMemcpyDeviceToHost);
 	}
 	
-	void copyToDevice(T* src, bool async) {
+	void copyToDevice(T* src, bool async=false, cudaStream_t s=0) {
 		if (async)
 			cudaMemcpy2DAsync(data, pitch, src, w*sizeof(T), w*sizeof(T), count*h, cudaMemcpyHostToDevice);
 		else

@@ -388,6 +388,16 @@ int NearestPowerOfTwo(int v)
 	return r/2;
 }
 
+int SmallestPowerOfTwo(int minval)
+{
+	int r=1;
+	while (r < minval)
+		r *= 2;
+	return r;
+}
+
+
+
 struct SpeedInfo {
 	float cpu, gpu, gputex;
 };
@@ -412,7 +422,7 @@ SpeedInfo SpeedCompareTest(int w)
 	//SetCUDADevices(devices);
 	cfg.cuda_device = QTrkCUDA_UseAll;
 	cfg.qi_angsteps_per_quadrant = 32;
-	cfg.qi_radialsteps = NearestPowerOfTwo(cfg.qi_maxradius);
+	cfg.qi_radialsteps = (int) (cfg.qi_maxradius-cfg.qi_minradius);
 	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
 	cfg.zlut_maxradius = 40;
@@ -643,11 +653,11 @@ int main(int argc, char *argv[])
 	listDevices();
 //	testLinearArray();
 
-	TestTextureFetch();
+	//TestTextureFetch();
 
-	QTrkTest();
-	//ProfileSpeedVsROI();
-	//CompareAccuracy();
+	CompareAccuracy();
+	//QTrkTest();
+	ProfileSpeedVsROI();
 ///	auto info = SpeedCompareTest(80);
 	//dbgprintf("CPU: %f, GPU: %f, GPU(tc): %f\n", info.cpu, info.gpu, info.gputex); 
 	return 0;

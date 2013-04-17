@@ -169,8 +169,7 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 	}
 	this->batchSize = batchSize;
 
-	qi_FFT_length = 1;
-	while (qi_FFT_length < cfg->qi_radialsteps*2) qi_FFT_length *= 2;
+	qi_FFT_length = cfg->qi_radialsteps*2;
 
 	dbgprintf("# of CUDA processors:%d. Using %d streams\n", deviceProp.multiProcessorCount, numStreams);
 	dbgprintf("Warp size: %d. Max threads: %d, Batch size: %d. QI FFT Length: %d\n", deviceProp.warpSize, deviceProp.maxThreadsPerBlock, batchSize, qi_FFT_length);
@@ -209,7 +208,7 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 		d->d_qiradialgrid=qi_radialgrid;
 		d->d_zlutradialgrid = zlut_radialgrid;
 	}
-	kernelParams.zlut.img = cudaImageListf::empty();
+	kernelParams.zlut.img = cudaImageListf::emptyList();
 	
 	streams.reserve(numStreams);
 	try {
@@ -298,9 +297,8 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream(Device* device)
 		cudaSetDevice(device->index);
 		cudaStreamCreate(&s->stream);
 
-		uint hostBufSize = cfg.width*cfg.height*batchSize;
-		s->hostImageBuf.init(hostBufSize);
 		s->images = cudaImageListf::alloc(cfg.width, cfg.height, batchSize);
+		s->images.allocateHostImageBuffer(s->hostImageBuf);
 
 		s->jobs.reserve(batchSize);
 		s->results.init(batchSize);
@@ -405,7 +403,7 @@ void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 	int jobIndex = s->jobs.size();
 	LocalizationJob job = *jobInfo;
 	job.locType = jobInfo->LocType();
-	if (s->device->zlut.count == 0)  // dont do ZLUT commands when no ZLUT has been set
+	if (s->device->zlut.isEmpty())  // dont do ZLUT commands when no ZLUT has been set
 		job.locType &= ~(LocalizeZ | LocalizeBuildZLUT);
 	s->jobs.push_back(job);
 	s->localizeFlags |= job.locType; // which kernels to run
@@ -569,8 +567,10 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 
 	cudaEventRecord(s->batchStart, s->stream);
 
-	{ ProfileBlock p("image to gpu");
-	cudaMemcpy2DAsync( s->images.data, s->images.pitch, s->hostImageBuf.data(), sizeof(float)*s->images.w, s->images.w*sizeof(float), s->images.h * s->JobCount(), cudaMemcpyHostToDevice, s->stream); }
+	
+	{ProfileBlock p("image to gpu");
+	s->images.copyToDevice(s->hostImageBuf.data(), true, s->stream); }
+	//cudaMemcpy2DAsync( s->images.data, s->images.pitch, s->hostImageBuf.data(), sizeof(float)*s->images.w, s->images.w*sizeof(float), s->images.h * s->JobCount(), cudaMemcpyHostToDevice, s->stream); }
 	//{ ProfileBlock p("jobs to gpu");
 	//s->d_jobs.copyToDevice(s->jobs.data(), s->jobCount, true, s->stream); }
 	cudaEventRecord(s->imageCopyDone, s->stream);
@@ -725,7 +725,10 @@ void QueuedCUDATracker::Device::SetZLUT(float *data, int radialsteps, int planes
 		zcompareWindow.free();
 
 	zlut = cudaImageListf::alloc(radialsteps, planes, numLUTs);
-	if (data) zlut.copyToDevice(data, false);
+	if (data) {
+		for (int i=0;i<numLUTs;i++)
+			zlut.copyImageToDevice(i, &data[planes*radialsteps*i]);
+	}
 	else zlut.clear();
 }	
 
@@ -733,10 +736,13 @@ void QueuedCUDATracker::Device::SetZLUT(float *data, int radialsteps, int planes
 float* QueuedCUDATracker::GetZLUT(int *count, int* planes)
 {
 	cudaImageListf* zlut = &devices[0]->zlut;
+
 	float* data = new float[zlut->h * cfg.zlut_radialsteps * zlut->count];
-	if (zlut->data)
-		zlut->copyToHost(data, false);
-	else
+	if (zlut->data) {
+		//zlut->copyToHost(data, false);
+		for (int i=0;i<zlut->count;i++)
+			zlut->copyImageToHost(i, &data[cfg.zlut_radialsteps*zlut->h]);
+	} else
 		std::fill(data, data+(cfg.zlut_radialsteps*zlut->h*zlut->count), 0.0f);
 
 	if (planes) *planes = zlut->h;
