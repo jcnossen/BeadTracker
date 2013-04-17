@@ -13,26 +13,26 @@ template<typename T>
 struct complex
 {
 	T x, y;
-	CUBOTH T& imag() { return y; }
-	CUBOTH T& real() { return x; }
-	CUBOTH const T& imag() const { return y; }
-	CUBOTH const T& real() const { return x; }
-	CUBOTH complex() : x(0.0f), y(0.0f) {}
-	CUBOTH complex(T a, T b=0.0) : x(a), y(b) {}
-	CUBOTH complex conjugate() { return complex(x, -y); }
+	SFFT_BOTH T& imag() { return y; }
+	SFFT_BOTH T& real() { return x; }
+	SFFT_BOTH const T& imag() const { return y; }
+	SFFT_BOTH const T& real() const { return x; }
+	SFFT_BOTH complex() : x(0.0f), y(0.0f) {}
+	SFFT_BOTH complex(T a, T b=0.0) : x(a), y(b) {}
+	SFFT_BOTH complex conjugate() { return complex(x, -y); }
 
-	CUBOTH complex operator*(const T& b) const { return complex(x*b,y*b); }
-	CUBOTH complex& operator*=(const T& b) { x*=b; y*=b; return *this; }
-	CUBOTH complex operator*(const complex& b) const { return complex(x*b.x - y*b.y, x*b.y + y*b.x); }
-	CUBOTH complex operator-(const complex& b) const { return complex(x-b.x, y-b.y); }
-	CUBOTH complex operator+(const complex& b) const { return complex(x+b.x, y+b.y); }
-	CUBOTH complex& operator+=(const complex& b) { x+=b.x; y+=b.y; return *this; }
+	SFFT_BOTH complex operator*(const T& b) const { return complex(x*b,y*b); }
+	SFFT_BOTH complex& operator*=(const T& b) { x*=b; y*=b; return *this; }
+	SFFT_BOTH complex operator*(const complex& b) const { return complex(x*b.x - y*b.y, x*b.y + y*b.x); }
+	SFFT_BOTH complex operator-(const complex& b) const { return complex(x-b.x, y-b.y); }
+	SFFT_BOTH complex operator+(const complex& b) const { return complex(x+b.x, y+b.y); }
+	SFFT_BOTH complex& operator+=(const complex& b) { x+=b.x; y+=b.y; return *this; }
 
 	complex(const std::complex<T>& a) : x(a.real()), y(a.imag()) {}
 };
 
 template<typename T>
-CUBOTH void swap(T& a, T& b) {
+SFFT_BOTH void swap(T& a, T& b) {
 	T tmp(a); 
 	a = b;
 	b = tmp;

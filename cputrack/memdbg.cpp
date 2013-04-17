@@ -4,7 +4,9 @@
 #include <map>
 #include <cstdint>
 
-void dbgprintf(const char *fmt,...);
+#include "dllmacros.h"
+
+CDLL_EXPORT void dbgprintf(const char *fmt,...);
 
 struct Allocation {
 	const char *srcfile;

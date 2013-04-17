@@ -199,6 +199,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpu_tracker.h" />
+    <ClInclude Include="dllmacros.h" />
     <ClInclude Include="fft2D.h" />
     <ClInclude Include="labview.h" />
     <ClInclude Include="LsqQuadraticFit.h" />
