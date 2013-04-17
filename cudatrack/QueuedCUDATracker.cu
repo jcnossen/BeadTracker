@@ -13,8 +13,12 @@ Method:
 		- Run CUFFT. Each iteration per axis does 2x forward FFT, and 1x backward FFT.
 		- Run QI kernel: Compute positions
 	}
-	- Async copy results to host
+	- Compute ZLUT profiles
+	- Depending on localize flags:
+		- copy ZLUT profiles (for ComputeBuildZLUT flag)
+		- generate compare profile kernel + compute Z kernel (for ComputeZ flag)
 	- Unbind image
+	- Async copy results to host
 
 
 Issues:
@@ -420,9 +424,9 @@ void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 	// If batch is filled, copy the image to video memory asynchronously, and start the localization
 	if (s->jobs.size() == batchSize) {
 		if (useTextureCache)
-			ExecuteBatch<PixelSampler_Tex> (s);
+			ExecuteBatch<ImageSampler_Tex> (s);
 		else
-			ExecuteBatch<PixelSampler_MemCopy> (s);
+			ExecuteBatch<ImageSampler_MemCopy> (s);
 	}
 
 	s->unlock();
@@ -435,9 +439,9 @@ void QueuedCUDATracker::Flush()
 		currentStream->lock();
 
 		if (useTextureCache) 
-			ExecuteBatch<PixelSampler_Tex> (currentStream);
+			ExecuteBatch<ImageSampler_Tex> (currentStream);
 		else 
-			ExecuteBatch<PixelSampler_MemCopy> (currentStream);
+			ExecuteBatch<ImageSampler_MemCopy> (currentStream);
 
 		currentStream->unlock();
 		currentStream = 0;
@@ -493,10 +497,13 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 		QI_ComputeProfile <TImageSampler> <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
 			s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, s->d_imgmeans.data,  kernelParams.qi);
 	}
-
-/*	cudaStreamSynchronize(s->stream);
+	/*
+	cudaStreamSynchronize(s->stream);
 	auto q0 = s->d_quadrants.toVector();
 	auto p0 = s->d_QIprofiles.toVector();
+
+	WriteImageAsCSV("qi-qtc.txt", &q0[0], cfg.qi_radialsteps * 4, njobs);
+	WriteComplexImageAsCSV("qi-ptc.txt", (std::complex<float>*)&p0[0], 2*qi_FFT_length, njobs);
 
 	QI_ComputeProfile <TImageSampler> <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
 		s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, s->d_imgmeans.data,  kernelParams.qi);
@@ -505,9 +512,6 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 	auto p1 = s->d_QIprofiles.toVector();
 
 	WriteImageAsCSV("qi-q1.txt", &q1[0], cfg.qi_radialsteps * 4, njobs);
-	WriteImageAsCSV("qi-q0.txt", &q0[0], cfg.qi_radialsteps * 4, njobs);
-
-	WriteComplexImageAsCSV("qi-p0.txt", (std::complex<float>*)&p0[0], 2*qi_FFT_length, njobs);
 	WriteComplexImageAsCSV("qi-p1.txt", (std::complex<float>*) &p1[0], 2*qi_FFT_length, njobs);
 
 	for (int j=0;j<njobs;j++) {
@@ -556,18 +560,6 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 		return;
 	//dbgprintf("Sending %d images to GPU stream %p...\n", s->jobCount, s->stream);
 
-/*	- Async copy host-side buffer to device
-	- Bind image
-	- Run COM kernel
-	- QI loop: {
-		- Run QI kernel: Sample from texture into quadrant profiles
-		- Run CUFFT
-		- Run QI kernel: Compute positions
-	}
-	- Async copy results to host
-	- Unbind image
-	*/
-
 	Device *d = s->device;
 	cudaSetDevice(d->index);
 	kernelParams.qi.radialgrid = d->d_qiradialgrid.data;
@@ -597,7 +589,6 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	device_vec<float3> *curpos = &s->d_com;
 	if (s->localizeFlags & LocalizeQI) {
 		ProfileBlock p("QI");
-		//dbgprintf("QI... %d iterations\n", cfg.qi_iterations);
 		for (int a=0;a<cfg.qi_iterations;a++) {
 			QI_Iterate<TImageSampler> (curpos, &s->d_resultpos, s);
 			curpos = &s->d_resultpos;

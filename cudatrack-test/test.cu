@@ -585,81 +585,54 @@ void CompareAccuracy ()
 texture<float, cudaTextureType2D, cudaReadModeElementType> test_tex(0, cudaFilterModePoint); // Un-normalized
 texture<float, cudaTextureType2D, cudaReadModeElementType> test_tex_lin(0, cudaFilterModeLinear); // Un-normalized
 
-__device__ inline float interp(float a, float b, float x) { return a + (b-a)*x; }
 
-__device__ float interpolateFromTex(float x ,float y)
+__global__ void TestSampling(int n , cudaImageListf img, float *rtex, float *rtex2, float *rmem, float2* pts)
 {
-	float fx = x-floor(x);
-	float fy = y-floor(y);
-	//x += 0.5f;
-	//y += 0.5f;
-	float ix = floor(x);
-	float iy = floor(y);
-	float v00 = tex2D(test_tex, ix, iy);
-	float v10 = tex2D(test_tex, ix+1, iy);
-	float v01 = tex2D(test_tex, ix, iy+1);
-	float v11 = tex2D(test_tex, ix+1, iy+1);
+	int idx = threadIdx.x+blockDim.x * blockIdx.x;
 
-	float v0 = interp (v00, v10, fx);
-	float v1 = interp (v01, v11, fx);
-
-	return interp (v0, v1, fy);
-}
-
-__device__ float interpolateFromTexGather(float x ,float y)
-{
-	float4 g = tex2Dgather(test_tex_lin,x+0.5f,y+0.5f,3);
-
-	float v0 = interp (g.x, g.y, x-floor(x));
-	float v1 = interp (g.z, g.w, x-floor(x));
-
-	return interp (v0, v1, y-floor(y));
-}
-
-
-
-__global__ void testTexFetchKernel(cudaImageListf img, float *rtex,float *rtex2, float *rmem, float2 offset, int rw, int rh)
-{
-	int x = threadIdx.x + blockDim.x * blockIdx.x;
-	int y = threadIdx.y + blockDim.y * blockIdx.y;
-	if (x < rw && y < rh) {
-		float2 p={x + offset.x, y + offset.y};
-		rmem [y*rw+x] = img.interpolate(p.x,p.y, 0);
-		rtex [y*rw+x] = tex2D(test_tex_lin, p.x+0.5f,p.y+0.5f);
-		//rtex [y*rw+x] = tex2D(test_tex_lin, p.x,p.y);
-		//rtex2[ y*rw+x] = interpolateFromTex(p.x, p.y);
-		rtex2[ y*rw+x] = img.interpolateFromTexture(test_tex, p.x, p.y, 0);
+	if (idx < n) {
+		float x = pts[idx].x;
+		float y = pts[idx].y;
+		int ii = 1;
+		rtex[idx] = tex2D(test_tex_lin, x+0.5f, y+0.5f+img.h*ii);
+		rtex2[idx] = img.interpolateFromTexture(test_tex, x, y, ii);
+		rmem[idx] = img.interpolate(x,y,ii);
 	}
 }
 
 void TestTextureFetch()
 {
 	int w=8,h=4;
-	cudaImageListf img = cudaImageListf::alloc(w,h,1);
-	float* himg = new float[w*h];
+	cudaImageListf img = cudaImageListf::alloc(w,h,2);
+	float* himg = new float[w*h*2];
+
+	int N=10;
+	std::vector<vector2f> pts(N);
+	for(int i=0;i<N;i++) {
+		pts[i]=vector2f( rand_uniform<float>() * (w-1), rand_uniform<float>() * (h-1) );
+	}
+	device_vec<vector2f> dpts;
+	dpts.copyToDevice(pts, false);
 
 	srand(1);
-	for (int i=0;i<w*h;i++)
+	for (int i=0;i<w*h*2;i++)
 		himg[i]=i;
-
 	img.copyToDevice(himg,false);
+
 	img.bind(test_tex);
 	img.bind(test_tex_lin);
-	int rw=w-1,rh=h-1;
-	device_vec<float> rtex(rw*rh),rmem(rw*rh),rtex2(rw*rh);
-	testTexFetchKernel<<<dim3(rw,rh), dim3()>>>(img, rtex.data,rtex2.data, rmem.data,make_float2(0.6f,0.6f), rw,rh);
+	device_vec<float> rtex(N),rmem(N),rtex2(N);
+	int nt=32;
+	TestSampling<<< dim3( (N+nt-1)/nt ), dim3(nt) >>> (N, img, rtex.data,rtex2.data,rmem.data, (float2*)dpts.data);
 	img.unbind(test_tex_lin);
 	img.unbind(test_tex);
 
 	auto hmem = rmem.toVector();
 	auto htex = rtex.toVector();
 	auto htex2 = rtex2.toVector();
-	for (int y=0;y<h-1;y++) {
-		for (int x=0;x<w-1;x++) {
-			int i = y*(w-1)+x;
-			dbgprintf("[%d,%d]: %f (tex), %f(tex2),  %f (mem).  tex-mem: %f,  tex2-mem: %f\n",
-				x,y,			htex[i], htex2[i],	hmem[i],	htex[i]-hmem[i],htex2[i]-hmem[i]);
-		}
+	for (int x=0;x<N;x++) {
+		dbgprintf("[%.2f, %.2f]: %f (tex), %f(tex2),  %f (mem).  tex-mem: %f,  tex2-mem: %f\n",
+		pts[x].x, pts[x].y, htex[x], htex2[x],	hmem[x],	htex[x]-hmem[x],htex2[x]-hmem[x]);
 	}
 }
 
@@ -670,7 +643,7 @@ int main(int argc, char *argv[])
 	listDevices();
 //	testLinearArray();
 
-	//TestTextureFetch();
+	TestTextureFetch();
 
 	QTrkTest();
 	//ProfileSpeedVsROI();

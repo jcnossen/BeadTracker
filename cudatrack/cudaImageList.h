@@ -34,12 +34,14 @@ struct cudaImageList {
 		if (x < 0 || x >= w || y < 0 || y >= h)
 			return border;
 
-		T* row = (T*) ( (char*)data + (h*imgIndex+y)*pitch );
+		computeImagePos(x,y,imgIndex);
+		T* row = (T*) ( (char*)data + y*pitch );
 		return row[x];
 	}
 
 	CUBOTH T pixel(int x,int y, int imgIndex) {
-		T* row = (T*) ( (char*)data + (h*imgIndex+y)*pitch );
+		computeImagePos(x,y,imgIndex);
+		T* row = (T*) ( (char*)data + y*pitch );
 		return row[x];
 	}
 
@@ -47,7 +49,8 @@ struct cudaImageList {
 		if (x < 0 || x >= w || y < 0 || y >= h)
 			return 0;
 
-		T* row = (T*) ( (char*)data + (h*imgIndex+y)*pitch );
+		computeImagePos(x,y,imgIndex);
+		T* row = (T*) ( (char*)data + y*pitch );
 		return row + x;
 	}
 
@@ -116,6 +119,11 @@ struct cudaImageList {
 		cudaUnbindTexture(&texref);
 	}
 
+	CUBOTH void computeImagePos(int& x, int& y, int idx)
+	{
+		y += idx * h;
+	}
+
 	// Using the texture cache can result in significant speedups
 	__device__ T interpolateFromTexture(texture<T, cudaTextureType2D, cudaReadModeElementType> texref, float x,float y, int idx, float border=0.0f)
 	{
@@ -124,17 +132,21 @@ struct cudaImageList {
 		if (rx < 0 || ry < 0 || rx >= w-1 || ry >= h-1)
 			return border;
 
-		ry += idx * h;
+		computeImagePos(rx, ry, idx);
 
-		T v00 = tex2D(texref, rx, ry);
-		T v10 = tex2D(texref, rx+1, ry);
-		T v01 = tex2D(texref, rx, ry+1);
-		T v11 = tex2D(texref, rx+1, ry+1);
+		float fx=x-floor(x), fy = y-floor(y);
+		float u = rx + 0.5f;
+		float v = ry + 0.5f;
 
-		T v0 = interp (v00, v10, x-rx);
-		T v1 = interp (v01, v11, x-rx);
+		T v00 = tex2D(texref, u, v);
+		T v10 = tex2D(texref, u+1, v);
+		T v01 = tex2D(texref, u, v+1);
+		T v11 = tex2D(texref, u+1, v+1);
 
-		return interp (v0, v1, y-ry);
+		T v0 = interp (v00, v10, fx);
+		T v1 = interp (v01, v11, fx);
+
+		return interp (v0, v1, fy);
 	}
 };
 

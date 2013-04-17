@@ -1,7 +1,7 @@
 #pragma once
 #include "cudaImageList.h"
 
-class PixelSampler_MemCopy {
+class ImageSampler_MemCopy {
 public:
 	static void BindTexture(cudaImageListf& images) { }
 	static void UnbindTexture(cudaImageListf& images) { }
@@ -22,7 +22,7 @@ public:
 texture<float, cudaTextureType2D, cudaReadModeElementType> qi_image_texture_linear(0, cudaFilterModeLinear); // Un-normalized
 
 // Using the lower-accuracy interpolation of texture hardware
-class PixelSampler_SimpleTextureRead {
+class ImageSampler_SimpleTextureRead {
 public:
 	static void BindTexture(cudaImageListf& images) { images.bind(qi_image_texture_linear); }
 	static void UnbindTexture(cudaImageListf& images) { images.unbind(qi_image_texture_linear);  }
@@ -53,7 +53,7 @@ private:
 texture<float, cudaTextureType2D, cudaReadModeElementType> qi_image_texture_nearest(0, cudaFilterModePoint); // Un-normalized
 
 // Using 4 texture fetches + standard 32 bit interpolation
-class PixelSampler_InterpolatedTexture {
+class ImageSampler_InterpolatedTexture {
 public:
 	static void BindTexture(cudaImageListf& images) { images.bind(qi_image_texture_nearest); }
 	static void UnbindTexture(cudaImageListf& images) { images.unbind(qi_image_texture_nearest);  }
@@ -61,9 +61,7 @@ public:
 	// All interpolated texture/images fetches go through here
 	static __device__ float Interpolated(cudaImageListf& images, float x,float y, int img, float imgmean)
 	{
-		float v;
-		images.interpolateFromTexture (qi_image_texture_nearest, x, y, img, imgmean);
-		return v;
+		return images.interpolateFromTexture (qi_image_texture_nearest, x, y, img, imgmean);
 	}
 
 	// Assumes pixel is always within image bounds
@@ -74,5 +72,5 @@ public:
 };
 
 
-//typedef PixelSampler_InterpolatedTexture PixelSampler_Tex;
-typedef PixelSampler_SimpleTextureRead PixelSampler_Tex;
+typedef ImageSampler_InterpolatedTexture ImageSampler_Tex;
+//typedef ImageSampler_SimpleTextureRead ImageSampler_Tex;

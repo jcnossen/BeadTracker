@@ -16,6 +16,8 @@
     <ClInclude Include="..\cputrack\cpu_tracker.h" />
     <ClInclude Include="..\cputrack\QueuedTracker.h" />
     <ClInclude Include="..\cudatrack\QueuedCUDATracker.h" />
+    <ClInclude Include="..\cudatrack\ImageSampler.h" />
+    <ClInclude Include="..\cudatrack\Kernels.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="test.cu" />
