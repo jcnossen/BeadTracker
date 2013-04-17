@@ -39,6 +39,7 @@
 			<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkSetZLUT.vi"/>
 			<Item Name="QTrkWaitForResults.vi" Type="VI" URL="../QTrk.llb/QTrkWaitForResults.vi"/>
 		</Item>
+		<Item Name="AdvanceFetchFrameCounter.vi" Type="VI" URL="../OfflineQTrk.llb/AdvanceFetchFrameCounter.vi"/>
 		<Item Name="BeadPos.ctl" Type="VI" URL="../OfflineQTrk.llb/BeadPos.ctl"/>
 		<Item Name="BuildZLUT.vi" Type="VI" URL="../OfflineQTrk.llb/BuildZLUT.vi"/>
 		<Item Name="FetchAndSaveResults.vi" Type="VI" URL="../OfflineQTrk.llb/FetchAndSaveResults.vi"/>
@@ -63,6 +64,7 @@
 		<Item Name="SaveState.ctl" Type="VI" URL="../OfflineQTrk.llb/SaveState.ctl"/>
 		<Item Name="ScalePixelsToMicrons.vi" Type="VI" URL="../OfflineQTrk.llb/ScalePixelsToMicrons.vi"/>
 		<Item Name="SelectBeads.vi" Type="VI" URL="../OfflineQTrk.llb/SelectBeads.vi"/>
+		<Item Name="TestFrameFetch.vi" Type="VI" URL="../TestFrameFetch.vi"/>
 		<Item Name="TryReadImageFile.vi" Type="VI" URL="../OfflineQTrk.llb/TryReadImageFile.vi"/>
 		<Item Name="XYZf.ctl" Type="VI" URL="../QTrk.llb/XYZf.ctl"/>
 		<Item Name="Dependencies" Type="Dependencies">
