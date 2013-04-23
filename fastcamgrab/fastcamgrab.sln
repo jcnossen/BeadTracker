@@ -8,6 +8,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lvfastcamgrab", "lvfastcamgrab.vcxproj", "{EE628A7B-E3ED-4858-B5E8-AA588FADD042}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fastcamgrab", "fastcamgrab.vcxproj", "{35498BB6-ED5E-478D-AAF9-C7462918D593}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B} = {1790E71E-B0EE-4BF9-8C27-0CD6C1B6DF4B}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

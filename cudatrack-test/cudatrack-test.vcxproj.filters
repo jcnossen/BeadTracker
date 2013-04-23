@@ -2,7 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="..\cudatrack\Array2D.h" />
-    <ClInclude Include="..\cudatrack\cuda_shared_mem.h" />
     <ClInclude Include="..\cputrack\utils.h" />
     <ClInclude Include="..\cudatrack\cudafft\cudafft.h">
       <Filter>cudafft</Filter>

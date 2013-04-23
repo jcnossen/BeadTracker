@@ -662,7 +662,7 @@ void QueuedCUDATracker::CopyStreamResults(Stream *s)
 		r.job = j;
 		r.firstGuess =  vector2f( s->com[a].x, s->com[a].y );
 		r.pos = vector3f( s->results[a].x , s->results[a].y, s->results[a].z);
-		if ( !(s->jobs[a].locType & LocalizeZ))
+		if(!(s->jobs[a].locType & LocalizeZ))
 			r.pos.z = 0.0f;
 
 		results.push_back(r);
