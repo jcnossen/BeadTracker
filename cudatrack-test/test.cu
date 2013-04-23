@@ -350,9 +350,19 @@ float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool ha
 	GenerateTestImage(ImageData(image, cfg.width, cfg.height), cfg.width/2, cfg.height/2, (zmin+zmax)/2, 0);
 	double tstart = GetPreciseTime();
 	int rc = 0, displayrc=0;
+	double maxScheduleTime = 0.0f;
+	double sumScheduleTime2 = 0.0f;
+	double sumScheduleTime = 0.0f;
 	for (int n=0;n<count;n++) {
 		LocalizeType flags = (LocalizeType)(locType| (haveZLUT ? LocalizeZ : 0) );
+
+		double t0 = GetPreciseTime();
 		qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, flags, n, 0, 0, 0, 0);
+		double dt = GetPreciseTime() - t0;
+		maxScheduleTime = std::max(maxScheduleTime, dt);
+		sumScheduleTime += dt;
+		sumScheduleTime2 += dt*dt;
+
 		if (n % 10 == 0) {
 			rc = qtrk->GetResultCount();
 			while (displayrc<rc) {
@@ -374,6 +384,10 @@ float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool ha
 	// Measure speed
 	double tend = GetPreciseTime();
 	delete[] image;
+
+	float mean = sumScheduleTime / count;
+	float stdev = sqrt(sumScheduleTime2 / count - mean * mean);
+	dbgprintf("Scheduletime: Avg=%f, Max=%f, Stdev=%f\n", mean, maxScheduleTime, stdev);
 
 	return count/(tend-tstart);
 }
@@ -399,7 +413,7 @@ int SmallestPowerOfTwo(int minval)
 
 
 struct SpeedInfo {
-	float cpu, gpu, gputex;
+	float cpu, gpu;
 };
 
 SpeedInfo SpeedCompareTest(int w)
@@ -436,7 +450,7 @@ SpeedInfo SpeedCompareTest(int w)
 
 	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(&cfg, cudaBatchSize);
 	cudatrk->EnableTextureCache(true);
-	float gputexspeed = SpeedTest(cfg, cudatrk, count, haveZLUT, locType);
+	float gpuspeed = SpeedTest(cfg, cudatrk, count, haveZLUT, locType);
 	std::string report = cudatrk->GetProfileReport();
 	delete cudatrk;
 
@@ -446,20 +460,13 @@ SpeedInfo SpeedCompareTest(int w)
 		dbgprintf("%s took %f ms on average\n", i->first, 1000*r.second/r.first);
 	}
 
-	cudatrk = new QueuedCUDATracker(&cfg, cudaBatchSize);
-	cudatrk->EnableTextureCache(false);
-	float gpuspeed = SpeedTest(cfg, cudatrk, count, haveZLUT, locType);
-	delete cudatrk;
-
 	dbgprintf("CPU tracking speed: %d img/s\n", (int)cpuspeed);
-	dbgprintf("GPU (tc) tracking speed: %d img/s\n", (int)gputexspeed);
 	dbgprintf("GPU tracking speed: %d img/s\n", (int)gpuspeed);
 //	dbgout(report);
 
 	SpeedInfo info;
 	info.cpu = cpuspeed;
 	info.gpu = gpuspeed;
-	info.gputex = gputexspeed;
 	return info;
 }
 
@@ -473,11 +480,10 @@ void ProfileSpeedVsROI()
 		SpeedInfo info = SpeedCompareTest(roi);
 		values[i*3+0] = info.cpu;
 		values[i*3+1] = info.gpu;
-		values[i*3+2] = info.gputex;
 	}
 
-	const char *labels[] = { "CPU", "CUDA (mem)", "CUDA (tc)" };
-	WriteImageAsCSV("speeds.txt", values, 3, N, labels);
+	const char *labels[] = { "CPU", "CUDA" };
+	WriteImageAsCSV("speeds.txt", values, 2, N, labels);
 	delete[] values;
 }
 

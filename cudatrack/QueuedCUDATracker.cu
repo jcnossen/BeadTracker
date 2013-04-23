@@ -134,13 +134,13 @@ void QueuedCUDATracker::InitializeDeviceList()
 		for (int i=0;i<numDevices;i++)
 			devices.push_back(new Device(i));
 	} else if (cfg.cuda_device == QTrkCUDA_UseList) {
-		for (int i=0;i<cudaDeviceList.size();i++)
+		for (uint i=0;i<cudaDeviceList.size();i++)
 			devices.push_back(new Device(cudaDeviceList[i]));
 	} else {
 		devices.push_back (new Device(cfg.cuda_device));
 	}
 	dbgprintf("Using devices: ");
-	for (int i=0;i<devices.size();i++) {
+	for (uint i=0;i<devices.size();i++) {
 		cudaDeviceProp p; 
 		cudaGetDeviceProperties(&p, devices[i]->index);
 		dbgprintf("%s%s", p.name, i<devices.size()-1?", ":"\n");
@@ -202,7 +202,7 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 		zlut_radialgrid[i]=make_float2(cos(ang),sin(ang));
 	}
 
-	for (int i=0;i<devices.size();i++) {
+	for (uint i=0;i<devices.size();i++) {
 		Device* d = devices[i];
 		cudaSetDevice(d->index);
 		d->d_qiradialgrid=qi_radialgrid;
@@ -331,7 +331,7 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream(Device* device)
 		cudaEventCreate(&s->zcomputeDone);
 		cudaEventCreate(&s->qiDone);
 		cudaEventCreate(&s->batchStart);
-	} catch (const std::exception& e) {
+	} catch (...) {
 		delete s;
 		throw;
 	}
@@ -351,7 +351,7 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::GetReadyStream()
 	// Second round: Query the GPU again for updated stream state.
 	// Further rounds: Wait 1 ms and try again.
 	for (int i = 0; true; i ++) {
-		for (int a=0;a<streams.size();a++) {
+		for (uint a=0;a<streams.size();a++) {
 			Stream *s = streams[a];
 			if (s->state != Stream::StreamExecuting) {
 				currentStream = s;
@@ -383,7 +383,7 @@ bool QueuedCUDATracker::IsIdle()
 bool QueuedCUDATracker::CheckAllStreams(Stream::State s)
 {
 	FetchResults();
-	for (int a=0;a<streams.size();a++){
+	for (uint a=0;a<streams.size();a++){
 		if (streams[a]->state != s)
 			return false;
 	}
@@ -447,7 +447,7 @@ void QueuedCUDATracker::Flush()
 }
 
 
-
+#ifdef QI_DBG_EXPORT
 static unsigned long hash(unsigned char *str, int n)
 {
     unsigned long hash = 5381;
@@ -459,6 +459,7 @@ static unsigned long hash(unsigned char *str, int n)
 
     return hash;
 }
+#endif
 
 template<typename T>
 void checksum(T* data, int elemsize, int numelem, const char *name)
@@ -640,7 +641,7 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 int QueuedCUDATracker::FetchResults()
 {
 	// Labview can call from multiple threads
-	for (int a=0;a<streams.size();a++) {
+	for (uint a=0;a<streams.size();a++) {
 		Stream* s = streams[a];
 		if (s->state == Stream::StreamExecuting && s->IsExecutionDone()) {
 			s->lock();
@@ -700,11 +701,11 @@ void QueuedCUDATracker::SetZLUT(float* data,  int numLUTs, int planes, float* zc
 {
 	kernelParams.zlut.planes = planes;
 	
-	for (int i=0;i<devices.size();i++) {
+	for (uint i=0;i<devices.size();i++) {
 		devices[i]->SetZLUT(data, cfg.zlut_radialsteps, planes, numLUTs, zcmp);
 	}
 
-	for (int i=0;i<streams.size();i++) {
+	for (uint i=0;i<streams.size();i++) {
 		StreamUpdateZLUTSize(streams[i]);
 	}
 }
