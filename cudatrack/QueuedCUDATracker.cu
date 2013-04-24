@@ -640,7 +640,6 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 
 int QueuedCUDATracker::FetchResults()
 {
-	// Labview can call from multiple threads
 	for (uint a=0;a<streams.size();a++) {
 		Stream* s = streams[a];
 		if (s->state == Stream::StreamExecuting && s->IsExecutionDone()) {

@@ -4,6 +4,7 @@
 #include "memdbg.h"
 #include <cstdint>
 #include <string>
+#include <deque>
 #include <vector>
 #include <algorithm>
 #include <cstdio>

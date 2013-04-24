@@ -194,14 +194,12 @@ CDLL_EXPORT void qtrk_queue_array(QueuedTracker* qtrk,  ErrorCluster* error,LVAr
 	qtrk_queue_pitchedmem(qtrk, (*data)->elem, pitch, pdt, jobInfo);
 }
 
-
-CDLL_EXPORT uint qtrk_queue_frame(QueuedTracker* qtrk, uchar* image, int pitch, int w,int h, 
-	uint pdt, ROIPosition* pos, int numROI, const LocalizationJob *pJobInfo, QueueFrameFlags flags)
+CDLL_EXPORT uint qtrk_read_timestamp(uchar* image, int w, int h, QueueFrameFlags flags)
 {
-	int s = sizeof(QueueFrameFlags);
-	
-	LocalizationJob jobInfo = *pJobInfo;
-	uchar *timestamp = (uchar*)&jobInfo.timestamp;
+	if (w*h<4) return 0;
+
+	uint ts;
+	uchar *timestamp = (uchar*)&ts;
 	if (flags & QFF_ReadTimestampFromFrame) {
 		// Assume little endian only
 		for (int i=0;i<4;i++)
@@ -210,11 +208,30 @@ CDLL_EXPORT uint qtrk_queue_frame(QueuedTracker* qtrk, uchar* image, int pitch, 
 		for (int i=0;i<4;i++)
 			timestamp[i] = image[3-i];
 	}
+	return ts;
+}
 
-	qtrk->ScheduleFrame(image, pitch, w,h, pos, numROI, (QTRK_PixelDataType)pdt, &jobInfo);
+CDLL_EXPORT uint qtrk_queue_frame(QueuedTracker* qtrk, uchar* image, int pitch, int w,int h, 
+	uint pdt, ROIPosition* pos, int numROI, const LocalizationJob *pJobInfo, QueueFrameFlags flags)
+{
+	LocalizationJob jobInfo = *pJobInfo;
+	if (flags & (QFF_ReadTimestampFromFrame | QFF_ReadTimestampFromFrameRev)) 
+		jobInfo.timestamp = qtrk_read_timestamp(image, w,h, flags);
+
+	if (flags & QFF_Async) {
+		qtrk->ScheduleFrameAsync(image, pitch, w,h, pos, numROI, (QTRK_PixelDataType)pdt, &jobInfo);
+	} else
+		qtrk->ScheduleFrame(image, pitch, w,h, pos, numROI, (QTRK_PixelDataType)pdt, &jobInfo);
 	return jobInfo.timestamp;
 }
 
+CDLL_EXPORT void qtrk_wait_for_queue_frame(QueuedTracker* qtrk, uchar* imgptr, ErrorCluster* e)
+{
+	if (ValidateTracker(qtrk, e, "wait for queue frame")) {
+		while (!qtrk->IsAsyncScheduleDone(imgptr)) {
+		}
+	}
+}
 
 CDLL_EXPORT void qtrk_clear_results(QueuedTracker* qtrk, ErrorCluster* e)
 {

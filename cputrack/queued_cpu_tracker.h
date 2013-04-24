@@ -56,10 +56,10 @@ private:
 	CPUTracker* noThreadTracker;
 
 	Threads::Mutex jobs_mutex, jobs_buffer_mutex, results_mutex;
-	std::list<Job*> jobs;
+	std::deque<Job*> jobs;
 	int jobCount;
 	std::vector<Job*> jobs_buffer; // stores memory
-	std::vector<LocalizationResult> results;
+	std::deque<LocalizationResult> results;
 	int resultCount;
 
 	std::vector<Thread> threads;

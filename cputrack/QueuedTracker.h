@@ -4,6 +4,7 @@
 #pragma once
 
 #include "std_incl.h" 
+#include "threads.h"
 
 enum LocalizeType {
 	// Flags for selecting 2D localization type
@@ -101,11 +102,13 @@ struct ROIPosition
 };
 #pragma pack(pop)
 
+class AsyncScheduler;
+
 // Abstract tracker interface, implementated by QueuedCUDATracker and QueuedCPUTracker
 class QueuedTracker
 {
 public:
-	QueuedTracker() {}
+	QueuedTracker();
 	virtual ~QueuedTracker();
 
 	// Frame and timestamp are ignored by tracking code itself, but usable for the calling code
@@ -131,17 +134,12 @@ public:
 
 	QTrkSettings cfg;
 
-	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint frame, uint timestamp, vector3f* initial, uint zlutIndex, uint zlutPlane) {
-		LocalizationJob j;
-		j.frame= frame;
-		j.locType = locType;
-		j.timestamp = timestamp;
-		if (initial) j.initialPos = *initial;
-		j.zlutIndex = zlutIndex;
-		j.zlutPlane = zlutPlane;
-		ScheduleLocalization(data,pitch,pdt,&j);
-	}
-
+	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint frame, uint timestamp, vector3f* initial, uint zlutIndex, uint zlutPlane);
+	void ScheduleFrameAsync(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo);
+	bool IsAsyncScheduleDone(uchar* imgptr);
+private:
+	
+	AsyncScheduler* asyncScheduler;	
 };
 
 CDLL_EXPORT void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelDataType pdt, float* dst);

@@ -428,8 +428,8 @@ void QTrkTest()
 			int iid = result.id;
 			float x = fabs(truepos[iid*3+0]-result.pos.x);
 			float y = fabs(truepos[iid*3+1]-result.pos.y);
-			result.z = zmin + (zmax-zmin) * result.z / (float)(zplanes-1); // transform from index scale to coordinate scale
-			float z = fabs(truepos[iid*3+2]-result.z);
+			result.pos.z = zmin + (zmax-zmin) * result.pos.z / (float)(zplanes-1); // transform from index scale to coordinate scale
+			float z = fabs(truepos[iid*3+2]-result.pos.z);
 		//	dbgprintf("ID: %d. Boundary Error:%d. ErrX=%f, ErrY=%f, ErrZ=%f\n", result.id, result.error, x,y,z);
 			errX += x; errY += y; errZ += z;
 			rc--;

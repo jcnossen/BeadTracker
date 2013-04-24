@@ -11,9 +11,6 @@
 #include "LsqQuadraticFit.h"
 #include "QueuedTracker.h"
 
-// For some reason, abstract virtual destructors need to have an implementation in C++
-QueuedTracker::~QueuedTracker() {}
-
 CDLL_EXPORT void DestroyQueuedTracker(QueuedTracker* qtrk)
 {
 	delete qtrk;

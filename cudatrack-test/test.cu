@@ -317,7 +317,7 @@ void TestAsync()
 __global__ void emptyKernel()
 {}
 
-float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool haveZLUT, LocalizeType locType)
+float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool haveZLUT, LocalizeType locType, float* scheduleTime)
 {
 	float *image = new float[cfg.width*cfg.height];
 	srand(1);
@@ -331,7 +331,11 @@ float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool ha
 			vector2f center( cfg.width/2, cfg.height/2 );
 			float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 			GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
-			LocalizeType flags = (LocalizeType)(LocalizeBuildZLUT|LocalizeOnlyCOM);
+			LocalizeType flags = ;
+			LocalizationJob job;
+			job.frame = 0;
+			job.locType = LocalizeBuildZLUT|LocalizeOnlyCOM;
+			job.zlutPlane = job.frame = x;
 			qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, flags , x, 0,0, 0, x);
 		}
 		qtrk->Flush();
@@ -387,7 +391,8 @@ float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool ha
 
 	float mean = sumScheduleTime / count;
 	float stdev = sqrt(sumScheduleTime2 / count - mean * mean);
-	dbgprintf("Scheduletime: Avg=%f, Max=%f, Stdev=%f\n", mean, maxScheduleTime, stdev);
+	dbgprintf("Scheduletime: Avg=%f, Max=%f, Stdev=%f\n", mean*1000, maxScheduleTime*1000, stdev*1000);
+	*scheduleTime = mean;
 
 	return count/(tend-tstart);
 }
@@ -413,7 +418,8 @@ int SmallestPowerOfTwo(int minval)
 
 
 struct SpeedInfo {
-	float cpu, gpu;
+	float speed_cpu, speed_gpu;
+	float sched_cpu, sched_gpu;
 };
 
 SpeedInfo SpeedCompareTest(int w)
@@ -444,13 +450,14 @@ SpeedInfo SpeedCompareTest(int w)
 	cfg.zlut_angularsteps = 128;
 	dbgprintf("Width: %d, QI radius: %f, radialsteps: %d\n", w, cfg.qi_maxradius, cfg.qi_radialsteps);
 
+	SpeedInfo info;
 	QueuedCPUTracker *cputrk = new QueuedCPUTracker(&cfg);
-	float cpuspeed = SpeedTest(cfg, cputrk, count, haveZLUT, locType);
+	info.speed_cpu = SpeedTest(cfg, cputrk, count, haveZLUT, locType, &info.sched_cpu);
 	delete cputrk;
 
 	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(&cfg, cudaBatchSize);
 	cudatrk->EnableTextureCache(true);
-	float gpuspeed = SpeedTest(cfg, cudatrk, count, haveZLUT, locType);
+	info.speed_gpu = SpeedTest(cfg, cudatrk, count, haveZLUT, locType, &info.sched_gpu);
 	std::string report = cudatrk->GetProfileReport();
 	delete cudatrk;
 
@@ -460,26 +467,22 @@ SpeedInfo SpeedCompareTest(int w)
 		dbgprintf("%s took %f ms on average\n", i->first, 1000*r.second/r.first);
 	}
 
-	dbgprintf("CPU tracking speed: %d img/s\n", (int)cpuspeed);
-	dbgprintf("GPU tracking speed: %d img/s\n", (int)gpuspeed);
-//	dbgout(report);
+	dbgprintf("CPU tracking speed: %d img/s\n", (int)info.speed_cpu);
+	dbgprintf("GPU tracking speed: %d img/s\n", (int)info.speed_gpu);
 
-	SpeedInfo info;
-	info.cpu = cpuspeed;
-	info.gpu = gpuspeed;
 	return info;
 }
 
 void ProfileSpeedVsROI()
 {
 	int N=24;
-	float* values = new float[N*3];
+	float* values = new float[N*2];
 
 	for (int i=0;i<N;i++) {
 		int roi = 40+i*5;
 		SpeedInfo info = SpeedCompareTest(roi);
-		values[i*3+0] = info.cpu;
-		values[i*3+1] = info.gpu;
+		values[i*2+0] = info.speed_cpu;
+		values[i*2+1] = info.speed_gpu;
 	}
 
 	const char *labels[] = { "CPU", "CUDA" };

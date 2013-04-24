@@ -59,7 +59,10 @@ struct Threads
 		void unlock() { ReleaseMutex(h); }
 	};
 
-	static Handle* Create(DWORD (WINAPI *method)(void* param), void* param) {
+	typedef DWORD ReturnValue;
+	typedef ReturnValue (WINAPI *ThreadEntryPoint)(void* param);
+
+	static Handle* Create(ThreadEntryPoint method, void* param) {
 		DWORD threadID;
 		HANDLE h = CreateThread(0, 0, method, param, 0, &threadID);
 		if (!h) {
