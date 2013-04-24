@@ -117,7 +117,6 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="..\cudatrack\Array2D.h" />
     <ClInclude Include="..\cudatrack\cudafft\cudafft.h" />
     <ClInclude Include="..\cudatrack\cudaImageList.h" />
-    <ClInclude Include="..\cudatrack\cuda_shared_mem.h" />
     <ClInclude Include="..\cudatrack\gpu_utils.h" />
     <ClInclude Include="..\cudatrack\ImageSampler.h" />
     <ClInclude Include="..\cudatrack\Kernels.h" />
