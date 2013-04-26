@@ -225,7 +225,7 @@ QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
 
 	batchesDone = 0;
 	time_QI = time_COM = time_ZCompute = time_imageCopy = 0.0;
-	useTextureCache = false;
+	useTextureCache = true;
 }
 
 QueuedCUDATracker::~QueuedCUDATracker()
@@ -377,7 +377,7 @@ void QueuedCUDATracker::ClearResults()
 // All streams on StreamIdle?
 bool QueuedCUDATracker::IsIdle()
 {
-	return CheckAllStreams(Stream::StreamIdle) && (!currentStream || currentStream->jobs.empty() );
+	return CheckAllStreams(Stream::StreamIdle) && (!currentStream || currentStream->jobs.empty() ) && IsAsyncSchedulerIdle();
 }
 
 bool QueuedCUDATracker::CheckAllStreams(Stream::State s)

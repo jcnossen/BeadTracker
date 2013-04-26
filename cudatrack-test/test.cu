@@ -317,7 +317,7 @@ void TestAsync()
 __global__ void emptyKernel()
 {}
 
-float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool haveZLUT, LocalizeType locType, float* scheduleTime)
+float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool haveZLUT, LocalizeType locType, float* scheduleTime, bool asyncSchedule)
 {
 	float *image = new float[cfg.width*cfg.height];
 	srand(1);
@@ -331,12 +331,11 @@ float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool ha
 			vector2f center( cfg.width/2, cfg.height/2 );
 			float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 			GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
-			LocalizeType flags = ;
 			LocalizationJob job;
 			job.frame = 0;
 			job.locType = LocalizeBuildZLUT|LocalizeOnlyCOM;
 			job.zlutPlane = job.frame = x;
-			qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, flags , x, 0,0, 0, x);
+			qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, &job);
 		}
 		qtrk->Flush();
 		// wait to finish ZLUT
@@ -361,7 +360,14 @@ float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool ha
 		LocalizeType flags = (LocalizeType)(locType| (haveZLUT ? LocalizeZ : 0) );
 
 		double t0 = GetPreciseTime();
-		qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, flags, n, 0, 0, 0, 0);
+		///qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, flags, n, 0, 0, 0, 0);
+		ROIPosition roipos[]={ {0,0} };
+		LocalizationJob job;
+		job.frame = n;
+		if (asyncSchedule)
+			qtrk->ScheduleFrameAsync((uchar*)image, cfg.width*sizeof(float),cfg.width,cfg.height, roipos, 1, QTrkFloat, &job);
+		else 
+			qtrk->ScheduleFrame((uchar*)image, cfg.width*sizeof(float),cfg.width,cfg.height, roipos, 1, QTrkFloat, &job);
 		double dt = GetPreciseTime() - t0;
 		maxScheduleTime = std::max(maxScheduleTime, dt);
 		sumScheduleTime += dt;
@@ -452,12 +458,12 @@ SpeedInfo SpeedCompareTest(int w)
 
 	SpeedInfo info;
 	QueuedCPUTracker *cputrk = new QueuedCPUTracker(&cfg);
-	info.speed_cpu = SpeedTest(cfg, cputrk, count, haveZLUT, locType, &info.sched_cpu);
+	info.speed_cpu = SpeedTest(cfg, cputrk, count, haveZLUT, locType, &info.sched_cpu, true);
 	delete cputrk;
 
 	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(&cfg, cudaBatchSize);
-	cudatrk->EnableTextureCache(true);
-	info.speed_gpu = SpeedTest(cfg, cudatrk, count, haveZLUT, locType, &info.sched_gpu);
+	info.speed_gpu = SpeedTest(cfg, cudatrk, count, haveZLUT, locType, &info.sched_gpu, true);
+	//info.speed_gpu = SpeedTest(cfg, cudatrk, count, haveZLUT, locType, &info.sched_gpu);
 	std::string report = cudatrk->GetProfileReport();
 	delete cudatrk;
 

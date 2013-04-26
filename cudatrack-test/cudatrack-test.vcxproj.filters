@@ -17,6 +17,7 @@
     <ClInclude Include="..\cudatrack\QueuedCUDATracker.h" />
     <ClInclude Include="..\cudatrack\ImageSampler.h" />
     <ClInclude Include="..\cudatrack\Kernels.h" />
+    <ClInclude Include="..\cputrack\AsyncScheduler.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="test.cu" />
@@ -43,5 +44,6 @@
     </ClCompile>
     <ClCompile Include="..\cputrack\cpu_tracker.cpp" />
     <ClCompile Include="..\cputrack\queued_cpu_tracker.cpp" />
+    <ClCompile Include="..\cputrack\QueuedTracker.cpp" />
   </ItemGroup>
 </Project>

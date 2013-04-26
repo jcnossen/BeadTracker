@@ -28,6 +28,11 @@ bool QueuedTracker::IsAsyncScheduleDone(uchar* ptr)
 }
 
 
+bool QueuedTracker::IsAsyncSchedulerIdle()
+{
+	return asyncScheduler ? asyncScheduler->IsEmpty() : true;
+}
+
 void QueuedTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint frame, uint timestamp, vector3f* initial, uint zlutIndex, uint zlutPlane)
 {
 	LocalizationJob j;

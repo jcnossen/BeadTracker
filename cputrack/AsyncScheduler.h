@@ -55,7 +55,7 @@ public:
 			queue.push_back(cp);
 		mutex.unlock();
 		imageMutex.lock();
-			images.insert(f.imgptr);
+			images.insert(cp->imgptr);
 		imageMutex.unlock();
 	}
 
@@ -75,6 +75,14 @@ public:
 		bool r = images.find(ptr) == images.end();
 		imageMutex.unlock();
 		return r;
+	}
+
+	bool IsEmpty()
+	{
+		mutex.lock();
+		bool e = queue.empty();
+		mutex.unlock();
+		return e;
 	}
 
 protected:

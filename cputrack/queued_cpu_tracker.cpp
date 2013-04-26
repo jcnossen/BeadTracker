@@ -14,6 +14,11 @@ static int PDT_BytesPerPixel(QTRK_PixelDataType pdt) {
 	return pdtBytes[(int)pdt];
 }
 
+bool QueuedCPUTracker::IsIdle()
+{
+	return IsAsyncSchedulerIdle() && GetJobCount() == 0;
+}
+
 int QueuedCPUTracker::GetResultCount()
 {
 	results_mutex.lock();

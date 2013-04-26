@@ -30,7 +30,7 @@ public:
 	void Flush() override { };
 
 	bool IsQueueFilled() override { return GetJobCount() >= cfg.maxQueueSize; }
-	bool IsIdle() override { return GetJobCount() == 0; }
+	bool IsIdle() override;
 	int GetResultCount() override;
 
 	std::string GetProfileReport() { return "CPU tracker currently has no profile reporting"; }
