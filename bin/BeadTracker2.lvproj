@@ -34,28 +34,43 @@
 			<Item Name="ExperimentProgram" Type="Folder">
 				<Item Name="ConvertProgrammedMovesCode.vi" Type="VI" URL="../BeadTracker2.llb/ConvertProgrammedMovesCode.vi"/>
 				<Item Name="ConvertProgrammedMovesDialog.vi" Type="VI" URL="../BeadTracker2.llb/ConvertProgrammedMovesDialog.vi"/>
+				<Item Name="ExperimentProgramType.ctl" Type="VI" URL="../BeadTracker2.llb/ExperimentProgramType.ctl"/>
 				<Item Name="ExperimentProgramUI.vi" Type="VI" URL="../BeadTracker2.llb/ExperimentProgramUI.vi"/>
-				<Item Name="ExpProgExecutionState.ctl" Type="VI" URL="../BeadTracker2.llb/ExpProgExecutionState.ctl"/>
+				<Item Name="ExperimentStateType.ctl" Type="VI" URL="../BeadTracker2.llb/ExperimentStateType.ctl"/>
+				<Item Name="ExProg_InitScriptState.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_InitScriptState.vi"/>
 				<Item Name="ExProg_ParseFromScript.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_ParseFromScript.vi"/>
 				<Item Name="ExProg_Simulate.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_Simulate.vi"/>
-				<Item Name="GetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/GetMotorAxisValue.vi"/>
+				<Item Name="ExProg_Tick.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_Tick.vi"/>
+				<Item Name="ExProgCommandEnumType.ctl" Type="VI" URL="../BeadTracker2.llb/ExProgCommandEnumType.ctl"/>
+				<Item Name="ExProgCommandType.ctl" Type="VI" URL="../BeadTracker2.llb/ExProgCommandType.ctl"/>
+				<Item Name="ExProgState.ctl" Type="VI" URL="../BeadTracker2.llb/ExProgState.ctl"/>
 				<Item Name="IsMotorPosWithinRange.vi" Type="VI" URL="../BeadTracker2.llb/IsMotorPosWithinRange.vi"/>
 				<Item Name="MotorAxisEnum.ctl" Type="VI" URL="../BeadTracker2.llb/MotorAxisEnum.ctl"/>
 				<Item Name="RemoveCommentsFromStringArray.vi" Type="VI" URL="../BeadTracker2.llb/RemoveCommentsFromStringArray.vi"/>
 				<Item Name="SplitStringIntoArray.vi" Type="VI" URL="../BeadTracker2.llb/SplitStringIntoArray.vi"/>
 			</Item>
+			<Item Name="Tracking" Type="Folder">
+				<Item Name="AllocateMemoryForResults.vi" Type="VI" URL="../BeadTracker2.llb/AllocateMemoryForResults.vi"/>
+				<Item Name="BuildZLUT.vi" Type="VI" URL="../BeadTracker2.llb/BuildZLUT.vi"/>
+				<Item Name="CreateQTrkInstance.vi" Type="VI" URL="../BeadTracker2.llb/CreateQTrkInstance.vi"/>
+				<Item Name="DiscardBead.vi" Type="VI" URL="../BeadTracker2.llb/DiscardBead.vi"/>
+				<Item Name="EditQTrkSettingsDialog.vi" Type="VI" URL="../BeadTracker2.llb/EditQTrkSettingsDialog.vi"/>
+				<Item Name="FetchTrackingResults.vi" Type="VI" URL="../BeadTracker2.llb/FetchTrackingResults.vi"/>
+				<Item Name="GetBeadCornerPos.vi" Type="VI" URL="../BeadTracker2.llb/GetBeadCornerPos.vi"/>
+				<Item Name="GrabImageFromQueue.vi" Type="VI" URL="../BeadTracker2.llb/GrabImageFromQueue.vi"/>
+				<Item Name="ResultsToXYZGraphData.vi" Type="VI" URL="../BeadTracker2.llb/ResultsToXYZGraphData.vi"/>
+				<Item Name="SaveOrLoadBeadlist.vi" Type="VI" URL="../BeadTracker2.llb/SaveOrLoadBeadlist.vi"/>
+				<Item Name="SaveTrackingResults.vi" Type="VI" URL="../BeadTracker2.llb/SaveTrackingResults.vi"/>
+			</Item>
 			<Item Name="Typedefs" Type="Folder">
 				<Item Name="CameraStateType.ctl" Type="VI" URL="../BeadTracker2.llb/CameraStateType.ctl"/>
 				<Item Name="Cmd_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/Cmd_CameraIn.ctl"/>
+				<Item Name="Cmd_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/Cmd_MotorIn.ctl"/>
 				<Item Name="CmdData_NewFrame.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_NewFrame.ctl"/>
 				<Item Name="CmdData_SetMotorPos.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_SetMotorPos.ctl"/>
 				<Item Name="CmdEnum_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraIn.ctl"/>
 				<Item Name="CmdEnum_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_MotorIn.ctl"/>
 				<Item Name="CmdEnum_UserInterfaceCmd.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_UserInterfaceCmd.ctl"/>
-				<Item Name="ExperimentProgramType.ctl" Type="VI" URL="../BeadTracker2.llb/ExperimentProgramType.ctl"/>
-				<Item Name="ExperimentStateType.ctl" Type="VI" URL="../BeadTracker2.llb/ExperimentStateType.ctl"/>
-				<Item Name="ExProgCommandEnumType.ctl" Type="VI" URL="../BeadTracker2.llb/ExProgCommandEnumType.ctl"/>
-				<Item Name="ExProgCommandType.ctl" Type="VI" URL="../BeadTracker2.llb/ExProgCommandType.ctl"/>
 				<Item Name="MeasureConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/MeasureConfigType.ctl"/>
 				<Item Name="MotorMoveFlagsType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorMoveFlagsType.ctl"/>
 				<Item Name="MotorPosType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorPosType.ctl"/>
@@ -64,23 +79,12 @@
 				<Item Name="ResultsCollectionType.ctl" Type="VI" URL="../BeadTracker2.llb/ResultsCollectionType.ctl"/>
 				<Item Name="XYf.ctl" Type="VI" URL="../BeadTracker2.llb/XYf.ctl"/>
 			</Item>
-			<Item Name="AllocateMemoryForResults.vi" Type="VI" URL="../BeadTracker2.llb/AllocateMemoryForResults.vi"/>
 			<Item Name="AskForCreateNewDir.vi" Type="VI" URL="../BeadTracker2.llb/AskForCreateNewDir.vi"/>
-			<Item Name="BuildZLUT.vi" Type="VI" URL="../BeadTracker2.llb/BuildZLUT.vi"/>
-			<Item Name="CreateQTrkInstance.vi" Type="VI" URL="../BeadTracker2.llb/CreateQTrkInstance.vi"/>
-			<Item Name="DiscardBead.vi" Type="VI" URL="../BeadTracker2.llb/DiscardBead.vi"/>
-			<Item Name="EditQTrkSettingsDialog.vi" Type="VI" URL="../BeadTracker2.llb/EditQTrkSettingsDialog.vi"/>
-			<Item Name="FetchTrackingResults.vi" Type="VI" URL="../BeadTracker2.llb/FetchTrackingResults.vi"/>
-			<Item Name="GetBeadCornerPos.vi" Type="VI" URL="../BeadTracker2.llb/GetBeadCornerPos.vi"/>
 			<Item Name="GetExperimentPaths.vi" Type="VI" URL="../BeadTracker2.llb/GetExperimentPaths.vi"/>
 			<Item Name="GetQueues.vi" Type="VI" URL="../BeadTracker2.llb/GetQueues.vi"/>
 			<Item Name="GlobalVariables.vi" Type="VI" URL="../BeadTracker2.llb/GlobalVariables.vi"/>
-			<Item Name="GrabImageFromQueue.vi" Type="VI" URL="../BeadTracker2.llb/GrabImageFromQueue.vi"/>
 			<Item Name="MotorUI.vi" Type="VI" URL="../BeadTracker2.llb/MotorUI.vi"/>
 			<Item Name="MoveMotorAxis.vi" Type="VI" URL="../BeadTracker2.llb/MoveMotorAxis.vi"/>
-			<Item Name="ResultsToXYZGraphData.vi" Type="VI" URL="../BeadTracker2.llb/ResultsToXYZGraphData.vi"/>
-			<Item Name="SaveOrLoadBeadlist.vi" Type="VI" URL="../BeadTracker2.llb/SaveOrLoadBeadlist.vi"/>
-			<Item Name="SaveTrackingResults.vi" Type="VI" URL="../BeadTracker2.llb/SaveTrackingResults.vi"/>
 			<Item Name="SendCameraCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendCameraCmd.vi"/>
 			<Item Name="SendMotorCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorCmd.vi"/>
 			<Item Name="SendMotorMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorMoveCmd.vi"/>
@@ -142,14 +146,10 @@
 			<Item Name="QTrkWaitForResults.vi" Type="VI" URL="../QTrk.llb/QTrkWaitForResults.vi"/>
 			<Item Name="XYZf.ctl" Type="VI" URL="../QTrk.llb/XYZf.ctl"/>
 		</Item>
-		<Item Name="Cmd_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/Cmd_MotorIn.ctl"/>
-		<Item Name="ExProg_ProcessSingleCmd.vi" Type="VI" URL="../BeadTracker2.llb/ExProg_ProcessSingleCmd.vi"/>
-		<Item Name="ExProgState.ctl" Type="VI" URL="../BeadTracker2.llb/ExProgState.ctl"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 		<Item Name="QTrkReadTimestamp.vi" Type="VI" URL="../QTrk.llb/QTrkReadTimestamp.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
-		<Item Name="VEL.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/General command.llb/VEL.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
@@ -263,48 +263,29 @@
 			<Item Name="#7.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/#7.vi"/>
 			<Item Name="*IDN?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/*IDN?.vi"/>
 			<Item Name="AccurateTickCount.vi" Type="VI" URL="../BeadTracker2.llb/AccurateTickCount.vi"/>
-			<Item Name="Analog Functions.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Analog control.llb/Analog Functions.vi"/>
-			<Item Name="Analog Receive String.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Analog control.llb/Analog Receive String.vi"/>
 			<Item Name="Assign values from string to axes.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Assign values from string to axes.vi"/>
-			<Item Name="Available Analog Commands.ctl" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Analog control.llb/Available Analog Commands.ctl"/>
-			<Item Name="Available DLL interfaces.ctl" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Communication.llb/Available DLL interfaces.ctl"/>
-			<Item Name="Available DLLs.ctl" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Communication.llb/Available DLLs.ctl"/>
-			<Item Name="Available interfaces.ctl" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Communication.llb/Available interfaces.ctl"/>
 			<Item Name="BDR.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/BDR.vi"/>
-			<Item Name="Build command substring.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Support.llb/Build command substring.vi"/>
 			<Item Name="Build command substring.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Build command substring.vi"/>
 			<Item Name="Build query command substring.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Build query command substring.vi"/>
 			<Item Name="C843_E665_Configuration_Self.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/C843_E665_Configuration_Self.vi"/>
 			<Item Name="Close connection if open.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Close connection if open.vi"/>
 			<Item Name="Cmd_TrackerIn.ctl" Type="VI" URL="../BeadTracker2.llb/Cmd_TrackerIn.ctl"/>
 			<Item Name="CmdEnum_CameraOut.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraOut.ctl"/>
-			<Item Name="Commanded axes connected?.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Support.llb/Commanded axes connected?.vi"/>
 			<Item Name="Commanded axes connected?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Commanded axes connected?.vi"/>
 			<Item Name="Commanded stage name available?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Commanded stage name available?.vi"/>
 			<Item Name="ConfigureDalsa.vi" Type="VI" URL="../Modules/DalsaCamera - Copy.llb/ConfigureDalsa.vi"/>
-			<Item Name="Controller names.ctl" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/General command.llb/Controller names.ctl"/>
 			<Item Name="Controller names.ctl" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Controller names.ctl"/>
 			<Item Name="CST.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/CST.vi"/>
-			<Item Name="Cut out additional spaces.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Support.llb/Cut out additional spaces.vi"/>
 			<Item Name="DalsaGetCameraConfig.vi" Type="VI" URL="../Modules/DalsaCamera - Copy.llb/DalsaGetCameraConfig.vi"/>
 			<Item Name="DalsaModule.vi" Type="VI" URL="../Modules/DalsaCamera - Copy.llb/DalsaModule.vi"/>
 			<Item Name="DalsaSettings.ctl" Type="VI" URL="../Modules/DalsaCamera - Copy.llb/DalsaSettings.ctl"/>
 			<Item Name="Define connected axes.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Define connected axes.vi"/>
-			<Item Name="ERR?.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/General command.llb/ERR?.vi"/>
 			<Item Name="ERR?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/ERR?.vi"/>
-			<Item Name="GCSTranslator DLL Functions.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Communication.llb/GCSTranslator DLL Functions.vi"/>
 			<Item Name="GCSTranslator DLL Functions.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/GCSTranslator DLL Functions.vi"/>
-			<Item Name="GCSTranslator.dll" Type="Document" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/GCSTranslator.dll"/>
 			<Item Name="GCSTranslator.dll" Type="Document" URL="../Setups/D020R/GCSTranslator.dll"/>
-			<Item Name="Get all axes.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Support.llb/Get all axes.vi"/>
-			<Item Name="Get arrays without blanks.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Support.llb/Get arrays without blanks.vi"/>
-			<Item Name="Get lines from string.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Support.llb/Get lines from string.vi"/>
 			<Item Name="Get lines from string.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Get lines from string.vi"/>
 			<Item Name="GetSetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/GetSetMotorAxisValue.vi"/>
-			<Item Name="Global DaisyChain.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Communication.llb/Global DaisyChain.vi"/>
-			<Item Name="Global1.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Communication.llb/Global1.vi"/>
 			<Item Name="Global1.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Global1.vi"/>
-			<Item Name="Global2 (Array).vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/General command.llb/Global2 (Array).vi"/>
 			<Item Name="Global2.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Global2.vi"/>
 			<Item Name="imaq.dll" Type="Document" URL="imaq.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
@@ -316,10 +297,10 @@
 			</Item>
 			<Item Name="Longlasting one-axis command.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Longlasting one-axis command.vi"/>
 			<Item Name="lvanlys.dll" Type="Document" URL="/C/Program Files/National Instruments/LabVIEW 2011/resource/lvanlys.dll"/>
-			<Item Name="MeasureCurrentPos.vi" Type="VI" URL="../Modules/PI_M126_E816Piezo - Copy.llb/MeasureCurrentPos.vi"/>
+			<Item Name="MeasureCurrentPos.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/MeasureCurrentPos.vi"/>
 			<Item Name="MOV.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/MOV.vi"/>
 			<Item Name="MOV?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/MOV?.vi"/>
-			<Item Name="MoveSingleAxis.vi" Type="VI" URL="../Modules/PI_M126_E816Piezo - Copy.llb/MoveSingleAxis.vi"/>
+			<Item Name="MoveSingleAxis.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/MoveSingleAxis.vi"/>
 			<Item Name="MPL.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/MPL.vi"/>
 			<Item Name="nivision.dll" Type="Document" URL="nivision.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
@@ -328,28 +309,23 @@
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
 			<Item Name="PI Open Interface.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/PI Open Interface.vi"/>
-			<Item Name="PI Receive String.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Communication.llb/PI Receive String.vi"/>
 			<Item Name="PI Receive String.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/PI Receive String.vi"/>
 			<Item Name="PI ReceiveNCharacters RS232.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/PI ReceiveNCharacters RS232.vi"/>
 			<Item Name="PI ReceiveString GPIB.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/PI ReceiveString GPIB.vi"/>
-			<Item Name="PI Send String.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Communication.llb/PI Send String.vi"/>
 			<Item Name="PI Send String.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/PI Send String.vi"/>
-			<Item Name="PI VISA Receive Characters.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Communication.llb/PI VISA Receive Characters.vi"/>
-			<Item Name="PI_Stages_Main.vi" Type="VI" URL="../Modules/PI_M126_E816Piezo - Copy.llb/PI_Stages_Main.vi"/>
+			<Item Name="PI_Stages_Main.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/PI_Stages_Main.vi"/>
+			<Item Name="PIMoveSingleAxis.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/PIMoveSingleAxis.vi"/>
 			<Item Name="POS?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/POS?.vi"/>
 			<Item Name="QTrkLocalizationJob.ctl" Type="VI" URL="../QTrk.llb/QTrkLocalizationJob.ctl"/>
-			<Item Name="Return space.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Support.llb/Return space.vi"/>
 			<Item Name="SAI?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/SAI?.vi"/>
 			<Item Name="SelectBeads.vi" Type="VI" URL="../BeadTracker2.llb/SelectBeads.vi"/>
 			<Item Name="SerialCmd.vi" Type="VI" URL="../Modules/DalsaCamera - Copy.llb/SerialCmd.vi"/>
-			<Item Name="SetSingleAxisPos.vi" Type="VI" URL="../Modules/PI_M126_E816Piezo - Copy.llb/SetSingleAxisPos.vi"/>
 			<Item Name="ShowSettingsDialog.vi" Type="VI" URL="../Modules/DalsaCamera - Copy.llb/ShowSettingsDialog.vi"/>
 			<Item Name="Split num query command.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Split num query command.vi"/>
-			<Item Name="String with ASCII code conversion.vi" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Support.llb/String with ASCII code conversion.vi"/>
 			<Item Name="SVA?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/SVA?.vi"/>
 			<Item Name="SVO.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/SVO.vi"/>
-			<Item Name="Termination character.ctl" Type="VI" URL="/C/ProgramData/PI/GCSMergedLabVIEW/Low Level/Communication.llb/Termination character.ctl"/>
 			<Item Name="TrackerMain.vi" Type="VI" URL="../BeadTracker2.llb/TrackerMain.vi"/>
+			<Item Name="VEL.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/VEL.vi"/>
 			<Item Name="VOL?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/VOL?.vi"/>
 			<Item Name="VST?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/VST?.vi"/>
 			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Wait for answer of longlasting command.vi"/>

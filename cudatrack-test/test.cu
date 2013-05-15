@@ -557,7 +557,7 @@ void CompareAccuracy ()
 	cfg.qi_maxradius = cfg.width/2-8;
 	//std::vector<int> devices(1); devices[0]=1;
 	//SetCUDADevices(devices);
-	cfg.cuda_device = QTrkCUDA_UseAll;
+	cfg.cuda_device = QTrkCUDA_UseBest;
 	cfg.qi_angsteps_per_quadrant = 32;
 	cfg.qi_radialsteps = NearestPowerOfTwo(cfg.qi_maxradius);
 	cfg.numThreads = -1;

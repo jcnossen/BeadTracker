@@ -232,7 +232,7 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 	}
 
 #ifdef _DEBUG
-	dbgprintf("pos[%d]: x=%f, y=%f\n", result.job.zlutIndex, result.pos.x, result.pos.y);
+	dbgprintf("pos[%d]: x=%f, y=%f, z=%f\n", result.job.zlutIndex, result.pos.x, result.pos.y, result.pos.z);
 #endif
 
 	result.error = boundaryHit ? 1 : 0;
