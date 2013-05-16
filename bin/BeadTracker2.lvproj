@@ -148,6 +148,8 @@
 		</Item>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 		<Item Name="QTrkReadTimestamp.vi" Type="VI" URL="../QTrk.llb/QTrkReadTimestamp.vi"/>
+		<Item Name="RegisterFrameTimestamp.vi" Type="VI" URL="../BeadTracker2.llb/RegisterFrameTimestamp.vi"/>
+		<Item Name="SaveResultsIncremental.vi" Type="VI" URL="../SaveResultsIncremental.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
@@ -265,6 +267,7 @@
 			<Item Name="AccurateTickCount.vi" Type="VI" URL="../BeadTracker2.llb/AccurateTickCount.vi"/>
 			<Item Name="Assign values from string to axes.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Assign values from string to axes.vi"/>
 			<Item Name="BDR.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/BDR.vi"/>
+			<Item Name="BeadPos.ctl" Type="VI" URL="../BeadPos.ctl"/>
 			<Item Name="Build command substring.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Build command substring.vi"/>
 			<Item Name="Build query command substring.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Build query command substring.vi"/>
 			<Item Name="C843_E665_Configuration_Self.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/C843_E665_Configuration_Self.vi"/>
@@ -284,6 +287,7 @@
 			<Item Name="GCSTranslator DLL Functions.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/GCSTranslator DLL Functions.vi"/>
 			<Item Name="GCSTranslator.dll" Type="Document" URL="../Setups/D020R/GCSTranslator.dll"/>
 			<Item Name="Get lines from string.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Get lines from string.vi"/>
+			<Item Name="GetResultsFilename.vi" Type="VI" URL="../GetResultsFilename.vi"/>
 			<Item Name="GetSetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/GetSetMotorAxisValue.vi"/>
 			<Item Name="Global1.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Global1.vi"/>
 			<Item Name="Global2.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Global2.vi"/>
@@ -292,6 +296,7 @@
 			</Item>
 			<Item Name="INI.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/INI.vi"/>
 			<Item Name="InitializeCamera.vi" Type="VI" URL="../Modules/DalsaCamera - Copy.llb/InitializeCamera.vi"/>
+			<Item Name="Job.ctl" Type="VI" URL="../Job.ctl"/>
 			<Item Name="kernel32.dll" Type="Document" URL="kernel32.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
@@ -318,6 +323,7 @@
 			<Item Name="POS?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/POS?.vi"/>
 			<Item Name="QTrkLocalizationJob.ctl" Type="VI" URL="../QTrk.llb/QTrkLocalizationJob.ctl"/>
 			<Item Name="SAI?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/SAI?.vi"/>
+			<Item Name="SaveState.ctl" Type="VI" URL="../SaveState.ctl"/>
 			<Item Name="SelectBeads.vi" Type="VI" URL="../BeadTracker2.llb/SelectBeads.vi"/>
 			<Item Name="SerialCmd.vi" Type="VI" URL="../Modules/DalsaCamera - Copy.llb/SerialCmd.vi"/>
 			<Item Name="ShowSettingsDialog.vi" Type="VI" URL="../Modules/DalsaCamera - Copy.llb/ShowSettingsDialog.vi"/>
@@ -329,6 +335,7 @@
 			<Item Name="VOL?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/VOL?.vi"/>
 			<Item Name="VST?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/VST?.vi"/>
 			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Wait for answer of longlasting command.vi"/>
+			<Item Name="XYZf.ctl" Type="VI" URL="../../QTrk.llb/XYZf.ctl"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
