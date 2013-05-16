@@ -211,6 +211,7 @@
     <ClInclude Include="QueuedTracker.h" />
     <ClInclude Include="queued_cpu_tracker.h" />
     <ClInclude Include="random_distr.h" />
+    <ClInclude Include="ResultManager.h" />
     <ClInclude Include="scalar_types.h" />
     <ClInclude Include="std_incl.h" />
     <ClInclude Include="TeLibJpeg\jmemdstsrc.h" />
