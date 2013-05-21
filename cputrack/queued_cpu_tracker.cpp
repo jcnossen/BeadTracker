@@ -157,7 +157,7 @@ void QueuedCPUTracker::Start()
 	processJobs = true;
 }
 
-DWORD QueuedCPUTracker::WorkerThreadMain(void* arg)
+void QueuedCPUTracker::WorkerThreadMain(void* arg)
 {
 	Thread* th = (Thread*)arg;
 	QueuedCPUTracker* this_ = th->manager;
@@ -177,7 +177,6 @@ DWORD QueuedCPUTracker::WorkerThreadMain(void* arg)
 		}
 	}
 	dbgprintf("Thread %p ending.\n", arg);
-	return 0;
 }
 
 void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)

@@ -50,7 +50,14 @@ struct Threads
 
 struct Threads
 {
-	struct Handle;
+	typedef void (*ThreadEntryPoint)(void* param);
+	struct Handle {
+		DWORD threadID;
+		ThreadEntryPoint callback;
+		HANDLE winhdl;
+		void* param;
+	};
+
 	struct Mutex {
 		HANDLE h;
 		Mutex() { h=CreateMutex(0,FALSE,0); }
@@ -59,16 +66,22 @@ struct Threads
 		void unlock() { ReleaseMutex(h); }
 	};
 
-	typedef DWORD ReturnValue;
-	typedef ReturnValue (WINAPI *ThreadEntryPoint)(void* param);
+	static DWORD WINAPI ThreadCaller (void *param) {
+		Handle* hdl = (Handle*)param;
+		hdl->callback (hdl->param);
+		return 0;
+	}
 
 	static Handle* Create(ThreadEntryPoint method, void* param) {
-		DWORD threadID;
-		HANDLE h = CreateThread(0, 0, method, param, 0, &threadID);
-		if (!h) {
+		Handle* hdl = new Handle();
+		hdl->param = param;
+		hdl->callback = method;
+		hdl->winhdl = CreateThread(0, 0, ThreadCaller, hdl, 0, &hdl->threadID);
+		
+		if (!hdl->winhdl) {
 			throw std::runtime_error("Failed to create processing thread.");
 		}
-		return (Handle*)h;
+		return hdl;
 	}
 
 	static bool RunningVistaOrBetter ()
@@ -89,8 +102,9 @@ struct Threads
 	}
 
 	static void WaitAndClose(Handle* h) {
-		WaitForSingleObject((HANDLE)h, INFINITE);
-		CloseHandle((HANDLE)h);
+		WaitForSingleObject(h->winhdl, INFINITE);
+		CloseHandle(h->winhdl);
+		delete h;
 	}
 
 	static void Sleep(int ms) {

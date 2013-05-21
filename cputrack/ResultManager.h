@@ -9,28 +9,36 @@
 class ResultManager
 {
 public:
-	ResultManager(QueuedTracker *qtrk, int numBeads);
+	ResultManager(QueuedTracker *qtrk, int numBeads, const char* outfile);
 	~ResultManager();
 
 	void EnableFetcher(bool enable);
-	void SetOutputFile(const char *filename);
 	void SetWriteInterval(int nFrames);
 
-	int GetLastFrame();
-	void GetPositions(int frame, LocalizationResult *results); // results[nBeads]
+	int GetLastFrame() { return fullFrames; }
+	void GetBeadPositions(int startFrame, int endFrame, int bead, LocalizationResult* r);
+
 
 protected:
 	void Write();
+	void StoreResult(LocalizationResult* r);
 
-	class Block
+	struct FrameResult
 	{
-	public:
+		FrameResult() {count=0; results=0; }
 		LocalizationResult* results;
+		int count;
 	};
 
-	std::list<Block> blocks;
+	std::deque< FrameResult > frameResults;
+	int startFrame; // startFrame for frameResults
+	int fullFrames; // frame where all data is retrieved (all beads)
 
 	QueuedTracker* qtrk;
 	std::string outputFile;
-	Threads::Handle* thread;	
+	Threads::Handle* thread;
+	int numBeads;
+	bool quit;
+
+	static void ThreadLoop(void *param);
 };

@@ -78,6 +78,6 @@ private:
 	void AddJob(Job* j);
 	void ProcessJob(CPUTracker* trk, Job* j);
 
-	static DWORD WINAPI WorkerThreadMain(void* arg);
+	static void WorkerThreadMain(void* arg);
 };
 

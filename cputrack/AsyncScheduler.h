@@ -23,7 +23,6 @@ public:
 		Threads::WaitAndClose(thread);
 	}
 
-
 	struct Frame {
 		Frame() { imgptr = 0; }
 		uchar *imgptr;
@@ -113,12 +112,11 @@ protected:
 		mutex.unlock();
 	}
 
-	static Threads::ReturnValue ThreadFunc(AsyncScheduler* this_)
+	static void ThreadFunc(AsyncScheduler* this_)
 	{
 		while(!this_->closeScheduler) {
 			this_->Process();
 		}
-		return 0;
 	}
 
 };

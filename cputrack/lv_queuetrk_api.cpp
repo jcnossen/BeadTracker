@@ -9,6 +9,8 @@ Labview API for the functionality in QueuedTracker.h
 
 #include "lv_qtrk_api.h"
 
+#include "ResultManager.h"
+
 static Threads::Mutex trackerListMutex;
 static std::vector<QueuedTracker*> trackerList;
 
