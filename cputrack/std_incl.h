@@ -28,6 +28,16 @@ struct vector3f {
 	vector3f() { x=y=z=0.0f; }
 	vector3f(float X,float Y,float Z) { x=X; y=Y; z=Z; }
 	float x,y,z;
+
+	vector3f operator*(const vector3f& o) const {
+		return vector3f(x*o.x,y*o.y,z*o.z);
+	}
+	vector3f operator+(const vector3f& o) const {
+		return vector3f(x+o.x,y+o.y,z+o.z);
+	}
+	vector3f operator-(const vector3f& o) const {
+		return vector3f(x-o.x,y-o.y,z-o.z);
+	}
 };
 #pragma pack(pop)
 

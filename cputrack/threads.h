@@ -73,7 +73,7 @@ struct Threads
 	}
 
 	static Handle* Create(ThreadEntryPoint method, void* param) {
-		Handle* hdl = new Handle();
+		Handle* hdl = new Handle;
 		hdl->param = param;
 		hdl->callback = method;
 		hdl->winhdl = CreateThread(0, 0, ThreadCaller, hdl, 0, &hdl->threadID);
