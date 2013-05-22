@@ -13,8 +13,8 @@ struct ResultManagerConfig
 	vector3f scaling;
 	vector3f offset; // output will be   (position + offset) * scaling
 	int writeInterval;
+	uint maxFramesInMemory; // 0 for infinite
 	uint8_t binaryOutput;
-	uint8_t freeSavedFrameMemory;
 };
 #pragma pack(pop)
 
@@ -22,16 +22,16 @@ struct ResultManagerConfig
 class ResultManager
 {
 public:
-	ResultManager(QueuedTracker *qtrk, const char *outfile,  ResultManagerConfig *cfg);
+	ResultManager(const char *outfile, ResultManagerConfig *cfg);
 	~ResultManager();
 
-	void EnableFetcher(bool enable);
+	void EnableResultFetch(QueuedTracker *qtrk);
 
 	//int GetStartFrame() { return startFrame; }
 	//int GetLastFrame() { return fullFrames; }
 	//int GetLastWrittenFrame() { return lastSaveFrame; }
-	void GetBeadPositions(int startFrame, int endFrame, int bead, LocalizationResult* r);
-	void GetResults(LocalizationResult* results, int startFrame, int numResults);
+	int GetBeadPositions(int startFrame, int endFrame, int bead, LocalizationResult* r);
+	int GetResults(LocalizationResult* results, int startFrame, int numResults);
 	void Flush();
 
 	void GetFrameCounters(int* startFrame, int *fullFrames, int *lastSaveFrame);

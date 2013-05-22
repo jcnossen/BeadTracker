@@ -100,12 +100,16 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\cputrack\dllmain.cpp" />
     <ClCompile Include="..\cputrack\lv_queuetrk_api.cpp" />
+    <ClCompile Include="..\cputrack\lv_resultmanager_api.cpp" />
     <ClCompile Include="..\cputrack\QueuedTracker.cpp" />
+    <ClCompile Include="..\cputrack\ResultManager.cpp" />
     <ClCompile Include="..\cputrack\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cputrack\QueuedTracker.h" />
+    <ClInclude Include="..\cputrack\ResultManager.h" />
     <ClInclude Include="..\cputrack\utils.h" />
     <ClInclude Include="cudaImageList.h" />
     <ClInclude Include="gpu_utils.h" />

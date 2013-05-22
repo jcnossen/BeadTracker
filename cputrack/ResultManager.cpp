@@ -2,7 +2,7 @@
 #include "ResultManager.h"
 #include "utils.h"
 
-ResultManager::ResultManager(QueuedTracker *qtrk, const char *outfile, ResultManagerConfig *cfg)
+ResultManager::ResultManager(const char *outfile, ResultManagerConfig *cfg)
 {
 	config = *cfg;
 	outputFile = outfile;
@@ -11,7 +11,7 @@ ResultManager::ResultManager(QueuedTracker *qtrk, const char *outfile, ResultMan
 	lastSaveFrame = 0;
 	fullFrames = 0;
 
-	this->qtrk = qtrk;
+	qtrk = 0;
 
 	thread = Threads::Create(ThreadLoop, this);
 	quit=false;
@@ -52,7 +52,6 @@ void ResultManager::StoreResult(LocalizationResult *r)
 	fr.results[r->job.zlutIndex] = scaled;
 	fr.count++;
 
-
 	// Advance fullFrames
 	frameCountMutex.lock();
 	while (fullFrames - startFrame < frameResults.size() && frameResults[fullFrames-startFrame].count == config.numBeads)
@@ -68,6 +67,9 @@ void ResultManager::Write()
 	if (config.binaryOutput) {
 		for (int fr=lastSaveFrame; fr<fullFrames;fr++)
 		{
+			auto results = frameResults[fr-startFrame].results;
+			fwrite(&results[0].job.frame, sizeof(uint), 1, f);
+			fwrite(&results[0].job.timestamp, sizeof(uint), 1, f);
 			for (int i=0;i<config.numBeads;i++) 
 			{
 				LocalizationResult *r = &frameResults[fr-startFrame].results[i];
@@ -97,34 +99,44 @@ void ResultManager::Write()
 	lastSaveFrame = fullFrames;
 	frameCountMutex.unlock();
 
-	if (config.freeSavedFrameMemory) {
-		for (int i=0;i<lastSaveFrame-startFrame;i++)
-			delete[] frameResults[i].results;
-		frameResults.erase(frameResults.begin(), frameResults.begin()+(lastSaveFrame-startFrame));
-
-		frameCountMutex.lock();
-		startFrame = lastSaveFrame;
-		frameCountMutex.unlock();
-	}
 	resultMutex.unlock();
 }
 
 
+void ResultManager::EnableResultFetch(QueuedTracker *qtrk)
+{
+	this->qtrk = qtrk;
+}
+
 bool ResultManager::Update()
 {
+	if (!qtrk)
+		return 0;
+
 	const int NResultBuf = 10;
 	LocalizationResult resultbuf[NResultBuf];
 
 	int count = qtrk->PollFinished( resultbuf, NResultBuf );
 
 	resultMutex.lock();
-
 	for (int i=0;i<count;i++)
 		StoreResult(&resultbuf[i]);
 	resultMutex.unlock();
 
 	if (fullFrames - lastSaveFrame >= config.writeInterval) {
 		Write();
+	}
+
+	if (config.maxFramesInMemory>0 && frameResults.size () > config.maxFramesInMemory) {
+		int del = frameResults.size()-config.maxFramesInMemory;
+		dbgprintf("Removing %d frames from memory\n", del);
+		for (int i=0;i<del;i++)
+			delete[] frameResults[i].results;
+		frameResults.erase(frameResults.begin(), frameResults.begin()+del);
+
+		frameCountMutex.lock();
+		startFrame += del;
+		frameCountMutex.unlock();
 	}
 
 	return count>0;
@@ -143,8 +155,20 @@ void ResultManager::ThreadLoop(void *param)
 	}
 }
 
-void ResultManager::GetBeadPositions(int startFrame, int endFrame, int bead, LocalizationResult* results)
+int ResultManager::GetBeadPositions(int startFrame, int endFrame, int bead, LocalizationResult* results)
 {
+	int start = startFrame - this->startFrame;
+
+	if (endFrame > fullFrames)
+		endFrame = fullFrames;
+
+	int end = endFrame - this->startFrame;
+	
+	for (int i=start;i<end;i++){
+		results[i-start] = frameResults[i].results[bead];
+	}
+
+	return end-start;
 }
 
 
@@ -163,7 +187,7 @@ void ResultManager::GetFrameCounters(int* startFrame, int *fullFrames, int *last
 	frameCountMutex.unlock();
 }
 
-void ResultManager::GetResults(LocalizationResult* results, int startFrame, int numFrames)
+int ResultManager::GetResults(LocalizationResult* results, int startFrame, int numFrames)
 {
 	frameCountMutex.lock();
 
@@ -178,5 +202,7 @@ void ResultManager::GetResults(LocalizationResult* results, int startFrame, int 
 		resultMutex.unlock();
 	}
 	frameCountMutex.unlock();
+
+	return numFrames;
 }
 
