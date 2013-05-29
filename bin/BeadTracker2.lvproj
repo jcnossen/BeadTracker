@@ -48,6 +48,7 @@
 				<Item Name="SplitStringIntoArray.vi" Type="VI" URL="../BeadTracker2.llb/SplitStringIntoArray.vi"/>
 			</Item>
 			<Item Name="Tracking" Type="Folder">
+				<Item Name="AdvanceFramesAllDone.vi" Type="VI" URL="../BeadTracker2.llb/AdvanceFramesAllDone.vi"/>
 				<Item Name="AllocateMemoryForResults.vi" Type="VI" URL="../BeadTracker2.llb/AllocateMemoryForResults.vi"/>
 				<Item Name="BuildZLUT.vi" Type="VI" URL="../BeadTracker2.llb/BuildZLUT.vi"/>
 				<Item Name="CreateQTrkInstance.vi" Type="VI" URL="../BeadTracker2.llb/CreateQTrkInstance.vi"/>
@@ -55,13 +56,12 @@
 				<Item Name="EditQTrkSettingsDialog.vi" Type="VI" URL="../BeadTracker2.llb/EditQTrkSettingsDialog.vi"/>
 				<Item Name="FetchTrackingResults.vi" Type="VI" URL="../BeadTracker2.llb/FetchTrackingResults.vi"/>
 				<Item Name="GetBeadCornerPos.vi" Type="VI" URL="../BeadTracker2.llb/GetBeadCornerPos.vi"/>
-				<Item Name="GrabImageFromQueue.vi" Type="VI" URL="../BeadTracker2.llb/GrabImageFromQueue.vi"/>
+				<Item Name="GetResultScaleAndOffset.vi" Type="VI" URL="../BeadTracker2.llb/GetResultScaleAndOffset.vi"/>
 				<Item Name="ResultsToXYZGraphData.vi" Type="VI" URL="../BeadTracker2.llb/ResultsToXYZGraphData.vi"/>
 				<Item Name="SaveOrLoadBeadlist.vi" Type="VI" URL="../BeadTracker2.llb/SaveOrLoadBeadlist.vi"/>
 				<Item Name="SaveTrackingResults.vi" Type="VI" URL="../BeadTracker2.llb/SaveTrackingResults.vi"/>
 			</Item>
 			<Item Name="Typedefs" Type="Folder">
-				<Item Name="CameraStateType.ctl" Type="VI" URL="../BeadTracker2.llb/CameraStateType.ctl"/>
 				<Item Name="Cmd_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/Cmd_CameraIn.ctl"/>
 				<Item Name="Cmd_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/Cmd_MotorIn.ctl"/>
 				<Item Name="CmdData_NewFrame.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_NewFrame.ctl"/>
@@ -69,6 +69,7 @@
 				<Item Name="CmdEnum_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraIn.ctl"/>
 				<Item Name="CmdEnum_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_MotorIn.ctl"/>
 				<Item Name="CmdEnum_UserInterfaceCmd.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_UserInterfaceCmd.ctl"/>
+				<Item Name="FrameInfoType.ctl" Type="VI" URL="../BeadTracker2.llb/FrameInfoType.ctl"/>
 				<Item Name="MeasureConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/MeasureConfigType.ctl"/>
 				<Item Name="MotorConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorConfigType.ctl"/>
 				<Item Name="MotorPosFlagsType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorPosFlagsType.ctl"/>
@@ -79,13 +80,15 @@
 				<Item Name="XYf.ctl" Type="VI" URL="../BeadTracker2.llb/XYf.ctl"/>
 			</Item>
 			<Item Name="AskForCreateNewDir.vi" Type="VI" URL="../BeadTracker2.llb/AskForCreateNewDir.vi"/>
+			<Item Name="ClusterToValueList.vi" Type="VI" URL="../BeadTracker2.llb/ClusterToValueList.vi"/>
 			<Item Name="GetExperimentPaths.vi" Type="VI" URL="../BeadTracker2.llb/GetExperimentPaths.vi"/>
 			<Item Name="GetQueues.vi" Type="VI" URL="../BeadTracker2.llb/GetQueues.vi"/>
-			<Item Name="GetResultScaleAndOffset.vi" Type="VI" URL="../BeadTracker2.llb/GetResultScaleAndOffset.vi"/>
 			<Item Name="GlobalVariables.vi" Type="VI" URL="../BeadTracker2.llb/GlobalVariables.vi"/>
 			<Item Name="LimitedMotorMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/LimitedMotorMoveCmd.vi"/>
 			<Item Name="LimitMotorPos.vi" Type="VI" URL="../BeadTracker2.llb/LimitMotorPos.vi"/>
 			<Item Name="MotorUI.vi" Type="VI" URL="../BeadTracker2.llb/MotorUI.vi"/>
+			<Item Name="OpenOrContinueResultFile.vi" Type="VI" URL="../BeadTracker2.llb/OpenOrContinueResultFile.vi"/>
+			<Item Name="SaveExperimentInfo.vi" Type="VI" URL="../BeadTracker2.llb/SaveExperimentInfo.vi"/>
 			<Item Name="SendCameraCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendCameraCmd.vi"/>
 			<Item Name="SendMotorCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorCmd.vi"/>
 			<Item Name="SetMotorAxisPos.vi" Type="VI" URL="../BeadTracker2.llb/SetMotorAxisPos.vi"/>
@@ -147,12 +150,10 @@
 			<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkSetZLUT.vi"/>
 			<Item Name="QTrkWaitForResults.vi" Type="VI" URL="../QTrk.llb/QTrkWaitForResults.vi"/>
 		</Item>
-		<Item Name="FrameInfoType.ctl" Type="VI" URL="../BeadTracker2.llb/FrameInfoType.ctl"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
-		<Item Name="OpenOrContinueResultFile.vi" Type="VI" URL="../BeadTracker2.llb/OpenOrContinueResultFile.vi"/>
-		<Item Name="SaveExperimentInfo.vi" Type="VI" URL="../BeadTracker2.llb/SaveExperimentInfo.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
+		<Item Name="TrackedBeadPos.ctl" Type="VI" URL="../BeadTracker2.llb/TrackedBeadPos.ctl"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
@@ -278,6 +279,7 @@
 			<Item Name="Commanded stage name available?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Commanded stage name available?.vi"/>
 			<Item Name="ConfigureDalsa.vi" Type="VI" URL="../Setups/D020R/DalsaCamera.llb/ConfigureDalsa.vi"/>
 			<Item Name="Controller names.ctl" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Controller names.ctl"/>
+			<Item Name="conv_turns_steps.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/conv_turns_steps.vi"/>
 			<Item Name="CST.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/CST.vi"/>
 			<Item Name="DalsaGetCameraConfig.vi" Type="VI" URL="../Setups/D020R/DalsaCamera.llb/DalsaGetCameraConfig.vi"/>
 			<Item Name="DalsaModule.vi" Type="VI" URL="../Setups/D020R/DalsaCamera.llb/DalsaModule.vi"/>
