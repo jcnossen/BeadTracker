@@ -154,7 +154,9 @@
 			<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkSetZLUT.vi"/>
 			<Item Name="QTrkWaitForResults.vi" Type="VI" URL="../QTrk.llb/QTrkWaitForResults.vi"/>
 		</Item>
+		<Item Name="CreateResultDVR.vi" Type="VI" URL="../BeadTracker2.llb/CreateResultDVR.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
+		<Item Name="PartialFreeResultData.vi" Type="VI" URL="../BeadTracker2.llb/PartialFreeResultData.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="TrackedBeadPos.ctl" Type="VI" URL="../BeadTracker2.llb/TrackedBeadPos.ctl"/>
