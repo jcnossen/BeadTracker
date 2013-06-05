@@ -47,7 +47,7 @@ CDLL_EXPORT void dbgprintf(const char *fmt,...) {
 
 void GenerateTestImage(ImageData img, float xp, float yp, float size, float SNratio)
 {
-	float S = 1.0f/size;
+	float S = 1.0f/sqrt(size);
 	for (int y=0;y<img.h;y++) {
 		for (int x=0;x<img.w;x++) {
 			float X = x - xp;
@@ -89,7 +89,7 @@ void ComputeCRP(float* dst, int radialSteps, int angularSteps, float minradius, 
 		for (int i=0;i<radialSteps; i++) {
 			float x = center.x + radialDirs[a].x * r;
 			float y = center.y + radialDirs[a].y * r;
-			float v = img->interpolate(x,y, paddingValue);
+			float v = img->interpolate(x,y);
 			r += rstep;
 			map[a*radialSteps+i] = v;
 			sum += v;
@@ -159,19 +159,34 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 	for (int i=0;i<radialSteps; i++) {
 		double sum = 0.0f;
 
+		int nsamples = 0;
 		float r = minradius+rstep*i;
 		for (int a=0;a<angularSteps;a++) {
 			float x = center.x + radialDirs[a].x * r;
 			float y = center.y + radialDirs[a].y * r;
-			sum += img->interpolate(x,y, paddingValue);
+			bool outside;
+			float v = img->interpolate(x,y, &outside);
+			if (!outside) {
+				sum += v;
+				nsamples++;
+			}
 		}
 
 		//dst[i] = sum/angularSteps;
 	//}
 		
-		dst[i] = sum/angularSteps-paddingValue;
-		totalrmssum2 += dst[i]*dst[i];
+		dst[i] = sum/nsamples;
+//		totalrmssum2 += dst[i]*dst[i];
 	}
+	float substr = dst[radialSteps-1];
+	for (int i=0;i<radialSteps-1;i++)
+		dst[i] -= substr;
+	double sum=0.0f;
+	for (int i=0;i<radialSteps;i++)
+		totalrmssum2 += dst[i]*dst[i];
+//		sum += dst[i];
+	double invSum = 1.0/sum;
+	//	totalrmssum2 += dst[i]*dst[i];
 	double invTotalrms = 1.0f/sqrt(totalrmssum2/radialSteps);
 	for (int i=0;i<radialSteps;i++) {
 		dst[i] *= invTotalrms;
@@ -347,6 +362,5 @@ double GetPreciseTime()
 
 	return (double)time / (double)freq;
 }
-
 
 

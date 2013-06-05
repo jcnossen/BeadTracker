@@ -9,7 +9,7 @@ template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }
 float distance(vector2f a,vector2f b) { return distance(a.x-b.x,a.y-b.y); }
 
 
-
+/*
 void SpeedTest()
 {
 #ifdef _DEBUG
@@ -56,10 +56,10 @@ void SpeedTest()
 		double t2 = GetPreciseTime();
 		bool boundaryHit = false;
 		vector2f xcor = tracker->ComputeXCorInterpolated(initial, xcor_iterations, 16, boundaryHit);
-/*		if (k == 1) {
+		if (k == 1) {
 			tracker.OutputDebugInfo();
 			writeImageAsCSV("test.csv", tracker.srcImage, tracker.width, tracker.height);
-		}*/
+		}
 		if (boundaryHit)
 			dbgprintf("xcor boundaryhit!!\n");
 
@@ -118,7 +118,7 @@ void OnePixelTest()
 	vector2f com = tracker->ComputeBgCorrectedCOM();
 	dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
 	
-	vector2f initial = {15,15};
+	vector2f initial(15,15);
 	bool boundaryHit = false;
 	vector2f xcor = tracker->ComputeXCorInterpolated(initial,2, 16, boundaryHit);
 	dbgout(SPrintf("XCor: %f,%f\n", xcor.x, xcor.y));
@@ -278,7 +278,7 @@ void ZTrackingTest()
 		dbgout(SPrintf("average Z difference: %f. zplanes=%d\n", err, k));
 	}
 }
-
+*/
 /*
 void Test2DTracking()
 {
@@ -325,6 +325,7 @@ void Test2DTracking()
 	dbgprintf("Average dist XCor 2D: %f\n", dist2D/N);
 }*/
 
+/*
 void QTrkTest()
 {
 	QTrkSettings cfg;
@@ -503,7 +504,7 @@ void CRP_TestGeneratedData()
 	uchar* lut;
 	ReadJPEGFile(&lutdata[0], lutdata.size(), &lut, &lutw, &luth);
 	delete[] img;
-}
+}*/
 
 ImageData ReadJPEGFile(const char*fn)
 {
@@ -553,24 +554,44 @@ void CorrectedRadialProfileTest()
 
 
 
+void WriteRadialProf(const char *file, ImageData& d)
+{
+	CPUTracker trk(d.w,d.h);
+	trk.SetImageFloat(d.data);
+	vector2f com = trk.ComputeBgCorrectedCOM();
+	bool bhit;
+	vector2f qipos = trk.ComputeQI(com, 4, 64, 64, 5, 50, bhit);
+
+	const int radialsteps=64;
+	float radprof[radialsteps];
+	trk.ComputeRadialProfile(radprof, radialsteps, 128, 5, 40, qipos, false);
+
+	WriteImageAsCSV(file, radprof, radialsteps, 1);
+}
+
+
+
+void FastCameraTest()
+{
+
+}
 
 
 int main()
 {
+	FastCameraTest();
+
 	//SpeedTest();
 	//SmallImageTest();
 	//PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();
-	QTrkTest();
+//	QTrkTest();
 	//for (int i=1;i<8;i++)
 //		BuildConvergenceMap(i);
 
 
 	//CorrectedRadialProfileTest();
-
-
-
 	return 0;
 }

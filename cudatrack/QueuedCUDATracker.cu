@@ -741,7 +741,7 @@ float* QueuedCUDATracker::GetZLUT(int *count, int* planes)
 	if (zlut->data) {
 		//zlut->copyToHost(data, false);
 		for (int i=0;i<zlut->count;i++)
-			zlut->copyImageToHost(i, &data[cfg.zlut_radialsteps*zlut->h]);
+			zlut->copyImageToHost(i, &data[i*cfg.zlut_radialsteps*zlut->h]);
 	} else
 		std::fill(data, data+(cfg.zlut_radialsteps*zlut->h*zlut->count), 0.0f);
 

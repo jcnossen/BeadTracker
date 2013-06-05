@@ -184,12 +184,16 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 		// generate X position xcor array (summing over y range)
 		for (int x=0;x<xcorw;x++) {
 			xcor_t s = 0.0f;
+			int n=0;
 			for (int y=0;y<profileWidth;y++) {
 				float xp = x * XCorScale + xmin;
 				float yp = pos.y + XCorScale * (y - profileWidth/2);
-				s += Interpolate(srcImage, width, height, xp, yp,mean);
+				bool outside;
+				s += Interpolate(srcImage, width, height, xp, yp, &outside);
+				n += outside?0:1;
 				MARKPIXELI(xp, yp);
 			}
+			s/=n;
 			prof [x] = s;
 			prof_rev [xcorw-x-1] = s;
 		}
@@ -200,12 +204,16 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 		// generate Y position xcor array (summing over x range)
 		for (int y=0;y<xcorw;y++) {
 			xcor_t s = 0.0f; 
+			int n=0;
 			for (int x=0;x<profileWidth;x++) {
 				float xp = pos.x + XCorScale * (x - profileWidth/2);
 				float yp = y * XCorScale + ymin;
-				s += Interpolate(srcImage,width,height, xp, yp,mean);
+				bool outside;
+				s += Interpolate(srcImage,width,height, xp, yp, &outside);
+				n += outside?0:1;
 				MARKPIXELI(xp,yp);
 			}
+			s/=n;
 			prof[y] = s;
 			prof_rev [xcorw-y-1] =s;
 		}
@@ -380,7 +388,7 @@ float CPUTracker::ComputeAsymmetry(vector2f center, int radialSteps, int angular
 		for (int i=0;i<radialSteps;i++) {
 			float x = center.x + radialDirs[a].x * r;
 			float y = center.y + radialDirs[a].y * r;
-			rline[i] = Interpolate(srcImage,width,height, x,y,mean);
+			rline[i] = Interpolate(srcImage,width,height, x,y);
 			r += rstep;
 		}
 
@@ -413,14 +421,21 @@ void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, 
 		float sum = 0.0f;
 		float r = minRadius + rstep * i;
 
+		int nPixels = 0;
 		for (int a=0;a<angularSteps;a++) {
 			float x = center.x + mx*quadrantDirs[a].x * r;
 			float y = center.y + my*quadrantDirs[a].y * r;
-			sum += Interpolate(srcImage,width,height, x,y,mean);
-			MARKPIXELI(x,y);
+
+			bool outside;
+			float v = Interpolate(srcImage,width,height, x,y, &outside);
+			if (!outside) {
+				sum += v;
+				nPixels++;
+				MARKPIXELI(x,y);
+			}
 		}
 
-		dst[i] = sum/angularSteps-mean;
+		dst[i] = sum/nPixels;
 		total += dst[i];
 	}
 }

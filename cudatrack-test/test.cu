@@ -663,6 +663,112 @@ void TestTextureFetch()
 
 
 
+void MultipleLUTTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int numBeads, int count=100, LocalizeType locType=LocalizeQI)
+{
+	float *image = new float[cfg.width*cfg.height];
+	srand(1);
+
+	// Generate ZLUT
+	int zplanes=100;
+	float zmin=0.5,zmax=3;
+	qtrk->SetZLUT(0, numBeads, zplanes);
+
+	std::vector< std::vector<vector3f> > positions(numBeads);
+	for (int i=0;i<numBeads;i++) {
+		for (int x=0;x<zplanes;x++)  {
+			vector2f center( cfg.width/2, cfg.height/2 );
+			float s = i+ zmin + (zmax-zmin) * x/(float)(zplanes-1);
+			GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
+			LocalizationJob job;
+			job.frame = 0;
+			job.locType = LocalizeBuildZLUT|LocalizeOnlyCOM;
+			job.zlutPlane = job.frame = x;
+			job.zlutIndex = i;
+			qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, &job);
+		}
+	}
+	qtrk->Flush();
+	// wait to finish ZLUT
+	while(true) {
+		int rc = qtrk->GetResultCount();
+		if (rc == zplanes*numBeads) break;
+		Sleep(100);
+		dbgprintf(".");
+	}
+	qtrk->ClearResults();
+
+	float* zlutData = qtrk->GetZLUT();
+	for (int i=0;i<numBeads;i++) {
+		float* beadlut = zlutData + i* cfg.zlut_radialsteps * zplanes;
+		std::string filename=SPrintf("zlut-bead%d.jpg", i);
+		FloatToJPEGFile(filename.c_str(), beadlut, cfg.zlut_radialsteps, zplanes);
+	}
+	
+	// Schedule images to localize on
+	dbgprintf("Benchmarking...\n", count);
+
+	int rc = 0, displayrc=0;
+	for (int i=0;i<numBeads;i++){
+		for (int n=0;n<count;n++) {
+
+			float z = i*3+ zmin + (zmax-zmin) * rand_uniform<float>();
+			vector3f pos(cfg.width/2+rand_uniform<float>(), cfg.width/2+rand_uniform<float>(), z);
+			positions[i].push_back(pos);
+
+			GenerateTestImage(ImageData(image, cfg.width, cfg.height), pos.x, pos.y, pos.z, 0);
+			LocalizeType flags = (LocalizeType)(locType| LocalizeZ);
+
+			ROIPosition roipos[]={ {0,0} };
+			LocalizationJob job;
+			job.frame = n;
+			qtrk->ScheduleFrame((uchar*)image, cfg.width*sizeof(float),cfg.width,cfg.height, roipos, 1, QTrkFloat, &job);
+			if (n % 10 == 0) {
+				rc = qtrk->GetResultCount();
+				while (displayrc<rc) {
+					if( displayrc%(count/10)==0) dbgprintf("Done: %d / %d\n", displayrc, count);
+					displayrc++;
+				}
+			}
+		}
+	}
+	qtrk->Flush();
+	do {
+		rc = qtrk->GetResultCount();
+		while (displayrc<rc) {
+			if( displayrc%std::max(1,count/10)==0) dbgprintf("Done: %d / %d\n", displayrc, count);
+			displayrc++;
+		}
+		Sleep(10);
+	} while (rc != count*numBeads);
+	
+	// Measure speed
+	delete[] image;
+}
+
+
+void MultipleLUTTest()
+{
+	QTrkSettings cfg;
+	cfg.width = cfg.height = 80;
+	cfg.qi_iterations = 4;
+	cfg.qi_maxradius = cfg.width/2-8;
+	//std::vector<int> devices(1); devices[0]=1;
+	//SetCUDADevices(devices);
+	cfg.cuda_device = QTrkCUDA_UseBest;
+	cfg.qi_angsteps_per_quadrant = 32;
+	cfg.qi_radialsteps = NearestPowerOfTwo(cfg.qi_maxradius);
+	cfg.numThreads = -1;
+	cfg.com_bgcorrection = 0.0f;
+	cfg.zlut_maxradius = cfg.qi_maxradius;
+	cfg.zlut_radialsteps = 64;
+	cfg.zlut_angularsteps = 128;
+
+	QueuedCUDATracker* qtrk = new QueuedCUDATracker(&cfg);
+	//QueuedCPUTracker* qtrk = new QueuedCPUTracker(&cfg);
+	MultipleLUTTest(cfg, qtrk,4);
+	delete qtrk;
+}
+
 int main(int argc, char *argv[])
 {
 	listDevices();
@@ -670,9 +776,11 @@ int main(int argc, char *argv[])
 
 	//TestTextureFetch();
 
-	CompareAccuracy();
+	MultipleLUTTest();
+
+	//CompareAccuracy();
 	//QTrkTest();
-	ProfileSpeedVsROI();
+//	ProfileSpeedVsROI();
 ///	auto info = SpeedCompareTest(80);
 	//dbgprintf("CPU: %f, GPU: %f, GPU(tc): %f\n", info.cpu, info.gpu, info.gputex); 
 	return 0;

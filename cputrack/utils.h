@@ -33,11 +33,14 @@ void normalize(TPixel* d, uint w,uint h)
 
 inline float Lerp(float a, float b, float x) { return a + (b-a)*x; }
 
-inline float Interpolate(float* image, int width, int height, float x,float y, float paddingValue=0.0f)
+inline float Interpolate(float* image, int width, int height, float x,float y, bool* outside=0)
 {
 	int rx=x, ry=y;
-	if (rx<0 || ry <0 || rx+1 >= width || ry+1>=height)
-		return paddingValue;
+	if (rx<0 || ry <0 || rx+1 >= width || ry+1>=height) {
+		if (outside) *outside=true;
+		return 0.0f;
+	}
+	if (outside) *outside=false;
 
 	float v00 = image[width*ry+rx];
 	float v10 = image[width*ry+rx+1];
@@ -56,7 +59,7 @@ struct ImageData {
 	int w,h;
 	ImageData(float *d, int w, int h) : data(d), w(w),h(h) {}
 	float& at(int x, int y) { return data[w*y+x]; }
-	float interpolate(float x, float y, float paddingValue) { return Interpolate(data, w,h, x,y,paddingValue); }
+	float interpolate(float x, float y, bool *outside=0) { return Interpolate(data, w,h, x,y,outside); }
 	int numPixels() { return w*h; }
 	void normalize() { ::normalize(data,w,h); }
 	float mean() {
@@ -65,7 +68,10 @@ struct ImageData {
 			s+=data[x];
 		return s/(w*h);
 	}
+	float& operator[](int i) { return data[i]; }
 };
+
+float ComputeMostOccuringValue(ImageData& img); // a poor man's median
 
 void GenerateTestImage(ImageData img, float xp, float yp, float size, float MaxPhotons);
 
@@ -119,3 +125,35 @@ T ComputeStdDev(T* data, int len)
 	return sqrt(sum2 / len- mean * mean);
 }
 
+
+/*
+template<typename T, T minval, T maxval, int NBins>
+T ComputeMostOccuringValue(T* data, int size)
+{
+	T maxv,minv;
+	maxv=minv=img[0];
+	for (int i=1;i<size;i++) {
+		if (data[i] > maxv) maxv = data[i];
+		if (data[i] < minv) minv = data[i];
+	}
+	const int NBins=256;
+	int bins[NBins];
+	for (int i=0;i<NBins;i++)
+		bins[i]=0;
+	for (int i=0;i<size;i++) {
+		T v = data[i];
+		int bin = NBins * (v - minv) / (maxv-minv);
+		if (bin < 0) bin = 0;
+		if (bin >= NBins) bin--;
+		bins[bin]++;
+	}
+	int maxbinv= bins[0], maxbinIndex=0;
+	for (int i=0;i<NBins;i++)
+		if (bins[i]<maxbinv) {
+			maxbinIndex = i;
+			maxbinv = bins[i];
+		}
+	return 
+}
+
+*/
