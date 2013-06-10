@@ -155,9 +155,12 @@
 			<Item Name="QTrkWaitForResults.vi" Type="VI" URL="../QTrk.llb/QTrkWaitForResults.vi"/>
 		</Item>
 		<Item Name="CreateResultDVR.vi" Type="VI" URL="../BeadTracker2.llb/CreateResultDVR.vi"/>
+		<Item Name="GenerateNewFilename.vi" Type="VI" URL="../BeadTracker2.llb/GenerateNewFilename.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 		<Item Name="PartialFreeResultData.vi" Type="VI" URL="../BeadTracker2.llb/PartialFreeResultData.vi"/>
+		<Item Name="ResultsToTracePlotData.vi" Type="VI" URL="../BeadTracker2.llb/ResultsToTracePlotData.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
+		<Item Name="ShowRenameIfExistingExpDialog.vi" Type="VI" URL="../BeadTracker2.llb/ShowRenameIfExistingExpDialog.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="TrackedBeadPos.ctl" Type="VI" URL="../BeadTracker2.llb/TrackedBeadPos.ctl"/>
 		<Item Name="Dependencies" Type="Dependencies">
@@ -309,6 +312,7 @@
 			</Item>
 			<Item Name="Longlasting one-axis command.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Longlasting one-axis command.vi"/>
 			<Item Name="lvanlys.dll" Type="Document" URL="/C/Program Files/National Instruments/LabVIEW 2011/resource/lvanlys.dll"/>
+			<Item Name="MakeStetsonWindow.vi" Type="VI" URL="../QTrk.llb/MakeStetsonWindow.vi"/>
 			<Item Name="MeasureCurrentPos.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/MeasureCurrentPos.vi"/>
 			<Item Name="MOV.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/MOV.vi"/>
 			<Item Name="MOV?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/MOV?.vi"/>
