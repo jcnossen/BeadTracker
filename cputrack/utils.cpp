@@ -154,8 +154,9 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 	for (int i=0;i<radialSteps;i++)
 		dst[i]=0.0f;
 
-	double totalrmssum2 = 0.0f;
+	double totalrmssum2 = 0.0f, totalsum=0.0;
 	float rstep = (maxradius-minradius) / radialSteps;
+	int totalsmp = 0;
 	for (int i=0;i<radialSteps; i++) {
 		double sum = 0.0f;
 
@@ -172,14 +173,12 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 			}
 		}
 
-		//dst[i] = sum/angularSteps;
-	//}
-		
 		dst[i] = sum/nsamples;
-//		totalrmssum2 += dst[i]*dst[i];
+		totalsum += sum;
+		totalsmp += nsamples;
 	}
-	float substr = dst[radialSteps-1];
-	for (int i=0;i<radialSteps-1;i++)
+	float substr = totalsum/totalsmp;
+	for (int i=0;i<radialSteps;i++)
 		dst[i] -= substr;
 	double sum=0.0f;
 	for (int i=0;i<radialSteps;i++)

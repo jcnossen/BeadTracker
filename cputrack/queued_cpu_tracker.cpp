@@ -261,8 +261,9 @@ void QueuedCPUTracker::SetZLUT(float* data, int num_zluts, int planes, float* zc
 	else
 		zluts = 0;
 
-	if (zcmp)
+	if (zcmp) {
 		this->zcmp.assign(zcmp, zcmp+res);
+	}
 	else
 		this->zcmp.clear();
 
