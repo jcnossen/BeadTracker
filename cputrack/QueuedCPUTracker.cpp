@@ -1,5 +1,5 @@
 #include "std_incl.h"
-#include "queued_cpu_tracker.h"
+#include "QueuedCPUTracker.h"
 
 #ifndef CUDA_TRACK
 CDLL_EXPORT QueuedTracker* CreateQueuedTracker(QTrkSettings* s) {

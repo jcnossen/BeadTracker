@@ -56,6 +56,11 @@ public:
 		return a*pos*pos + b*pos + c;
 	}
 
+	LSQFIT_FUNC T computeDeriv(T pos)
+	{
+		return 2*a*pos + b;
+	}
+
 	LSQFIT_FUNC T maxPos()
 	{
 		return -b/(2*a);
@@ -86,17 +91,14 @@ private:
 		s01 = Sy; s11 = Sxy; s21 = Sx2y;
         return Sx;
     }
-};
 
-
-// Computes the interpolated maximum position
-template<typename T, int numPts=7>
-class ComputeMaxInterp {
 public:
 	static LSQFIT_FUNC T max_(T a, T b) { return a>b ? a : b; }
 	static LSQFIT_FUNC T min_(T a, T b) { return a<b ? a : b; }
 
-	static LSQFIT_FUNC T Compute(T* data, int len)
+	static LSQFIT_FUNC void ComputeCoefficients(
+
+	static LSQFIT_FUNC T ComputeMax(T* data, int len)
 	{
 		int iMax=0;
 		T vMax=data[0];
@@ -110,7 +112,6 @@ public:
 		int startPos = max_(iMax-numPts/2, 0);
 		int endPos = min_(iMax+(numPts-numPts/2), len);
 		int numpoints = endPos - startPos;
-
 
 		if (numpoints<3) 
 			return iMax;
@@ -131,6 +132,13 @@ public:
 				return (T)iMax + interpMax;
 		}
 	}
+};
+
+
+// Computes the interpolated maximum position
+template<typename T, int numPts=7>
+class ComputeMaxInterp {
+public:
 
 
 

@@ -135,8 +135,8 @@
     <ClCompile Include="..\cputrack\cpu_tracker.cpp" />
     <ClCompile Include="..\cputrack\fastjpg.cpp" />
     <ClCompile Include="..\cputrack\memdbg.cpp" />
+    <ClCompile Include="..\cputrack\QueuedCPUTracker.cpp" />
     <ClCompile Include="..\cputrack\QueuedTracker.cpp" />
-    <ClCompile Include="..\cputrack\queued_cpu_tracker.cpp" />
     <ClCompile Include="..\cputrack\TeLibJpeg\jmemdst.c" />
     <ClCompile Include="..\cputrack\TeLibJpeg\jmemsrc.c" />
     <ClCompile Include="..\cputrack\utils.cpp" />
@@ -144,9 +144,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\cputrack\cpu_tracker.h" />
+    <ClInclude Include="..\cputrack\FisherMatrix.h" />
     <ClInclude Include="..\cputrack\kissfft.h" />
+    <ClInclude Include="..\cputrack\QueuedCPUTracker.h" />
     <ClInclude Include="..\cputrack\QueuedTracker.h" />
-    <ClInclude Include="..\cputrack\queued_cpu_tracker.h" />
     <ClInclude Include="..\cputrack\std_incl.h" />
     <ClInclude Include="..\cputrack\TeLibJpeg\jmemdstsrc.h" />
     <ClInclude Include="..\cputrack\utils.h" />
