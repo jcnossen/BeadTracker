@@ -36,6 +36,10 @@ public:
 
 	void GetFrameCounters(int* startFrame, int *fullFrames, int *lastSaveFrame);
 
+	// Configure output of an additional frame info file
+	void SetFrameInfoFile(const char* outfile, int numcols);
+	void SetFrameInfo(int frame, float* columns);
+
 protected:
 	void Write();
 	void StoreResult(LocalizationResult* r);
