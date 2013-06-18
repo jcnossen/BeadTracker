@@ -10,6 +10,7 @@ Labview API for the functionality in QueuedTracker.h
 #include "lv_qtrk_api.h"
 
 #include "ResultManager.h"
+#include "FisherMatrix.h"
 
 static Threads::Mutex trackerListMutex;
 static std::vector<QueuedTracker*> trackerList;
@@ -310,6 +311,16 @@ CDLL_EXPORT void qtrk_dump_memleaks()
 CDLL_EXPORT void qtrk_get_profile_report(QueuedTracker* qtrk, LStrHandle str)
 {
 	SetLVString(str, qtrk->GetProfileReport().c_str());
+}
+
+
+CDLL_EXPORT void qtrk_compute_fisher(LVArray2D<float> **lut, QTrkSettings* cfg, vector3f* pos, vector3f* fisherMatrix)
+{
+	for (int i=0;i<3;i++)
+		fisherMatrix[i] = vector3f();
+
+	LUTFisherMatrix fm( (*lut)->elem, cfg->zlut_radialsteps, (*lut)->dimSizes[1] );
+	fm.Compute(cfg->width, cfg->height, *pos, cfg->zlut_minradius, cfg->zlut_maxradius);
 }
 
 

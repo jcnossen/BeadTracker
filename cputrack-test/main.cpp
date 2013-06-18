@@ -1,7 +1,7 @@
 #include "../cputrack/std_incl.h"
 #include "../cputrack/cpu_tracker.h"
 #include "../cputrack/random_distr.h"
-#include "../cputrack/queued_cpu_tracker.h"
+#include "../cputrack/QueuedCPUTracker.h"
 
 template<typename T> T sq(T x) { return x*x; }
 template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }

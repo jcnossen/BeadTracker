@@ -193,8 +193,8 @@
     <ClCompile Include="lv_queuetrk_api.cpp" />
     <ClCompile Include="lv_resultmanager_api.cpp" />
     <ClCompile Include="memdbg.cpp" />
+    <ClCompile Include="QueuedCPUTracker.cpp" />
     <ClCompile Include="QueuedTracker.cpp" />
-    <ClCompile Include="queued_cpu_tracker.cpp" />
     <ClCompile Include="ResultManager.cpp" />
     <ClCompile Include="TeLibJpeg\jmemdst.c" />
     <ClCompile Include="TeLibJpeg\jmemsrc.c" />
@@ -205,13 +205,14 @@
     <ClInclude Include="cpu_tracker.h" />
     <ClInclude Include="dllmacros.h" />
     <ClInclude Include="fft2D.h" />
+    <ClInclude Include="FisherMatrix.h" />
     <ClInclude Include="hash_templates.h" />
     <ClInclude Include="labview.h" />
     <ClInclude Include="LsqQuadraticFit.h" />
     <ClInclude Include="memdbg.h" />
     <ClInclude Include="lv_qtrk_api.h" />
+    <ClInclude Include="QueuedCPUTracker.h" />
     <ClInclude Include="QueuedTracker.h" />
-    <ClInclude Include="queued_cpu_tracker.h" />
     <ClInclude Include="random_distr.h" />
     <ClInclude Include="ResultManager.h" />
     <ClInclude Include="scalar_types.h" />

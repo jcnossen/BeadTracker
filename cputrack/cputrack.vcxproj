@@ -108,14 +108,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="cpu_tracker.cpp" />
-    <ClCompile Include="queued_cpu_tracker.cpp" />
+    <ClCompile Include="QueuedCPUTracker.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpu_tracker.h" />
     <ClInclude Include="LsqQuadraticFit.h" />
+    <ClInclude Include="QueuedCPUTracker.h" />
     <ClInclude Include="QueuedTracker.h" />
-    <ClInclude Include="queued_cpu_tracker.h" />
     <ClInclude Include="random_distr.h" />
     <ClInclude Include="scalar_types.h" />
     <ClInclude Include="std_incl.h" />
