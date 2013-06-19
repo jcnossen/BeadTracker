@@ -151,6 +151,7 @@
 			<Item Name="QTrkIsIdle.vi" Type="VI" URL="../QTrk.llb/QTrkIsIdle.vi"/>
 			<Item Name="QTrkIsQueueFull.vi" Type="VI" URL="../QTrk.llb/QTrkIsQueueFull.vi"/>
 			<Item Name="QTrkLocalizationResult.ctl" Type="VI" URL="../QTrk.llb/QTrkLocalizationResult.ctl"/>
+			<Item Name="QTrkLocalizationType.ctl" Type="VI" URL="../QTrk.llb/QTrkLocalizationType.ctl"/>
 			<Item Name="QTrkPixelDataType.ctl" Type="VI" URL="../QTrk.llb/QTrkPixelDataType.ctl"/>
 			<Item Name="QTrkQueueFrame.vi" Type="VI" URL="../QTrk.llb/QTrkQueueFrame.vi"/>
 			<Item Name="QTrkQueueImageU8.vi" Type="VI" URL="../QTrk.llb/QTrkQueueImageU8.vi"/>
@@ -160,10 +161,12 @@
 			<Item Name="QTrkSettings.ctl" Type="VI" URL="../QTrk.llb/QTrkSettings.ctl"/>
 			<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../QTrk.llb/QTrkSetZLUT.vi"/>
 			<Item Name="QTrkWaitForResults.vi" Type="VI" URL="../QTrk.llb/QTrkWaitForResults.vi"/>
+			<Item Name="QTrkZCommandType.ctl" Type="VI" URL="../QTrk.llb/QTrkZCommandType.ctl"/>
 		</Item>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
+		<Item Name="StoreFrameInfo.vi" Type="VI" URL="../BeadTracker2.llb/StoreFrameInfo.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
@@ -208,7 +211,6 @@
 				<Item Name="IMAQ Serial Read.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Serial Read.vi"/>
 				<Item Name="IMAQ Serial Write.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Serial Write.vi"/>
 				<Item Name="IMAQ Start.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Start.vi"/>
-				<Item Name="IMAQ Status.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Status.vi"/>
 				<Item Name="IMAQ Stop.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Stop.vi"/>
 				<Item Name="IMAQRegisterSession.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/IMAQRegisterSession.vi"/>
 				<Item Name="IMAQUnregisterSession.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/IMAQUnregisterSession.vi"/>
@@ -227,7 +229,6 @@
 				<Item Name="imgSessionExamineBuffer.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionExamineBuffer.vi"/>
 				<Item Name="imgSessionOpen.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionOpen.vi"/>
 				<Item Name="imgSessionReleaseBuffer.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionReleaseBuffer.vi"/>
-				<Item Name="imgSessionStatus.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionStatus.vi"/>
 				<Item Name="imgSessionStopAcquisition.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionStopAcquisition.vi"/>
 				<Item Name="imgSetRoi.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSetRoi.vi"/>
 				<Item Name="imgUpdateErrorCluster.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgUpdateErrorCluster.vi"/>
@@ -288,7 +289,7 @@
 			<Item Name="Available DLL interfaces.ctl" Type="VI" URL="/C/Users/Public/Documents/MercuryGCS/GCS_LabView/Low Level/Communication.llb/Available DLL interfaces.ctl"/>
 			<Item Name="Available DLLs.ctl" Type="VI" URL="/C/Users/Public/Documents/MercuryGCS/GCS_LabView/Low Level/Communication.llb/Available DLLs.ctl"/>
 			<Item Name="Available interfaces.ctl" Type="VI" URL="/C/Users/Public/Documents/MercuryGCS/GCS_LabView/Low Level/Communication.llb/Available interfaces.ctl"/>
-			<Item Name="BT2_CameraModule.vi" Type="VI" URL="../Modules/FastCMOS.llb/BT2_CameraModule.vi"/>
+			<Item Name="BT2_CameraModule2.vi" Type="VI" URL="../Modules/FastCMOS.llb/BT2_CameraModule2.vi"/>
 			<Item Name="Build command substring.vi" Type="VI" URL="/C/Users/Public/Documents/Merged_GCS_LabVIEW/Merged_GCS_LabVIEW/Low Level/Support.llb/Build command substring.vi"/>
 			<Item Name="Build query command substring.vi" Type="VI" URL="/C/Users/Public/Documents/MercuryGCS/GCS_LabView/Low Level/Support.llb/Build query command substring.vi"/>
 			<Item Name="CameraConfig.ctl" Type="VI" URL="../Modules/FastCMOS.llb/CameraConfig.ctl"/>
@@ -327,6 +328,8 @@
 			<Item Name="Global DaisyChain.vi" Type="VI" URL="/C/Users/Public/Documents/MercuryGCS/GCS_LabView/Low Level/Communication.llb/Global DaisyChain.vi"/>
 			<Item Name="Global1.vi" Type="VI" URL="/C/Users/Public/Documents/MercuryGCS/GCS_LabView/Low Level/Communication.llb/Global1.vi"/>
 			<Item Name="Global2 (Array).vi" Type="VI" URL="/C/Users/Public/Documents/MercuryGCS/GCS_LabView/Low Level/General command.llb/Global2 (Array).vi"/>
+			<Item Name="GrabToFrameQueue.vi" Type="VI" URL="../Modules/FastCMOS.llb/GrabToFrameQueue.vi"/>
+			<Item Name="GrabToTracker.vi" Type="VI" URL="../Modules/FastCMOS.llb/GrabToTracker.vi"/>
 			<Item Name="HLP?.vi" Type="VI" URL="/C/Users/Public/Documents/MercuryGCS/GCS_LabView/Low Level/General command.llb/HLP?.vi"/>
 			<Item Name="imaq.dll" Type="Document" URL="imaq.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
