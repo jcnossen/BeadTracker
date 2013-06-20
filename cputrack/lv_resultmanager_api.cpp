@@ -5,9 +5,9 @@
 #include "labview.h"
 #include "ResultManager.h"
 
-CDLL_EXPORT ResultManager* DLL_CALLCONV rm_create(const char *file, ResultManagerConfig* cfg)
+CDLL_EXPORT ResultManager* DLL_CALLCONV rm_create(const char *file, const char *frameinfo, ResultManagerConfig* cfg)
 {
-	ResultManager* rm = new ResultManager(file, cfg);
+	ResultManager* rm = new ResultManager(file, frameinfo, cfg);
 	return rm;
 }
 
@@ -21,6 +21,10 @@ CDLL_EXPORT void DLL_CALLCONV rm_destroy(ResultManager* rm)
 	delete rm;
 }
 
+CDLL_EXPORT void DLL_CALLCONV rm_store_frameinfo(ResultManager* rm, double timestamp, float* cols)
+{
+	rm->StoreFrameInfo(timestamp, cols);
+}
 
 CDLL_EXPORT int DLL_CALLCONV rm_getbeadresults(ResultManager* rm, int start, int end, int bead, LocalizationResult* results)
 {

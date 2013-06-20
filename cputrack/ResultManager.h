@@ -9,7 +9,7 @@
 #pragma pack(push,1)
 struct ResultManagerConfig
 {
-	int numBeads;
+	int numBeads, numFrameInfoColumns;
 	vector3f scaling;
 	vector3f offset; // output will be   (position + offset) * scaling
 	int writeInterval;
@@ -22,7 +22,7 @@ struct ResultManagerConfig
 class ResultManager
 {
 public:
-	ResultManager(const char *outfile, ResultManagerConfig *cfg);
+	ResultManager(const char *outfile, const char *frameinfo, ResultManagerConfig *cfg);
 	~ResultManager();
 
 	void EnableResultFetch(QueuedTracker *qtrk);
@@ -35,10 +35,7 @@ public:
 	void Flush();
 
 	void GetFrameCounters(int* startFrame, int *fullFrames, int *lastSaveFrame);
-
-	// Configure output of an additional frame info file
-	void SetFrameInfoFile(const char* outfile, int numcols);
-	void SetFrameInfo(int frame, float* columns);
+	void StoreFrameInfo(double timestamp, float* columns);
 
 protected:
 	void Write();
@@ -46,21 +43,23 @@ protected:
 
 	struct FrameResult
 	{
-		FrameResult() {count=0; results=0; }
-		LocalizationResult* results;
+		FrameResult(int nResult, int nFrameInfo) : frameInfo(nFrameInfo), results(nResult) { count=0; timestamp=0;}
+		std::vector<LocalizationResult> results;
+		std::vector<float> frameInfo;
 		int count;
+		double timestamp;
 	};
 
 	Threads::Mutex frameCountMutex, resultMutex;
 
-	std::deque< FrameResult > frameResults;
+	std::deque< FrameResult* > frameResults;
 	int startFrame; // startFrame for frameResults
 	int fullFrames; // frame where all data is retrieved (all beads)
 	int lastSaveFrame;
 	ResultManagerConfig config;
 
 	QueuedTracker* qtrk;
-	std::string outputFile;
+	std::string outputFile, frameInfoFile;
 	Threads::Handle* thread;
 	bool quit;
 

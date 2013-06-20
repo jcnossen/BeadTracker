@@ -2,10 +2,11 @@
 #include "ResultManager.h"
 #include "utils.h"
 
-ResultManager::ResultManager(const char *outfile, ResultManagerConfig *cfg)
+ResultManager::ResultManager(const char *outfile, const char* frameInfoFile, ResultManagerConfig *cfg)
 {
 	config = *cfg;
 	outputFile = outfile;
+	this->frameInfoFile = frameInfoFile;
 
 	startFrame = 0;
 	lastSaveFrame = 0;
@@ -18,9 +19,10 @@ ResultManager::ResultManager(const char *outfile, ResultManagerConfig *cfg)
 
 	frameResults.resize(100);
 	for (int i=0;i<frameResults.size();i++) 
-		frameResults[i].results =new LocalizationResult[config.numBeads];
+		frameResults[i] =new FrameResult(config.numBeads, config.numFrameInfoColumns);
 
 	remove(outfile);
+	remove(frameInfoFile);
 }
 
 ResultManager::~ResultManager()
@@ -28,33 +30,29 @@ ResultManager::~ResultManager()
 	quit = true;
 	Threads::WaitAndClose(thread);
 
-	for(int i=0;i<frameResults.size();i++)
-		delete[] frameResults[i].results;
+	DeleteAllElems(frameResults);
 }
+
 
 void ResultManager::StoreResult(LocalizationResult *r)
 {
 	int index = r->job.frame - startFrame;
 
 	if (index >= frameResults.size()) {
-		int prevsize = frameResults.size();
-		frameResults.resize(frameResults.size()*2);
-
-		for (int i=prevsize;i<frameResults.size();i++) 
-			frameResults[i].results =new LocalizationResult[config.numBeads];
+		return; // add errors?
 	}
 
 	LocalizationResult scaled = *r;
 	// Make roi-centered pos
 	scaled.pos = scaled.pos - vector3f( qtrk->cfg.width*0.5f, qtrk->cfg.height*0.5f, 0);
 	scaled.pos = ( scaled.pos + config.offset ) * config.scaling;
-	FrameResult& fr = frameResults[index];
-	fr.results[r->job.zlutIndex] = scaled;
-	fr.count++;
+	FrameResult* fr = frameResults[index];
+	fr->results[r->job.zlutIndex] = scaled;
+	fr->count++;
 
 	// Advance fullFrames
 	frameCountMutex.lock();
-	while (fullFrames - startFrame < frameResults.size() && frameResults[fullFrames-startFrame].count == config.numBeads)
+	while (fullFrames - startFrame < frameResults.size() && frameResults[fullFrames-startFrame]->count == config.numBeads)
 		fullFrames ++;
 	frameCountMutex.unlock();
 }
@@ -62,32 +60,37 @@ void ResultManager::StoreResult(LocalizationResult *r)
 void ResultManager::Write()
 {
 	FILE* f = fopen(outputFile.c_str(), "a");
+	FILE* finfo = fopen(frameInfoFile.c_str(), "a");
 	
 	resultMutex.lock();
 	if (config.binaryOutput) {
-		for (int fr=lastSaveFrame; fr<fullFrames;fr++)
+		for (uint j=lastSaveFrame; j<fullFrames;j++)
 		{
-			auto results = frameResults[fr-startFrame].results;
-			fwrite(&results[0].job.frame, sizeof(uint), 1, f);
-			fwrite(&results[0].job.timestamp, sizeof(uint), 1, f);
+			auto fr = frameResults[j-startFrame];
+			fwrite(&j, sizeof(uint), 1, f);
+			fwrite(&fr->timestamp, sizeof(double), 1, f);
+			fwrite(&fr->timestamp, sizeof(double), 1, finfo);
 			for (int i=0;i<config.numBeads;i++) 
 			{
-				LocalizationResult *r = &frameResults[fr-startFrame].results[i];
+				LocalizationResult *r = &fr->results[i];
 				fwrite(&r->pos, sizeof(vector3f), 1, f);
 			}
 		}
 	}
 	else {
-		for (int fr=lastSaveFrame; fr<fullFrames;fr++)
+		for (uint k=lastSaveFrame; k<fullFrames;k++)
 		{
-			auto results = frameResults[fr-startFrame].results;
-			fprintf(f,"%d\t%d\t",results[0].job.frame, results[0].job.timestamp);
+			auto fr = frameResults[k-startFrame];
+			fprintf(f,"%d\t%f\t", k, fr->timestamp);
+			fprintf(finfo,"%d\t%f\t", k, fr->timestamp);
+			for (int i=0;i<config.numFrameInfoColumns;i++)
+				fprintf(f, "%.5f\t", fr->frameInfo[i]);
+			fputs("\n", finfo);
 			for (int i=0;i<config.numBeads;i++) 
 			{
-				LocalizationResult *r = &results[i];
+				LocalizationResult *r = &fr->results[i];
 				fprintf(f, "%.5f\t%.5f\t%.5f\t", r->pos.x,r->pos.y,r->pos.z);
 			}
-
 			fputs("\n", f);
 		}
 	}
@@ -95,6 +98,7 @@ void ResultManager::Write()
 	dbgprintf("Saved frame %d to %d\n", lastSaveFrame, fullFrames);
 
 	fclose(f);
+	fclose(finfo);
 	frameCountMutex.lock();
 	lastSaveFrame = fullFrames;
 	frameCountMutex.unlock();
@@ -130,8 +134,9 @@ bool ResultManager::Update()
 	if (config.maxFramesInMemory>0 && frameResults.size () > config.maxFramesInMemory) {
 		int del = frameResults.size()-config.maxFramesInMemory;
 		dbgprintf("Removing %d frames from memory\n", del);
+		
 		for (int i=0;i<del;i++)
-			delete[] frameResults[i].results;
+			delete frameResults[i];
 		frameResults.erase(frameResults.begin(), frameResults.begin()+del);
 
 		frameCountMutex.lock();
@@ -165,7 +170,7 @@ int ResultManager::GetBeadPositions(int startFrame, int endFrame, int bead, Loca
 	int end = endFrame - this->startFrame;
 	
 	for (int i=start;i<end;i++){
-		results[i-start] = frameResults[i].results[bead];
+		results[i-start] = frameResults[i]->results[bead];
 	}
 
 	return end-start;
@@ -196,7 +201,7 @@ int ResultManager::GetResults(LocalizationResult* results, int startFrame, int n
 		for (int f=0;f<numFrames;f++) {
 			int index = f + startFrame - this->startFrame;
 			for (int j=0;j<config.numBeads;j++)
-				results[config.numBeads*f+j] = frameResults[index].results[j];
+				results[config.numBeads*f+j] = frameResults[index]->results[j];
 		}
 
 		resultMutex.unlock();
@@ -204,5 +209,17 @@ int ResultManager::GetResults(LocalizationResult* results, int startFrame, int n
 	frameCountMutex.unlock();
 
 	return numFrames;
+}
+
+
+void ResultManager::StoreFrameInfo(double timestamp, float* columns)
+{
+	resultMutex.lock();
+	auto fr = new FrameResult( config.numBeads, config.numFrameInfoColumns);
+	fr->timestamp = timestamp;
+	for(int i=0;i<config.numFrameInfoColumns;i++)
+		fr->frameInfo[i]=columns[i];
+	frameResults.push_back (fr);
+	resultMutex.unlock();
 }
 
