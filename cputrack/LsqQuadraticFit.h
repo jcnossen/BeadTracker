@@ -72,7 +72,7 @@ public:
 		int iPos = (int)pos;
 		T xs[numPts]; 
 		int startPos = max_(iPos-numPts/2, 0);
-		int endPos = min_(iMax+(numPts-numPts/2), len);
+		int endPos = min_(iPos+(numPts-numPts/2), len);
 		int numpoints = endPos - startPos;
 		
 		for(int i=startPos;i<endPos;i++)

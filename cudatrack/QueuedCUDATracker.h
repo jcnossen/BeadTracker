@@ -166,7 +166,7 @@ protected:
 
 	std::vector<Stream*> streams;
 	Stream* currentStream;
-	std::deque<LocalizationResult> results;
+	std::list<LocalizationResult> results;
 	std::vector<Device*> devices;
 	bool useTextureCache; // speed up, but more numerical errors
 	
