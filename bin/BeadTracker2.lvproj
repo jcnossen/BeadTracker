@@ -54,17 +54,18 @@
 				<Item Name="AdvanceFramesAllDone.vi" Type="VI" URL="../BeadTracker2.llb/AdvanceFramesAllDone.vi"/>
 				<Item Name="AllocateMemoryForResults.vi" Type="VI" URL="../BeadTracker2.llb/AllocateMemoryForResults.vi"/>
 				<Item Name="BuildZLUT.vi" Type="VI" URL="../BeadTracker2.llb/BuildZLUT.vi"/>
+				<Item Name="ConvertBeadPosCornerCenter.vi" Type="VI" URL="../BeadTracker2.llb/ConvertBeadPosCornerCenter.vi"/>
 				<Item Name="CreateQTrkInstance.vi" Type="VI" URL="../BeadTracker2.llb/CreateQTrkInstance.vi"/>
 				<Item Name="CreateResultDVR.vi" Type="VI" URL="../BeadTracker2.llb/CreateResultDVR.vi"/>
 				<Item Name="DiscardBead.vi" Type="VI" URL="../BeadTracker2.llb/DiscardBead.vi"/>
 				<Item Name="EditQTrkSettingsDialog.vi" Type="VI" URL="../BeadTracker2.llb/EditQTrkSettingsDialog.vi"/>
 				<Item Name="FetchTrackingResults.vi" Type="VI" URL="../BeadTracker2.llb/FetchTrackingResults.vi"/>
-				<Item Name="GetBeadCornerPos.vi" Type="VI" URL="../BeadTracker2.llb/GetBeadCornerPos.vi"/>
 				<Item Name="GetResultScaleAndOffset.vi" Type="VI" URL="../BeadTracker2.llb/GetResultScaleAndOffset.vi"/>
 				<Item Name="PartialFreeResultData.vi" Type="VI" URL="../BeadTracker2.llb/PartialFreeResultData.vi"/>
 				<Item Name="ResultsToXYZGraphData.vi" Type="VI" URL="../BeadTracker2.llb/ResultsToXYZGraphData.vi"/>
 				<Item Name="SaveOrLoadBeadlist.vi" Type="VI" URL="../BeadTracker2.llb/SaveOrLoadBeadlist.vi"/>
 				<Item Name="SaveTrackingResults.vi" Type="VI" URL="../BeadTracker2.llb/SaveTrackingResults.vi"/>
+				<Item Name="TrackerMain.vi" Type="VI" URL="../BeadTracker2.llb/TrackerMain.vi"/>
 			</Item>
 			<Item Name="Typedefs" Type="Folder">
 				<Item Name="Cmd_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/Cmd_CameraIn.ctl"/>
@@ -103,7 +104,7 @@
 			<Item Name="SendMotorCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorCmd.vi"/>
 			<Item Name="SetMotorAxisPos.vi" Type="VI" URL="../BeadTracker2.llb/SetMotorAxisPos.vi"/>
 			<Item Name="ShowRenameIfExistingExpDialog.vi" Type="VI" URL="../BeadTracker2.llb/ShowRenameIfExistingExpDialog.vi"/>
-			<Item Name="TrackerMain.vi" Type="VI" URL="../BeadTracker2.llb/TrackerMain.vi"/>
+			<Item Name="StoreFrameInfo.vi" Type="VI" URL="../BeadTracker2.llb/StoreFrameInfo.vi"/>
 		</Item>
 		<Item Name="MessageQueue" Type="Folder">
 			<Item Name="ListenerType.ctl" Type="VI" URL="../MessageQueue.llb/ListenerType.ctl"/>
@@ -166,7 +167,7 @@
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
-		<Item Name="StoreFrameInfo.vi" Type="VI" URL="../BeadTracker2.llb/StoreFrameInfo.vi"/>
+		<Item Name="TrackingTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/TrackingTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
@@ -295,7 +296,6 @@
 			<Item Name="CameraConfig.ctl" Type="VI" URL="../Modules/FastCMOS.llb/CameraConfig.ctl"/>
 			<Item Name="Close connection if open.vi" Type="VI" URL="/C/Users/Public/Documents/Merged_GCS_LabVIEW/Merged_GCS_LabVIEW/Low Level/Communication.llb/Close connection if open.vi"/>
 			<Item Name="Cmd_SetPosition.vi" Type="VI" URL="../Setups/D020L/PIMotorController.llb/Cmd_SetPosition.vi"/>
-			<Item Name="Cmd_TrackerIn.ctl" Type="VI" URL="../BeadTracker2.llb/Cmd_TrackerIn.ctl"/>
 			<Item Name="CmdEnum_CameraOut.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraOut.ctl"/>
 			<Item Name="Combine axes arrays.vi" Type="VI" URL="/C/Users/Public/Documents/Merged_GCS_LabVIEW/Merged_GCS_LabVIEW/Low Level/Support.llb/Combine axes arrays.vi"/>
 			<Item Name="Commanded axes connected?.vi" Type="VI" URL="/C/Users/Public/Documents/MercuryGCS/GCS_LabView/Low Level/Support.llb/Commanded axes connected?.vi"/>
@@ -347,6 +347,7 @@
 			<Item Name="MakeStetsonWindow.vi" Type="VI" URL="../QTrk.llb/MakeStetsonWindow.vi"/>
 			<Item Name="MeasureCurrentPos.vi" Type="VI" URL="../Setups/D020L/PIMotorController.llb/MeasureCurrentPos.vi"/>
 			<Item Name="Mercury_GCS_Configuration_Setup.vi" Type="VI" URL="/C/Users/Public/Documents/Merged_GCS_LabVIEW/Merged_GCS_LabVIEW/Mercury_GCS_Configuration_Setup.vi"/>
+			<Item Name="mkAdjustROIPositions.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkAdjustROIPositions.vi"/>
 			<Item Name="mkConfigure.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkConfigure.vi"/>
 			<Item Name="mkConfigureBufferList.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkConfigureBufferList.vi"/>
 			<Item Name="mkGetROIs.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkGetROIs.vi"/>
