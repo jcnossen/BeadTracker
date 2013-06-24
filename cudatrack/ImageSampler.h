@@ -7,9 +7,9 @@ public:
 	static void UnbindTexture(cudaImageListf& images) { }
 
 	// All interpolated texture/images fetches go through here
-	static __device__ float Interpolated(cudaImageListf& images, float x,float y, int img, float imgmean)
+	static __device__ float Interpolated(cudaImageListf& images, float x,float y, int img, bool &outside)
 	{
-		return images.interpolate(x,y,img, imgmean);
+		return images.interpolate(x,y,img, outside);
 	}
 
 	// Assumes pixel is always within image bounds
@@ -28,14 +28,16 @@ public:
 	static void UnbindTexture(cudaImageListf& images) { images.unbind(qi_image_texture_linear);  }
 
 	// All interpolated texture/images fetches go through here
-	static __device__ float Interpolated(cudaImageListf& images, float x,float y, int img, float imgmean)
+	static __device__ float Interpolated(cudaImageListf& images, float x,float y, int img, bool &outside)
 	{
 		float v;
-		if (x < 0 || x >= images.w-1 || y < 0 || y >= images.h-1)
-			v = imgmean;
-		else 
-			v = tex2D(qi_image_texture_linear, ofs(x),ofs(y) + img*images.h);
-		return v;
+		if (x < 0 || x >= images.w-1 || y < 0 || y >= images.h-1) {
+			outside=true;
+			return 0.0f;
+		} else  {
+			outside=false;
+			return tex2D(qi_image_texture_linear, ofs(x),ofs(y) + img*images.h);
+		}
 	}
 
 	// Assumes pixel is always within image bounds
@@ -59,9 +61,9 @@ public:
 	static void UnbindTexture(cudaImageListf& images) { images.unbind(qi_image_texture_nearest);  }
 
 	// All interpolated texture/images fetches go through here
-	static __device__ float Interpolated(cudaImageListf& images, float x,float y, int img, float imgmean)
+	static __device__ float Interpolated(cudaImageListf& images, float x,float y, int img, bool &outside)
 	{
-		return images.interpolateFromTexture (qi_image_texture_nearest, x, y, img, imgmean);
+		return images.interpolateFromTexture (qi_image_texture_nearest, x, y, img, outside);
 	}
 
 	// Assumes pixel is always within image bounds

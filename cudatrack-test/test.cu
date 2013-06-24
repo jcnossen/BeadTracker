@@ -17,7 +17,7 @@
 #include <stdint.h>
 #include "gpu_utils.h"
 #include "QueuedCUDATracker.h"
-#include "queued_cpu_tracker.h"
+#include "QueuedCPUTracker.h"
 
 
 

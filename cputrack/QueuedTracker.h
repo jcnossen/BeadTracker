@@ -127,7 +127,7 @@ public:
 	virtual int GetResultCount() = 0;
 	virtual int PollFinished(LocalizationResult* results, int maxResults) = 0;
 
-	virtual bool IsQueueFilled() = 0;
+	virtual int GetQueueLength() = 0;
 	virtual bool IsIdle() = 0;
 
 	virtual std::string GetProfileReport() { return ""; }

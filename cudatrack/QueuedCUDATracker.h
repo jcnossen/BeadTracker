@@ -80,7 +80,7 @@ public:
 	// Force the current waiting batch to be processed. Useful when number of localizations is not a multiple of internal batch size (almost always)
 	void Flush() override;
 	
-	bool IsQueueFilled() override;
+	bool GetQueueLength() override;
 	bool IsIdle() override;
 	int GetResultCount() override;
 
@@ -112,8 +112,8 @@ protected:
 		std::vector<LocalizationJob> jobs;
 		
 		cudaImageListf images; 
-		//pinned_array<float, cudaHostAllocWriteCombined> hostImageBuf; // original image format pixel buffer
-		pinned_array<float> hostImageBuf; // original image format pixel buffer
+		pinned_array<float, cudaHostAllocWriteCombined> hostImageBuf; // original image format pixel buffer
+		//pinned_array<float> hostImageBuf; // original image format pixel buffer
 
 		// CUDA objects
 		cudaStream_t stream; // Stream used

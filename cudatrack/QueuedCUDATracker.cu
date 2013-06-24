@@ -600,7 +600,8 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	// Compute radial profiles
 	if (s->localizeFlags & (LocalizeZ | LocalizeBuildZLUT)) {
 		dim3 numThreads(16, 16);
-		dim3 numBlocks( (s->JobCount() + numThreads.x - 1) / numThreads.x, (cfg.zlut_radialsteps + numThreads.y - 1) / numThreads.y);
+		dim3 numBlocks( (s->JobCount() + numThreads.x - 1) / numThreads.x, 
+				(cfg.zlut_radialsteps + numThreads.y - 1) / numThreads.y);
 		{ ProfileBlock p("ZLUT radial profile");
 		ZLUT_RadialProfileKernel<TImageSampler> <<< numBlocks , numThreads, 0, s->stream >>>
 			(s->JobCount(), s->images, kernelParams.zlut, curpos->data, s->d_radialprofiles.data,  s->d_imgmeans.data); }

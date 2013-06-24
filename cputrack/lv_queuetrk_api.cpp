@@ -244,10 +244,10 @@ CDLL_EXPORT void qtrk_clear_results(QueuedTracker* qtrk, ErrorCluster* e)
 }
 
 
-CDLL_EXPORT int qtrk_hasfullqueue(QueuedTracker* qtrk, ErrorCluster* e)
+CDLL_EXPORT int qtrk_get_queue_len(QueuedTracker* qtrk, ErrorCluster* e)
 {
 	if (ValidateTracker(qtrk, e, "fullqueue"))
-		return qtrk->IsQueueFilled() ? 1 : 0;
+		return qtrk->GetQueueLength();
 	return 0;
 }
 

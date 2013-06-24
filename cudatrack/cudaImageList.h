@@ -132,12 +132,14 @@ struct cudaImageList {
 	
 	CUBOTH static inline T interp(T a, T b, float x) { return a + (b-a)*x; }
 
-	CUBOTH T interpolate(float x,float y, int idx, float border=0.0f)
+	CUBOTH T interpolate(float x,float y, int idx, bool &outside)
 	{
 		int rx=x, ry=y;
 
-		if (rx < 0 || ry < 0 || rx >= w-1 || ry >= h-1)
-			return border;
+		if (rx < 0 || ry < 0 || rx >= w-1 || ry >= h-1) {
+			outside=true;
+			return 0.0f;
+		}
 
 		T v00 = pixel(rx, ry, idx);
 		T v10 = pixel(rx+1, ry, idx);
@@ -147,6 +149,7 @@ struct cudaImageList {
 		T v0 = interp (v00, v10, x-rx);
 		T v1 = interp (v01, v11, x-rx);
 
+		outside=false;
 		return interp (v0, v1, y-ry);
 	}
 
@@ -164,12 +167,14 @@ struct cudaImageList {
 	}
 
 	// Using the texture cache can result in significant speedups
-	__device__ T interpolateFromTexture(texture<T, cudaTextureType2D, cudaReadModeElementType> texref, float x,float y, int idx, float border=0.0f)
+	__device__ T interpolateFromTexture(texture<T, cudaTextureType2D, cudaReadModeElementType> texref, float x,float y, int idx, bool& outside)
 	{
 		int rx=x, ry=y;
 
-		if (rx < 0 || ry < 0 || rx >= w-1 || ry >= h-1)
-			return border;
+		if (rx < 0 || ry < 0 || rx >= w-1 || ry >= h-1) {
+			outside=true;
+			return 0.0f;
+		}
 
 		computeImagePos(rx, ry, idx);
 
@@ -185,6 +190,7 @@ struct cudaImageList {
 		T v0 = interp (v00, v10, fx);
 		T v1 = interp (v01, v11, fx);
 
+		outside = false;
 		return interp (v0, v1, fy);
 	}
 };

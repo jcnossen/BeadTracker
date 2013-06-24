@@ -24,23 +24,26 @@ __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, float* d
 	for (int i=0;i<params.radialSteps;i++)
 		dst[i]=0.0f;
 	
-	float sum2=0.0f;
 	float total = 0.0f;
 	float rstep = (params.maxRadius - params.minRadius) / params.radialSteps;
 	for (int i=0;i<params.radialSteps; i++) {
 		float sum = 0.0f;
 		float r = params.minRadius + rstep * i;
+		int count=0;
 
 		for (int a=0;a<params.angularSteps;a++) {
 			float x = center.x + mx*params.radialgrid[a].x * r;
 			float y = center.y + my*params.radialgrid[a].y * r;
-			float v = TImageSampler::Interpolated(images, x,y, idx, img_mean);
-			sum += v;
+			bool outside=false;
+			float v = TImageSampler::Interpolated(images, x,y, idx, outside);
+			if (!outside) {
+				sum += v;
+				count ++;
+			}
 		}
 
-		dst[i] = sum/params.angularSteps - img_mean;
+		dst[i] = sum/count;
 		total += dst[i];
-		sum2+=sum;
 	}
 }
 
@@ -173,14 +176,17 @@ __global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* po
 		float sum = 0.0f;
 		float r = params.minRadius + rstep * rIdx;
 		float3 pos = positions[jobIdx];
-		float mean = imgmeans[jobIdx];
+//		float mean = imgmeans[jobIdx];
 
+		int count=0;
 		for (int a=0;a<params.angularSteps;a++) {
 			float x = pos.x + mx*params.radialgrid[a].x * r;
 			float y = pos.y + my*params.radialgrid[a].y * r;
-			sum += TImageSampler::Interpolated(images, x,y,jobIdx, mean);
+			bool outside=false;
+			sum += TImageSampler::Interpolated(images, x,y,jobIdx, outside);
+			if (!outside) count++;
 		}
-		qdr[rIdx] = sum/params.angularSteps-mean;
+		qdr[rIdx] = sum/count;
 	}
 }
 
@@ -301,6 +307,59 @@ __global__ void ZLUT_ProfilesToZLUT(int njobs, cudaImageListf images, ZLUTParams
 	}
 }
 
+/*
+
+void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius,
+	vector2f center, ImageData* img, float paddingValue)
+{
+	vector2f* radialDirs = (vector2f*)ALLOCA(sizeof(vector2f)*angularSteps);
+	for (int j=0;j<angularSteps;j++) {
+		float ang = 2*3.141593f*j/(float)angularSteps;
+		radialDirs[j] = vector2f(cosf(ang), sinf(ang));
+	}
+
+	for (int i=0;i<radialSteps;i++)
+		dst[i]=0.0f;
+
+	double totalrmssum2 = 0.0f, totalsum=0.0;
+	float rstep = (maxradius-minradius) / radialSteps;
+	int totalsmp = 0;
+	for (int i=0;i<radialSteps; i++) {
+		double sum = 0.0f;
+
+		int nsamples = 0;
+		float r = minradius+rstep*i;
+		for (int a=0;a<angularSteps;a++) {
+			float x = center.x + radialDirs[a].x * r;
+			float y = center.y + radialDirs[a].y * r;
+			bool outside;
+			float v = img->interpolate(x,y, &outside);
+			if (!outside) {
+				sum += v;
+				nsamples++;
+			}
+		}
+
+		dst[i] = sum/nsamples;
+		totalsum += sum;
+		totalsmp += nsamples;
+	}
+	float substr = totalsum/totalsmp;
+	for (int i=0;i<radialSteps;i++)
+		dst[i] -= substr;
+	double sum=0.0f;
+	for (int i=0;i<radialSteps;i++)
+		totalrmssum2 += dst[i]*dst[i];
+//		sum += dst[i];
+	double invSum = 1.0/sum;
+	//	totalrmssum2 += dst[i]*dst[i];
+	double invTotalrms = 1.0f/sqrt(totalrmssum2/radialSteps);
+	for (int i=0;i<radialSteps;i++) {
+		dst[i] *= invTotalrms;
+	}
+}
+
+*/
 
 // Compute a single ZLUT radial profile element (looping through all the pixels at constant radial distance)
 template<typename TImageSampler>
@@ -315,15 +374,18 @@ __global__ void ZLUT_RadialProfileKernel(int njobs, cudaImageListf images, ZLUTP
 	float* dstprof = &profiles[params.radialSteps() * jobIdx];
 	float r = params.minRadius + (params.maxRadius-params.minRadius)*radialIdx/params.radialSteps();
 	float sum = 0.0f;
-	float imgmean = imgmeans[jobIdx];
+	
+	int count = 0;
 	
 	for (int i=0;i<params.angularSteps;i++) {
 		float x = positions[jobIdx].x + params.radialgrid[i].x * r;
 		float y = positions[jobIdx].y + params.radialgrid[i].y * r;
 
-		sum += TImageSampler::Interpolated(images, x,y, jobIdx, imgmean);
+		bool outside=false;
+		sum += TImageSampler::Interpolated(images, x,y, jobIdx, outside);
+		if (!outside) count++;
 	}
-	dstprof [radialIdx] = sum/params.angularSteps-imgmean;
+	dstprof [radialIdx] = sum/count;
 }
 
 
@@ -368,10 +430,21 @@ __global__ void ZLUT_NormalizeProfiles(int njobs, ZLUTParams params, float* prof
 
 	if (jobIdx < njobs) {
 		float* prof = &profiles[params.radialSteps()*jobIdx];
+
+		// First, subtract mean
+		float mean = 0.0f;
+		for (int i=0;i<params.radialSteps();i++) {
+			mean += prof[i];
+		}
+		mean /= params.radialSteps();
+
 		float rmsSum2 = 0.0f;
 		for (int i=0;i<params.radialSteps();i++){
+			prof[i] -= mean;
 			rmsSum2 += prof[i]*prof[i];
 		}
+
+		// And make RMS power equal 1
 		float invTotalRms = 1.0f / sqrt(rmsSum2/params.radialSteps());
 		for (int i=0;i<params.radialSteps();i++)
 			prof[i] *= invTotalRms;
