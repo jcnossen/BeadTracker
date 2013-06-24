@@ -12,7 +12,7 @@ struct ResultManagerConfig
 	int numBeads, numFrameInfoColumns;
 	vector3f scaling;
 	vector3f offset; // output will be   (position + offset) * scaling
-	int writeInterval;
+	int writeInterval; // [frames]
 	uint maxFramesInMemory; // 0 for infinite
 	uint8_t binaryOutput;
 };
@@ -35,7 +35,8 @@ public:
 	void Flush();
 
 	void GetFrameCounters(int* startFrame, int *fullFrames, int *lastSaveFrame);
-	void StoreFrameInfo(double timestamp, float* columns);
+	int StoreFrameInfo(double timestamp, float* columns); // return #frames
+	int GetFrameCount();
 
 protected:
 	void Write();

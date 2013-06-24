@@ -135,6 +135,17 @@
 			<Item Name="MotorControl" Type="Folder"/>
 		</Item>
 		<Item Name="QTrk" Type="Folder">
+			<Item Name="ResultManager" Type="Folder">
+				<Item Name="ResultManagerConfig.ctl" Type="VI" URL="../QTrk.llb/ResultManagerConfig.ctl"/>
+				<Item Name="ResultManagerInstance.ctl" Type="VI" URL="../QTrk.llb/ResultManagerInstance.ctl"/>
+				<Item Name="RMCreate.vi" Type="VI" URL="../QTrk.llb/RMCreate.vi"/>
+				<Item Name="RMDestroy.vi" Type="VI" URL="../QTrk.llb/RMDestroy.vi"/>
+				<Item Name="RMFlush.vi" Type="VI" URL="../QTrk.llb/RMFlush.vi"/>
+				<Item Name="RMGetFrameCounters.vi" Type="VI" URL="../QTrk.llb/RMGetFrameCounters.vi"/>
+				<Item Name="RMGetResults.vi" Type="VI" URL="../QTrk.llb/RMGetResults.vi"/>
+				<Item Name="RMSetTracker.vi" Type="VI" URL="../QTrk.llb/RMSetTracker.vi"/>
+				<Item Name="RMStoreFrameInfo.vi" Type="VI" URL="../QTrk.llb/RMStoreFrameInfo.vi"/>
+			</Item>
 			<Item Name="QTrkCheckForDLL.vi" Type="VI" URL="../QTrk.llb/QTrkCheckForDLL.vi"/>
 			<Item Name="QTrkClearResults.vi" Type="VI" URL="../QTrk.llb/QTrkClearResults.vi"/>
 			<Item Name="QTrkCreate.vi" Type="VI" URL="../QTrk.llb/QTrkCreate.vi"/>
@@ -167,7 +178,6 @@
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
-		<Item Name="TrackingTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/TrackingTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
@@ -397,6 +407,7 @@
 			<Item Name="Termination character.ctl" Type="VI" URL="/C/Users/Public/Documents/MercuryGCS/GCS_LabView/Low Level/Communication.llb/Termination character.ctl"/>
 			<Item Name="TMN?.vi" Type="VI" URL="/C/Users/Public/Documents/Merged_GCS_LabVIEW/Merged_GCS_LabVIEW/Low Level/Limits.llb/TMN?.vi"/>
 			<Item Name="TMX?.vi" Type="VI" URL="/C/Users/Public/Documents/Merged_GCS_LabVIEW/Merged_GCS_LabVIEW/Low Level/Limits.llb/TMX?.vi"/>
+			<Item Name="TrackingTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/TrackingTest.vi"/>
 			<Item Name="TRS?.vi" Type="VI" URL="/C/Users/Public/Documents/Merged_GCS_LabVIEW/Merged_GCS_LabVIEW/Low Level/Limits.llb/TRS?.vi"/>
 			<Item Name="TWG?.vi" Type="VI" URL="/C/Users/Public/Documents/Merged_GCS_LabVIEW/Merged_GCS_LabVIEW/Low Level/WaveGenerator.llb/TWG?.vi"/>
 			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="/C/Users/Public/Documents/Merged_GCS_LabVIEW/Merged_GCS_LabVIEW/Low Level/Support.llb/Wait for answer of longlasting command.vi"/>

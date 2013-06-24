@@ -212,7 +212,7 @@ int ResultManager::GetResults(LocalizationResult* results, int startFrame, int n
 }
 
 
-void ResultManager::StoreFrameInfo(double timestamp, float* columns)
+int ResultManager::StoreFrameInfo(double timestamp, float* columns)
 {
 	resultMutex.lock();
 	auto fr = new FrameResult( config.numBeads, config.numFrameInfoColumns);
@@ -220,6 +220,17 @@ void ResultManager::StoreFrameInfo(double timestamp, float* columns)
 	for(int i=0;i<config.numFrameInfoColumns;i++)
 		fr->frameInfo[i]=columns[i];
 	frameResults.push_back (fr);
+	int nfr = frameResults.size();
 	resultMutex.unlock();
+	return nfr;
+}
+
+
+int ResultManager::GetFrameCount()
+{
+	resultMutex.lock();
+	int nfr = frameResults.size(); 
+	resultMutex.unlock();
+	return nfr;
 }
 

@@ -21,9 +21,9 @@ CDLL_EXPORT void DLL_CALLCONV rm_destroy(ResultManager* rm)
 	delete rm;
 }
 
-CDLL_EXPORT void DLL_CALLCONV rm_store_frameinfo(ResultManager* rm, double timestamp, float* cols)
+CDLL_EXPORT int DLL_CALLCONV rm_store_frame_info(ResultManager* rm, double timestamp, float* cols)
 {
-	rm->StoreFrameInfo(timestamp, cols);
+	return rm->StoreFrameInfo(timestamp, cols);
 }
 
 CDLL_EXPORT int DLL_CALLCONV rm_getbeadresults(ResultManager* rm, int start, int end, int bead, LocalizationResult* results)
