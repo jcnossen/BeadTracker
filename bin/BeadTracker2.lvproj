@@ -344,6 +344,7 @@
 			<Item Name="PI_Stages_Main.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/PI_Stages_Main.vi"/>
 			<Item Name="PIMoveSingleAxis.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/PIMoveSingleAxis.vi"/>
 			<Item Name="POS?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/POS?.vi"/>
+			<Item Name="QTrkGetProfilingReport.vi" Type="VI" URL="../QTrk.llb/QTrkGetProfilingReport.vi"/>
 			<Item Name="QTrkLocalizationJob.ctl" Type="VI" URL="../QTrk.llb/QTrkLocalizationJob.ctl"/>
 			<Item Name="RMGetBeadResults.vi" Type="VI" URL="../QTrk.llb/RMGetBeadResults.vi"/>
 			<Item Name="RunGrabSession.vi" Type="VI" URL="../Setups/D020R/DalsaCamera.llb/RunGrabSession.vi"/>

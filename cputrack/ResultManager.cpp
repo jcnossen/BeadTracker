@@ -127,12 +127,13 @@ bool ResultManager::Update()
 	LocalizationResult resultbuf[NResultBuf];
 
 	int count = qtrk->PollFinished( resultbuf, NResultBuf );
-	trackerMutex.unlock();
 
 	resultMutex.lock();
 	for (int i=0;i<count;i++)
 		StoreResult(&resultbuf[i]);
 	resultMutex.unlock();
+
+	trackerMutex.unlock();
 
 	if (processedFrames - lastSaveFrame >= config.writeInterval) {
 		Write();
@@ -176,10 +177,8 @@ int ResultManager::GetBeadPositions(int startFrame, int endFrame, int bead, Loca
 
 	int end = endFrame - this->startFrame;
 
-	if (start < 0) {
-		memset(results, 0, sizeof(LocalizationResult) * -start); // we already deleted this data
-		start = 0;
-	}
+	if (start < 0)
+		return 0;
 
 	resultMutex.lock();
 	for (int i=start;i<end;i++){
