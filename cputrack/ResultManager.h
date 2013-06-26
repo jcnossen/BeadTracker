@@ -11,7 +11,7 @@ struct ResultManagerConfig
 {
 	int numBeads, numFrameInfoColumns;
 	vector3f scaling;
-	vector3f offset; // output will be   (position + offset) * scaling
+	vector3f offset; // output will be (position + offset) * scaling
 	int writeInterval; // [frames]
 	uint maxFramesInMemory; // 0 for infinite
 	uint8_t binaryOutput;
@@ -25,18 +25,18 @@ public:
 	ResultManager(const char *outfile, const char *frameinfo, ResultManagerConfig *cfg);
 	~ResultManager();
 
-	void EnableResultFetch(QueuedTracker *qtrk);
+	void SaveSection(int start, int end, const char *beadposfile, const char *infofile);
+	void SetTracker(QueuedTracker *qtrk);
 
-	//int GetStartFrame() { return startFrame; }
-	//int GetLastFrame() { return fullFrames; }
-	//int GetLastWrittenFrame() { return lastSaveFrame; }
 	int GetBeadPositions(int startFrame, int endFrame, int bead, LocalizationResult* r);
 	int GetResults(LocalizationResult* results, int startFrame, int numResults);
 	void Flush();
 
-	void GetFrameCounters(int* startFrame, int *fullFrames, int *lastSaveFrame);
+	void GetFrameCounters(int* startFrame, int *processedFrames, int *lastSaveFrame, int *capturedFrames);
 	int StoreFrameInfo(double timestamp, float* columns); // return #frames
 	int GetFrameCount();
+
+	const ResultManagerConfig& Config() { return config; }
 
 protected:
 	void Write();
@@ -51,15 +51,16 @@ protected:
 		double timestamp;
 	};
 
-	Threads::Mutex frameCountMutex, resultMutex;
+	Threads::Mutex frameCountMutex, resultMutex, trackerMutex;
 
 	std::deque< FrameResult* > frameResults;
 	int startFrame; // startFrame for frameResults
-	int fullFrames; // frame where all data is retrieved (all beads)
+	int processedFrames; // frame where all data is retrieved (all beads)
 	int lastSaveFrame;
 	ResultManagerConfig config;
 
 	QueuedTracker* qtrk;
+
 	std::string outputFile, frameInfoFile;
 	Threads::Handle* thread;
 	bool quit;

@@ -15,7 +15,7 @@ public:
 	void Break(bool pause);
 	void GenerateTestImage(float* dst, float xp, float yp, float z, float photoncount);
 	int NumThreads() { return cfg.numThreads; }
-	int GetJobCount();
+	int GetQueueLength() override;
 
 	// QueuedTracker interface
 	void SetZLUT(float* data, int num_zluts, int planes, float* zcmp=0) override;
@@ -29,7 +29,6 @@ public:
 	void ClearResults() override;
 	void Flush() override { };
 
-	bool IsQueueFilled() override { return GetJobCount() >= cfg.maxQueueSize; }
 	bool IsIdle() override;
 	int GetResultCount() override;
 

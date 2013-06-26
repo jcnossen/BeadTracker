@@ -80,7 +80,7 @@ public:
 	// Force the current waiting batch to be processed. Useful when number of localizations is not a multiple of internal batch size (almost always)
 	void Flush() override;
 	
-	bool GetQueueLength() override;
+	int GetQueueLength() override;
 	bool IsIdle() override;
 	int GetResultCount() override;
 

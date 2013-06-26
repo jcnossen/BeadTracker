@@ -44,7 +44,7 @@ Issues:
 
 
 // Do CPU-side profiling of kernel launches?
-//#define TRK_PROFILE
+#define TRK_PROFILE
 
 #ifdef TRK_PROFILE
 	class ProfileBlock
@@ -338,6 +338,7 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream(Device* device)
 	return s;
 }
 
+
  // get a stream that not currently executing, and still has room for images
 QueuedCUDATracker::Stream* QueuedCUDATracker::GetReadyStream()
 {
@@ -366,19 +367,19 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::GetReadyStream()
 
 
 
-
-
 void QueuedCUDATracker::ClearResults()
 {
 	FetchResults();
 	results.clear();
 }
 
+
 // All streams on StreamIdle?
 bool QueuedCUDATracker::IsIdle()
 {
 	return CheckAllStreams(Stream::StreamIdle) && (!currentStream || currentStream->jobs.empty() ) && IsAsyncSchedulerIdle();
 }
+
 
 bool QueuedCUDATracker::CheckAllStreams(Stream::State s)
 {
@@ -390,10 +391,17 @@ bool QueuedCUDATracker::CheckAllStreams(Stream::State s)
 	return true;
 }
 
-bool QueuedCUDATracker::IsQueueFilled()
+
+int QueuedCUDATracker::GetQueueLength()
 {
-	return CheckAllStreams(Stream::StreamExecuting);
+	int qlen = 0;
+	for (uint a=0;a<streams.size();a++){
+		qlen += streams[a]->JobCount();
+	}
+
+	return qlen;
 }
+
 
 void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, const LocalizationJob* jobInfo )
 {
@@ -567,7 +575,6 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	kernelParams.zlut.zcmpwindow = d->zcompareWindow.data;
 
 	cudaEventRecord(s->batchStart, s->stream);
-
 	
 	{ProfileBlock p("image to gpu");
 	s->images.copyToDevice(s->hostImageBuf.data(), true, s->stream); }

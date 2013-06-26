@@ -16,7 +16,7 @@ static int PDT_BytesPerPixel(QTRK_PixelDataType pdt) {
 
 bool QueuedCPUTracker::IsIdle()
 {
-	return IsAsyncSchedulerIdle() && GetJobCount() == 0;
+	return IsAsyncSchedulerIdle() && GetQueueLength() == 0;
 }
 
 int QueuedCPUTracker::GetResultCount()
@@ -76,7 +76,7 @@ void QueuedCPUTracker::AddJob(Job* j)
 	jobs_mutex.unlock();
 }
 
-int QueuedCPUTracker::GetJobCount()
+int QueuedCPUTracker::GetQueueLength()
 {
 	int jc;
 	jobs_mutex.lock();
@@ -300,7 +300,7 @@ float* QueuedCPUTracker::GetZLUT(int *count, int* planes)
 void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo)
 {
 	if (processJobs) {
-		while(cfg.maxQueueSize != 0 && GetJobCount () >= cfg.maxQueueSize)
+		while(cfg.maxQueueSize != 0 && GetQueueLength () >= cfg.maxQueueSize)
 			Threads::Sleep(5);
 	}
 

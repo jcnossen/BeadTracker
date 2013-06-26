@@ -620,8 +620,9 @@ __global__ void TestSampling(int n , cudaImageListf img, float *rtex, float *rte
 		float y = pts[idx].y;
 		int ii = 1;
 		rtex[idx] = tex2D(test_tex_lin, x+0.5f, y+0.5f+img.h*ii);
-		rtex2[idx] = img.interpolateFromTexture(test_tex, x, y, ii);
-		rmem[idx] = img.interpolate(x,y,ii);
+		bool outside;
+		rtex2[idx] = img.interpolateFromTexture(test_tex, x, y, ii, outside);
+		rmem[idx] = img.interpolate(x,y,ii, outside);
 	}
 }
 
@@ -776,10 +777,10 @@ int main(int argc, char *argv[])
 
 	//TestTextureFetch();
 
-	MultipleLUTTest();
+	//MultipleLUTTest();
 
 	//CompareAccuracy();
-	//QTrkTest();
+	QTrkTest();
 //	ProfileSpeedVsROI();
 ///	auto info = SpeedCompareTest(80);
 	//dbgprintf("CPU: %f, GPU: %f, GPU(tc): %f\n", info.cpu, info.gpu, info.gputex); 

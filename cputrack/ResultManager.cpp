@@ -10,7 +10,7 @@ ResultManager::ResultManager(const char *outfile, const char* frameInfoFile, Res
 
 	startFrame = 0;
 	lastSaveFrame = 0;
-	fullFrames = 0;
+	processedFrames = 0;
 
 	qtrk = 0;
 
@@ -52,8 +52,8 @@ void ResultManager::StoreResult(LocalizationResult *r)
 
 	// Advance fullFrames
 	frameCountMutex.lock();
-	while (fullFrames - startFrame < frameResults.size() && frameResults[fullFrames-startFrame]->count == config.numBeads)
-		fullFrames ++;
+	while (processedFrames - startFrame < frameResults.size() && frameResults[processedFrames-startFrame]->count == config.numBeads)
+		processedFrames ++;
 	frameCountMutex.unlock();
 }
 
@@ -64,7 +64,7 @@ void ResultManager::Write()
 	
 	resultMutex.lock();
 	if (config.binaryOutput) {
-		for (uint j=lastSaveFrame; j<fullFrames;j++)
+		for (uint j=lastSaveFrame; j<processedFrames;j++)
 		{
 			auto fr = frameResults[j-startFrame];
 			fwrite(&j, sizeof(uint), 1, f);
@@ -78,13 +78,13 @@ void ResultManager::Write()
 		}
 	}
 	else {
-		for (uint k=lastSaveFrame; k<fullFrames;k++)
+		for (uint k=lastSaveFrame; k<processedFrames;k++)
 		{
 			auto fr = frameResults[k-startFrame];
 			fprintf(f,"%d\t%f\t", k, fr->timestamp);
 			fprintf(finfo,"%d\t%f\t", k, fr->timestamp);
 			for (int i=0;i<config.numFrameInfoColumns;i++)
-				fprintf(f, "%.5f\t", fr->frameInfo[i]);
+				fprintf(finfo, "%.5f\t", fr->frameInfo[i]);
 			fputs("\n", finfo);
 			for (int i=0;i<config.numBeads;i++) 
 			{
@@ -95,39 +95,46 @@ void ResultManager::Write()
 		}
 	}
 
-	dbgprintf("Saved frame %d to %d\n", lastSaveFrame, fullFrames);
+	dbgprintf("Saved frame %d to %d\n", lastSaveFrame, processedFrames);
 
 	fclose(f);
 	fclose(finfo);
 	frameCountMutex.lock();
-	lastSaveFrame = fullFrames;
+	lastSaveFrame = processedFrames;
 	frameCountMutex.unlock();
 
 	resultMutex.unlock();
 }
 
 
-void ResultManager::EnableResultFetch(QueuedTracker *qtrk)
+void ResultManager::SetTracker(QueuedTracker *qtrk)
 {
+	trackerMutex.lock();
 	this->qtrk = qtrk;
+	trackerMutex.unlock();
 }
 
 bool ResultManager::Update()
 {
-	if (!qtrk)
+	trackerMutex.lock();
+
+	if (!qtrk) {
+		trackerMutex.unlock();
 		return 0;
+	}
 
 	const int NResultBuf = 10;
 	LocalizationResult resultbuf[NResultBuf];
 
 	int count = qtrk->PollFinished( resultbuf, NResultBuf );
+	trackerMutex.unlock();
 
 	resultMutex.lock();
 	for (int i=0;i<count;i++)
 		StoreResult(&resultbuf[i]);
 	resultMutex.unlock();
 
-	if (fullFrames - lastSaveFrame >= config.writeInterval) {
+	if (processedFrames - lastSaveFrame >= config.writeInterval) {
 		Write();
 	}
 
@@ -164,14 +171,21 @@ int ResultManager::GetBeadPositions(int startFrame, int endFrame, int bead, Loca
 {
 	int start = startFrame - this->startFrame;
 
-	if (endFrame > fullFrames)
-		endFrame = fullFrames;
+	if (endFrame > processedFrames)
+		endFrame = processedFrames;
 
 	int end = endFrame - this->startFrame;
-	
+
+	if (start < 0) {
+		memset(results, 0, sizeof(LocalizationResult) * -start); // we already deleted this data
+		start = 0;
+	}
+
+	resultMutex.lock();
 	for (int i=start;i<end;i++){
 		results[i-start] = frameResults[i]->results[bead];
 	}
+	resultMutex.unlock();
 
 	return end-start;
 }
@@ -183,20 +197,26 @@ void ResultManager::Flush()
 }
 
 
-void ResultManager::GetFrameCounters(int* startFrame, int *fullFrames, int *lastSaveFrame)
+void ResultManager::GetFrameCounters(int* startFrame, int *processedFrames, int *lastSaveFrame, int *capturedFrames)
 {
 	frameCountMutex.lock();
 	if (startFrame) *startFrame = this->startFrame;
-	if (fullFrames) *fullFrames = this->fullFrames;
+	if (processedFrames) *processedFrames = this->processedFrames;
 	if (lastSaveFrame) *lastSaveFrame = this->lastSaveFrame;
 	frameCountMutex.unlock();
+
+	if (capturedFrames) {
+		resultMutex.lock();
+		*capturedFrames = this->frameResults.size();
+		resultMutex.unlock();
+	}
 }
 
 int ResultManager::GetResults(LocalizationResult* results, int startFrame, int numFrames)
 {
 	frameCountMutex.lock();
 
-	if (startFrame >= this->startFrame && numFrames+startFrame <= fullFrames)  {
+	if (startFrame >= this->startFrame && numFrames+startFrame <= processedFrames)  {
 		resultMutex.lock();
 		for (int f=0;f<numFrames;f++) {
 			int index = f + startFrame - this->startFrame;
