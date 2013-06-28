@@ -88,6 +88,7 @@
 			<Item Name="ClusterToValueList.vi" Type="VI" URL="../BeadTracker2.llb/ClusterToValueList.vi"/>
 			<Item Name="ComputeHighFreqNoise.vi" Type="VI" URL="../BeadTracker2.llb/ComputeHighFreqNoise.vi"/>
 			<Item Name="DeleteFileIfExisting.vi" Type="VI" URL="../BeadTracker2.llb/DeleteFileIfExisting.vi"/>
+			<Item Name="ExtractBeadROI.vi" Type="VI" URL="../BeadTracker2.llb/ExtractBeadROI.vi"/>
 			<Item Name="GenerateNewFilename.vi" Type="VI" URL="../BeadTracker2.llb/GenerateNewFilename.vi"/>
 			<Item Name="GenerateTracePlotData.vi" Type="VI" URL="../BeadTracker2.llb/GenerateTracePlotData.vi"/>
 			<Item Name="GetExperimentPaths.vi" Type="VI" URL="../BeadTracker2.llb/GetExperimentPaths.vi"/>
