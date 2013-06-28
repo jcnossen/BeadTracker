@@ -427,7 +427,7 @@ void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, 
 		float r = minRadius + rstep * i;
 
 		int nPixels = 0;
-		float angstepf = angularSteps / (float) quadrantDirs.size();
+		float angstepf = (float) quadrantDirs.size() / angularSteps;
 		for (int a=0;a<angularSteps;a++) {
 			int i = (int)angstepf * a;
 			float x = center.x + mx*quadrantDirs[i].x * r;

@@ -24,7 +24,7 @@ __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, float* d
 	for (int i=0;i<params.radialSteps;i++)
 		dst[i]=0.0f;
 	
-	float asf = params.angularSteps / (float)params.trigtablesize;
+	float asf = (float)params.trigtablesize / params.angularSteps;
 	float total = 0.0f;
 	float rstep = (params.maxRadius - params.minRadius) / params.radialSteps;
 	for (int i=0;i<params.radialSteps; i++) {

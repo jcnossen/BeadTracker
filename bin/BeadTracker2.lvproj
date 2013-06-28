@@ -290,6 +290,7 @@
 			<Item Name="#7.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/#7.vi"/>
 			<Item Name="*IDN?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/*IDN?.vi"/>
 			<Item Name="AccurateTickCount.vi" Type="VI" URL="../BeadTracker2.llb/AccurateTickCount.vi"/>
+			<Item Name="AccurateTickCount.vi" Type="VI" URL="../QTrk.llb/AccurateTickCount.vi"/>
 			<Item Name="Assign values from string to axes.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Assign values from string to axes.vi"/>
 			<Item Name="BDR.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/BDR.vi"/>
 			<Item Name="Build command substring.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Build command substring.vi"/>
@@ -345,8 +346,11 @@
 			<Item Name="PI_Stages_Main.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/PI_Stages_Main.vi"/>
 			<Item Name="PIMoveSingleAxis.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/PIMoveSingleAxis.vi"/>
 			<Item Name="POS?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/POS?.vi"/>
+			<Item Name="QTrkComputedSettings.ctl" Type="VI" URL="../QTrk.llb/QTrkComputedSettings.ctl"/>
+			<Item Name="QTrkGetDerivedSettings.vi" Type="VI" URL="../QTrk.llb/QTrkGetDerivedSettings.vi"/>
 			<Item Name="QTrkGetProfilingReport.vi" Type="VI" URL="../QTrk.llb/QTrkGetProfilingReport.vi"/>
 			<Item Name="QTrkLocalizationJob.ctl" Type="VI" URL="../QTrk.llb/QTrkLocalizationJob.ctl"/>
+			<Item Name="QTrkSpeedTest.vi" Type="VI" URL="../QTrk.llb/QTrkSpeedTest.vi"/>
 			<Item Name="RMGetBeadResults.vi" Type="VI" URL="../QTrk.llb/RMGetBeadResults.vi"/>
 			<Item Name="RunGrabSession.vi" Type="VI" URL="../Setups/D020R/DalsaCamera.llb/RunGrabSession.vi"/>
 			<Item Name="SAI?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/SAI?.vi"/>

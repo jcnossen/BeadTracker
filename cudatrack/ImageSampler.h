@@ -30,7 +30,6 @@ public:
 	// All interpolated texture/images fetches go through here
 	static __device__ float Interpolated(cudaImageListf& images, float x,float y, int img, bool &outside)
 	{
-		float v;
 		if (x < 0 || x >= images.w-1 || y < 0 || y >= images.h-1) {
 			outside=true;
 			return 0.0f;

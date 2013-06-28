@@ -40,8 +40,11 @@ void QueuedCPUTracker::JobFinished(QueuedCPUTracker::Job* j)
 {
 	jobs_buffer_mutex.lock();
 	jobs_buffer.push_back(j);
-	jobsInProgress--;
 	jobs_buffer_mutex.unlock();
+
+	jobs_mutex.lock();
+	jobsInProgress--;
+	jobs_mutex.unlock();
 }
 
 QueuedCPUTracker::Job* QueuedCPUTracker::GetNextJob()

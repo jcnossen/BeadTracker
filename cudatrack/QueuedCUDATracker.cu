@@ -140,11 +140,11 @@ void QueuedCUDATracker::InitializeDeviceList()
 	} else {
 		devices.push_back (new Device(cfg.cuda_device));
 	}
-	dbgprintf("Using devices: ");
+	deviceReport = "Using devices: ";
 	for (uint i=0;i<devices.size();i++) {
 		cudaDeviceProp p; 
 		cudaGetDeviceProperties(&p, devices[i]->index);
-		dbgprintf("%s%s", p.name, i<devices.size()-1?", ":"\n");
+		deviceReport += SPrintf("%s%s", p.name, i<devices.size()-1?", ":"\n");
 	}
 }
 
@@ -801,7 +801,8 @@ std::string QueuedCUDATracker::GetProfileReport()
 {
 	float f = 1.0f/batchesDone;
 
-	return "CUDA tracker report: " + SPrintf("%d batches done of size %d", batchesDone, batchSize ) + "\n" +
+	return deviceReport + "Profiling: \n" +
+		SPrintf("%d batches done of size %d, on %d streams", batchesDone, batchSize, streams.size()) + "\n" +
 		SPrintf("Image copying: %f ms per image\n", time_imageCopy*f) +
 		SPrintf("QI: %f ms per image\n", time_QI*f) +
 		SPrintf("COM: %f ms per image\n", time_COM*f) +

@@ -192,6 +192,7 @@ public:
 	// Profiling
 	double time_COM, time_QI, time_imageCopy, time_ZCompute;
 	int batchesDone;
+	std::string deviceReport;
 };
 
 
