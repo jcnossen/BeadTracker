@@ -24,6 +24,7 @@ __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, float* d
 	for (int i=0;i<params.radialSteps;i++)
 		dst[i]=0.0f;
 	
+	float asf = params.angularSteps / (float)params.trigtablesize;
 	float total = 0.0f;
 	float rstep = (params.maxRadius - params.minRadius) / params.radialSteps;
 	for (int i=0;i<params.radialSteps; i++) {
@@ -32,8 +33,9 @@ __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, float* d
 		int count=0;
 
 		for (int a=0;a<params.angularSteps;a++) {
-			float x = center.x + mx*params.radialgrid[a].x * r;
-			float y = center.y + my*params.radialgrid[a].y * r;
+			int j = (int)(asf * a);
+			float x = center.x + mx*params.cos_sin_table[j].x * r;
+			float y = center.y + my*params.cos_sin_table[j].y * r;
 			bool outside=false;
 			float v = TImageSampler::Interpolated(images, x,y, idx, outside);
 			if (!outside) {
@@ -180,8 +182,8 @@ __global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* po
 
 		int count=0;
 		for (int a=0;a<params.angularSteps;a++) {
-			float x = pos.x + mx*params.radialgrid[a].x * r;
-			float y = pos.y + my*params.radialgrid[a].y * r;
+			float x = pos.x + mx*params.cos_sin_table[a].x * r;
+			float y = pos.y + my*params.cos_sin_table[a].y * r;
 			bool outside=false;
 			sum += TImageSampler::Interpolated(images, x,y,jobIdx, outside);
 			if (!outside) count++;
@@ -378,8 +380,8 @@ __global__ void ZLUT_RadialProfileKernel(int njobs, cudaImageListf images, ZLUTP
 	int count = 0;
 	
 	for (int i=0;i<params.angularSteps;i++) {
-		float x = positions[jobIdx].x + params.radialgrid[i].x * r;
-		float y = positions[jobIdx].y + params.radialgrid[i].y * r;
+		float x = positions[jobIdx].x + params.trigtable[i].x * r;
+		float y = positions[jobIdx].y + params.trigtable[i].y * r;
 
 		bool outside=false;
 		sum += TImageSampler::Interpolated(images, x,y, jobIdx, outside);

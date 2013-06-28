@@ -69,6 +69,7 @@ struct QTrkSettings {
 		qi_angular_coverage = 0.7f;
 		qi_radial_coverage = 2.0f; 
 		qi_roi_coverage = 1.0f;
+		qi_angstep_factor = 1.0f;
 		cuda_device = -1;
 		com_bgcorrection = 0.0f;
 		gauss2D_iterations = 3;
@@ -96,6 +97,7 @@ struct QTrkSettings {
 	float qi_radial_coverage;
 	float qi_angular_coverage;
 	float qi_roi_coverage;
+	float qi_angstep_factor;
 
 	int xc1_profileLength;
 	int xc1_profileWidth;

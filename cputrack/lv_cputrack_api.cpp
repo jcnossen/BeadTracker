@@ -56,7 +56,7 @@ CDLL_EXPORT int DLL_CALLCONV compute_xcor(CPUTracker* tracker, vector2f* positio
 CDLL_EXPORT int DLL_CALLCONV compute_qi(CPUTracker* tracker, vector2f* position, int iterations, int radialSteps, int angularStepsPerQ, float minRadius, float maxRadius, LVArray<float>** radialweights)
 {
 	bool boundaryHit;
-	*position = tracker->ComputeQI(*position, iterations, radialSteps, angularStepsPerQ, minRadius,maxRadius, boundaryHit);
+	*position = tracker->ComputeQI(*position, iterations, radialSteps, angularStepsPerQ, 1, minRadius,maxRadius, boundaryHit);
 	return boundaryHit ? 1 : 0;
 }
 

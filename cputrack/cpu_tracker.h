@@ -43,7 +43,6 @@ public:
 	float* getZLUT(int index)  { return &zluts[zlut_res*zlut_planes*index]; }
 
 	XCor1DBuffer* xcorBuffer;
-	
 	std::vector<vector2f> quadrantDirs; // single quadrant
 	int qi_radialsteps;
 	typedef float qi_t;
@@ -58,7 +57,7 @@ public:
 	bool KeepInsideBoundaries(vector2f *center, float radius);
 	bool CheckBoundaries(vector2f center, float radius);
 	vector2f ComputeXCorInterpolated(vector2f initial, int iterations, int profileWidth, bool& boundaryHit);
-	vector2f ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQuadrant, float minRadius, float maxRadius, bool& boundaryHit);
+	vector2f ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQuadrant, float angStepIterationFactor, float minRadius, float maxRadius, bool& boundaryHit);
 	vector2f Compute2DGaussianMLE(vector2f initial ,int iterations);
 	vector2f Compute2DXCor();
 

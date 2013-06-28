@@ -223,7 +223,7 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 		break;
 	case LocalizeQI:{
 		result.firstGuess = com;
-		vector2f resultPos = trk->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angstepspq, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
+		vector2f resultPos = trk->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angstepspq, cfg.qi_angstep_factor, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
 		result.pos.x = resultPos.x;
 		result.pos.y = resultPos.y;
 		break;}

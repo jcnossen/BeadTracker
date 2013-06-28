@@ -186,14 +186,15 @@ QueuedCUDATracker::QueuedCUDATracker(const QTrkComputedConfig& cc, int batchSize
 	zp.zcmpwindow = 0;
 
 	QIParams& qi = p.qi;
-	qi.angularSteps = cfg.qi_angstepspq;
+	qi.trigtablesize = cfg.qi_angstepspq;
 	qi.iterations = cfg.qi_iterations;
 	qi.maxRadius = cfg.qi_maxradius;
 	qi.minRadius = cfg.qi_minradius;
 	qi.radialSteps = cfg.qi_radialsteps;
-	std::vector<float2> qi_radialgrid(qi.angularSteps);
-	for (int i=0;i<qi.angularSteps;i++)  {
-		float ang = 0.5f*3.141593f*i/(float)qi.angularSteps;
+	qi.angularSteps = 0; // filled per iteration
+	std::vector<float2> qi_radialgrid(cfg.qi_angstepspq);
+	for (int i=0;i<cfg.qi_angstepspq;i++)  {
+		float ang = 0.5f*3.141593f*i/(float)cfg.qi_angstepspq;
 		qi_radialgrid[i]=make_float2(cos(ang), sin(ang));
 	}
 
@@ -206,8 +207,8 @@ QueuedCUDATracker::QueuedCUDATracker(const QTrkComputedConfig& cc, int batchSize
 	for (uint i=0;i<devices.size();i++) {
 		Device* d = devices[i];
 		cudaSetDevice(d->index);
-		d->d_qiradialgrid=qi_radialgrid;
-		d->d_zlutradialgrid = zlut_radialgrid;
+		d->d_qi_trigtable = qi_radialgrid;
+		d->d_zlut_trigtable = zlut_radialgrid;
 	}
 	kernelParams.zlut.img = cudaImageListf::emptyList();
 	
@@ -491,7 +492,7 @@ void checksum(T* data, int elemsize, int numelem, const char *name)
 }
 
 template<typename TImageSampler>
-void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s)
+void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s, int angularSteps)
 {
 	int njobs = s->jobs.size();
 	dim3 qdrThreads(16, 8);
@@ -506,8 +507,11 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 			(njobs, s->images, s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, kernelParams.qi);
 	}
 	else {
+		QIParams qiparams( kernelParams.qi );
+		qiparams.angularSteps = angularSteps;
+
 		QI_ComputeProfile <TImageSampler> <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
-			s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, s->d_imgmeans.data,  kernelParams.qi);
+			s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, s->d_imgmeans.data,  qiparams);
 	}
 	/*
 	cudaStreamSynchronize(s->stream);
@@ -574,9 +578,9 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 
 	Device *d = s->device;
 	cudaSetDevice(d->index);
-	kernelParams.qi.radialgrid = d->d_qiradialgrid.data;
+	kernelParams.qi.cos_sin_table = d->d_qi_trigtable.data;
 	kernelParams.zlut.img = d->zlut;
-	kernelParams.zlut.radialgrid = d->d_zlutradialgrid.data;
+	kernelParams.zlut.trigtable = d->d_zlut_trigtable.data;
 	kernelParams.zlut.zcmpwindow = d->zcompareWindow.data;
 
 	cudaEventRecord(s->batchStart, s->stream);
@@ -602,9 +606,13 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	device_vec<float3> *curpos = &s->d_com;
 	if (s->localizeFlags & LocalizeQI) {
 		ProfileBlock p("QI");
+
+		float angsteps = cfg.qi_angstepspq / powf(cfg.qi_angstep_factor, cfg.qi_iterations);
+		
 		for (int a=0;a<cfg.qi_iterations;a++) {
-			QI_Iterate<TImageSampler> (curpos, &s->d_resultpos, s);
+			QI_Iterate<TImageSampler> (curpos, &s->d_resultpos, s, angsteps);
 			curpos = &s->d_resultpos;
+			angsteps *= cfg.qi_angstep_factor;
 		}
 	}
 	cudaEventRecord(s->qiDone, s->stream);

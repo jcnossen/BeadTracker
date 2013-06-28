@@ -229,7 +229,8 @@ vector2f CPUTracker::ComputeXCorInterpolated(vector2f initial, int iterations, i
 	return pos;
 }
 
-vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQ, float minRadius, float maxRadius, bool& boundaryHit)
+vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps, int angularStepsPerQ, 
+	float angStepIterationFactor, float minRadius, float maxRadius, bool& boundaryHit)
 {
 	int nr=radialSteps;
 #ifdef _DEBUG
@@ -269,12 +270,14 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 		return initial;
 	}
 
+	float angsteps = angularStepsPerQ / powf(angStepIterationFactor, iterations);
+	
 	for (int k=0;k<iterations;k++){
 		// check bounds
 		boundaryHit = CheckBoundaries(center, maxRadius);
 
 		for (int q=0;q<4;q++) {
-			ComputeQuadrantProfile(buf+q*nr, nr, angularStepsPerQ, q, minRadius, maxRadius, center);
+			ComputeQuadrantProfile(buf+q*nr, nr, angsteps, q, minRadius, maxRadius, center);
 		}
 
 		// Build Ix = [ qL(-r)  qR(r) ]
@@ -309,6 +312,8 @@ vector2f CPUTracker::ComputeQI(vector2f initial, int iterations, int radialSteps
 
 		center.x += offsetX * pixelsPerProfLen;
 		center.y += offsetY * pixelsPerProfLen;
+
+		angsteps *= angStepIterationFactor;
 	}
 
 	return center;
@@ -401,7 +406,7 @@ float CPUTracker::ComputeAsymmetry(vector2f center, int radialSteps, int angular
 }
 
 
-void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, int angularSteps, 
+void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, int angularSteps,
 				int quadrant, float minRadius, float maxRadius, vector2f center)
 {
 	const int qmat[] = {
@@ -422,9 +427,11 @@ void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, 
 		float r = minRadius + rstep * i;
 
 		int nPixels = 0;
+		float angstepf = angularSteps / (float) quadrantDirs.size();
 		for (int a=0;a<angularSteps;a++) {
-			float x = center.x + mx*quadrantDirs[a].x * r;
-			float y = center.y + my*quadrantDirs[a].y * r;
+			int i = (int)angstepf * a;
+			float x = center.x + mx*quadrantDirs[i].x * r;
+			float y = center.y + my*quadrantDirs[i].y * r;
 
 			bool outside;
 			float v = Interpolate(srcImage,width,height, x,y, &outside);

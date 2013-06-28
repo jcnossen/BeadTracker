@@ -23,8 +23,8 @@ typedef cudaImageList<float> cudaImageListf;
 
 struct QIParams {
 	float minRadius, maxRadius;
-	int radialSteps, iterations, angularSteps;
-	float2* radialgrid; // precomputed radial directions (cos,sin pairs)
+	int radialSteps, iterations, trigtablesize, angularSteps;
+	float2* cos_sin_table;
 };
 
 struct ZLUTParams {
@@ -35,7 +35,7 @@ struct ZLUTParams {
 	int planes;
 	cudaImageListf img;
 	CUBOTH int radialSteps() { return img.w; }
-	float2* radialgrid; // precomputed radial directions (cos,sin pairs)
+	float2* trigtable; // precomputed radial directions (cos,sin pairs)
 };
 
 struct KernelParams {
@@ -93,8 +93,8 @@ protected:
 
 		cudaImageListf zlut;
 		device_vec<float> zcompareWindow;
-		device_vec<float2> d_qiradialgrid;
-		device_vec<float2> d_zlutradialgrid;
+		device_vec<float2> d_qi_trigtable;
+		device_vec<float2> d_zlut_trigtable;
 		int index;
 	};
 
@@ -178,7 +178,7 @@ protected:
 	int FetchResults();
 	template<typename TImageSampler> void ExecuteBatch(Stream *s);
 	Stream* GetReadyStream(); // get a stream that not currently executing, and still has room for images
-	template<typename TImageSampler> void QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s);
+	template<typename TImageSampler> void QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s, int angularSteps);
 	bool CheckAllStreams(Stream::State state);
 	void InitializeDeviceList();
 	Stream* CreateStream(Device* device);
