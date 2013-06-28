@@ -81,15 +81,16 @@ Issues:
 #endif
 
 static std::vector<int> cudaDeviceList; 
+
 void SetCUDADevices(int* dev, int numdev) {
 	cudaDeviceList.assign(dev,dev+numdev);
 }
 
 
 
-QueuedTracker* CreateQueuedTracker(QTrkSettings* cfg)
+QueuedTracker* CreateQueuedTracker(const QTrkComputedConfig& cc)
 {
-	return new QueuedCUDATracker(cfg);
+	return new QueuedCUDATracker(cc);
 }
 
 void CheckCUDAError()
@@ -148,57 +149,57 @@ void QueuedCUDATracker::InitializeDeviceList()
 }
 
 
-QueuedCUDATracker::QueuedCUDATracker(QTrkSettings *cfg, int batchSize)
+QueuedCUDATracker::QueuedCUDATracker(const QTrkComputedConfig& cc, int batchSize) 
 {
-	this->cfg = *cfg;
+	cfg = cc;
 
 	InitializeDeviceList();
 
 	// We take numThreads to be the number of CUDA streams
-	if (cfg->numThreads < 1) {
-		cfg->numThreads = devices.size()*3;
+	if (cfg.numThreads < 1) {
+		cfg.numThreads = devices.size()*3;
 	}
-	int numStreams = cfg->numThreads;
+	int numStreams = cfg.numThreads;
 
 	cudaGetDeviceProperties(&deviceProp, devices[0]->index);
 	numThreads = deviceProp.warpSize;
 	
-	if(batchSize<0) batchSize = 512;
-	while (batchSize * cfg->height > deviceProp.maxTexture2D[1]) {
+	if(batchSize<0) batchSize = 256;
+	while (batchSize * cfg.height > deviceProp.maxTexture2D[1]) {
 		batchSize/=2;
 	}
 	this->batchSize = batchSize;
 
-	qi_FFT_length = cfg->qi_radialsteps*2;
+	qi_FFT_length = cfg.qi_radialsteps*2;
 
 	dbgprintf("# of CUDA processors:%d. Using %d streams\n", deviceProp.multiProcessorCount, numStreams);
 	dbgprintf("Warp size: %d. Max threads: %d, Batch size: %d. QI FFT Length: %d\n", deviceProp.warpSize, deviceProp.maxThreadsPerBlock, batchSize, qi_FFT_length);
 
 	KernelParams &p = kernelParams;
-	p.com_bgcorrection = cfg->com_bgcorrection;
+	p.com_bgcorrection = cfg.com_bgcorrection;
 	
 	ZLUTParams& zp = p.zlut;
-	zp.angularSteps = cfg->zlut_angularsteps;
-	zp.maxRadius = cfg->zlut_maxradius;
-	zp.minRadius = cfg->zlut_minradius;
+	zp.angularSteps = cfg.zlut_angularsteps;
+	zp.maxRadius = cfg.zlut_maxradius;
+	zp.minRadius = cfg.zlut_minradius;
 	zp.planes = 0;
 	zp.zcmpwindow = 0;
 
 	QIParams& qi = p.qi;
-	qi.angularSteps = cfg->qi_angsteps_per_quadrant;
-	qi.iterations = cfg->qi_iterations;
-	qi.maxRadius = cfg->qi_maxradius;
-	qi.minRadius = cfg->qi_minradius;
-	qi.radialSteps = cfg->qi_radialsteps;
+	qi.angularSteps = cfg.qi_angstepspq;
+	qi.iterations = cfg.qi_iterations;
+	qi.maxRadius = cfg.qi_maxradius;
+	qi.minRadius = cfg.qi_minradius;
+	qi.radialSteps = cfg.qi_radialsteps;
 	std::vector<float2> qi_radialgrid(qi.angularSteps);
 	for (int i=0;i<qi.angularSteps;i++)  {
 		float ang = 0.5f*3.141593f*i/(float)qi.angularSteps;
 		qi_radialgrid[i]=make_float2(cos(ang), sin(ang));
 	}
 
-	std::vector<float2> zlut_radialgrid(cfg->zlut_angularsteps);
-	for (int i=0;i<cfg->zlut_angularsteps;i++) {
-		float ang = 2*3.141593f*i/(float)cfg->zlut_angularsteps;
+	std::vector<float2> zlut_radialgrid(cfg.zlut_angularsteps);
+	for (int i=0;i<cfg.zlut_angularsteps;i++) {
+		float ang = 2*3.141593f*i/(float)cfg.zlut_angularsteps;
 		zlut_radialgrid[i]=make_float2(cos(ang),sin(ang));
 	}
 
@@ -267,7 +268,6 @@ QueuedCUDATracker::Stream::~Stream()
 	if (stream)
 		cudaStreamDestroy(stream); // stream can be zero if in debugStream mode.
 }
-
 
 
 bool QueuedCUDATracker::Stream::IsExecutionDone()
@@ -392,11 +392,16 @@ bool QueuedCUDATracker::CheckAllStreams(Stream::State s)
 }
 
 
-int QueuedCUDATracker::GetQueueLength()
+int QueuedCUDATracker::GetQueueLength(int *maxQueueLen)
 {
 	int qlen = 0;
 	for (uint a=0;a<streams.size();a++){
+		streams[a]->lock();
 		qlen += streams[a]->JobCount();
+		streams[a]->unlock();
+	}
+	if (maxQueueLen) {
+		*maxQueueLen = streams.size()*batchSize;
 	}
 
 	return qlen;
@@ -738,7 +743,7 @@ void QueuedCUDATracker::Device::SetZLUT(float *data, int radialsteps, int planes
 			zlut.copyImageToDevice(i, &data[planes*radialsteps*i]);
 	}
 	else zlut.clear();
-}	
+}
 
 // delete[] memory afterwards
 float* QueuedCUDATracker::GetZLUT(int *count, int* planes)

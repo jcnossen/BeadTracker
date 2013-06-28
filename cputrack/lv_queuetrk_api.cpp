@@ -58,6 +58,12 @@ bool ValidateTracker(QueuedTracker* tracker, ErrorCluster* e, const char *funcna
 	return true;
 }
 
+CDLL_EXPORT void DLL_CALLCONV qtrk_get_computed_config(QueuedTracker* qtrk, QTrkComputedConfig* cc, ErrorCluster *err)
+{
+	if (ValidateTracker(qtrk, err, "get computed config"))
+		*cc = qtrk->cfg;
+}
+
 CDLL_EXPORT void DLL_CALLCONV qtrk_set_ZLUT(QueuedTracker* tracker, LVArray3D<float>** pZlut, LVArray<float>** zcmpWindow, ErrorCluster* e)
 {
 	LVArray3D<float>* zlut = *pZlut;
@@ -107,7 +113,7 @@ CDLL_EXPORT QueuedTracker* qtrk_create(QTrkSettings* settings, ErrorCluster* e)
 {
 	QueuedTracker* tracker = 0;
 	try {
-		tracker = CreateQueuedTracker(settings);
+		tracker = CreateQueuedTracker(*settings);
 
 		trackerListMutex.lock();
 		trackerList.push_back(tracker);
@@ -244,10 +250,10 @@ CDLL_EXPORT void qtrk_clear_results(QueuedTracker* qtrk, ErrorCluster* e)
 }
 
 
-CDLL_EXPORT int qtrk_get_queue_len(QueuedTracker* qtrk, ErrorCluster* e)
+CDLL_EXPORT int qtrk_get_queue_len(QueuedTracker* qtrk, int* maxQueueLen, ErrorCluster* e)
 {
 	if (ValidateTracker(qtrk, e, "fullqueue"))
-		return qtrk->GetQueueLength();
+		return qtrk->GetQueueLength(maxQueueLen);
 	return 0;
 }
 
@@ -319,8 +325,9 @@ CDLL_EXPORT void qtrk_compute_fisher(LVArray2D<float> **lut, QTrkSettings* cfg, 
 	for (int i=0;i<3;i++)
 		fisherMatrix[i] = vector3f();
 
-	LUTFisherMatrix fm( (*lut)->elem, cfg->zlut_radialsteps, (*lut)->dimSizes[1] );
-	fm.Compute(cfg->width, cfg->height, *pos, cfg->zlut_minradius, cfg->zlut_maxradius);
+	QTrkComputedConfig cc (*cfg);
+	LUTFisherMatrix fm( (*lut)->elem, cc.zlut_radialsteps, (*lut)->dimSizes[1] );
+	fm.Compute(cc.width, cc.height, *pos, cc.zlut_minradius, cc.zlut_maxradius);
 }
 
 

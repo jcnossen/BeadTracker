@@ -33,6 +33,9 @@ struct LocalizationJob {
 	LocalizationJob() {
 		locType=frame=timestamp=zlutIndex=zlutPlane=0; 
 	}
+	LocalizationJob(LocalizeType lt, uint frame, uint timestamp, uint zlutPlane, uint zlutIndex) :
+		locType ( (uint)lt ), frame (frame), timestamp(timestamp), zlutPlane(zlutPlane), zlutIndex(zlutIndex) 
+	{}
 	uint locType;
 	uint frame, timestamp;
 	uint zlutIndex; // or bead#
@@ -54,36 +57,24 @@ struct QTrkSettings {
 	QTrkSettings() {
 		width = height = 150;
 		numThreads = -1;
-		maxQueueSize = 200;
-		xc1_profileLength = 128; 
+		xc1_profileLength = 128;
 		xc1_profileWidth = 32;
 		xc1_iterations = 2;
-		zlut_minradius = 5.0f; zlut_maxradius = 60;
-		zlut_angularsteps = 128;
-		zlut_radialsteps = 32;
+		zlut_minradius = 5.0f;
+		zlut_angular_coverage = 0.7f;
+		zlut_radial_coverage = 2.0f;
+		zlut_roi_coverage = 1.0f;
 		qi_iterations = 2;
-		qi_radialsteps = 32; 
-		qi_angsteps_per_quadrant = 32;
-		qi_minradius = 5; qi_maxradius = 60;
+		qi_minradius = 5;
+		qi_angular_coverage = 0.7f;
+		qi_radial_coverage = 2.0f; 
+		qi_roi_coverage = 1.0f;
 		cuda_device = -1;
 		com_bgcorrection = 0.0f;
 		gauss2D_iterations = 3;
 	}
 	int width, height;
-	int numThreads, maxQueueSize;
-
-	int xc1_profileLength;
-	int xc1_profileWidth;
-	int xc1_iterations;
-
-	float zlut_minradius;
-	float zlut_maxradius;
-	int zlut_angularsteps;
-
-	int qi_iterations;
-	int qi_radialsteps; 
-	int qi_angsteps_per_quadrant;// Per quadrant
-	float qi_minradius, qi_maxradius;
+	int numThreads;
 
 #define QTrkCUDA_UseList -3   // Use list defined by SetCUDADevices
 #define QTrkCUDA_UseAll -2
@@ -93,14 +84,45 @@ struct QTrkSettings {
 	int cuda_device;
 
 	float com_bgcorrection; // 0.0f to disable
-	int zlut_radialsteps;
 	int gauss2D_iterations;
+
+	float zlut_minradius;
+	float zlut_radial_coverage;
+	float zlut_angular_coverage;
+	float zlut_roi_coverage; // maxradius = ROI/2*roi_coverage
+
+	int qi_iterations;
+	float qi_minradius;
+	float qi_radial_coverage;
+	float qi_angular_coverage;
+	float qi_roi_coverage;
+
+	int xc1_profileLength;
+	int xc1_profileWidth;
+	int xc1_iterations;
 };
 struct ROIPosition
 {
 	int x,y; // top-left coordinates. ROI is [ x .. x+w ; y .. y+h ]
 };
 #pragma pack(pop)
+
+// Parameters computed from QTrkSettings
+struct QTrkComputedConfig : public QTrkSettings
+{
+	QTrkComputedConfig() {}
+	QTrkComputedConfig(const QTrkSettings& base) { *((QTrkSettings*)this)=base; Update(); }
+	void Update();
+
+	// Computed from QTrkSettings
+	int zlut_radialsteps;
+	int zlut_angularsteps;
+	float zlut_maxradius;
+	
+	int qi_radialsteps;
+	int qi_angstepspq;
+	float qi_maxradius;
+};
 
 class AsyncScheduler;
 
@@ -127,25 +149,24 @@ public:
 	virtual int GetResultCount() = 0;
 	virtual int PollFinished(LocalizationResult* results, int maxResults) = 0;
 
-	virtual int GetQueueLength() = 0;
+	virtual int GetQueueLength(int *maxQueueLen=0) = 0;
 	virtual bool IsIdle() = 0;
 
 	virtual std::string GetProfileReport() { return ""; }
 
-	QTrkSettings cfg;
+	QTrkComputedConfig cfg;
 
 	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint frame, uint timestamp, vector3f* initial, uint zlutIndex, uint zlutPlane);
 	void ScheduleFrameAsync(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo);
 	bool IsAsyncScheduleDone(uchar* imgptr);
 	bool IsAsyncSchedulerIdle();
 protected:
-	
 	AsyncScheduler* asyncScheduler;	
 };
 
-CDLL_EXPORT void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelDataType pdt, float* dst);
-CDLL_EXPORT QueuedTracker* CreateQueuedTracker(QTrkSettings* s);
+void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelDataType pdt, float* dst);
+QueuedTracker* CreateQueuedTracker(const QTrkComputedConfig& cc);
 // if the tracker code is in a different DLL, you cannot call delete on the tracker instance. (DLLs do not share the memory heap with the host app)
-CDLL_EXPORT void DestroyQueuedTracker(QueuedTracker* qtrk); 
-CDLL_EXPORT void SetCUDADevices(int *devices, int numdev); // empty for CPU tracker
+void DestroyQueuedTracker(QueuedTracker* qtrk); 
+void SetCUDADevices(int *devices, int numdev); // empty for CPU tracker
 

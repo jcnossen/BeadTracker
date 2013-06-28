@@ -9,7 +9,6 @@ template<typename T> T distance(T x, T y) { return sqrt(x*x+y*y); }
 float distance(vector2f a,vector2f b) { return distance(a.x-b.x,a.y-b.y); }
 
 
-/*
 void SpeedTest()
 {
 #ifdef _DEBUG
@@ -27,7 +26,7 @@ void SpeedTest()
 
 	float* zlut = new float[radialSteps*zplanes];
 	for (int x=0;x<zplanes;x++)  {
-		vector2f center = { tracker->GetWidth()/2, tracker->GetHeight()/2 };
+		vector2f center (tracker->GetWidth()/2, tracker->GetHeight()/2);
 		float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 		GenerateTestImage(ImageData(tracker->srcImage, tracker->GetWidth(), tracker->GetHeight()), center.x, center.y, s, 0.0f);
 		tracker->mean = 0.0f;
@@ -37,7 +36,7 @@ void SpeedTest()
 	delete[] zlut;
 
 	// Speed test
-	vector2f comdist={}, xcordist={}, qidist={};
+	vector2f comdist, xcordist, qidist;
 	float zdist=0.0f;
 	double zerrsum=0.0f;
 	double tcom = 0.0, tgen=0.0, tz = 0.0, tqi=0.0, txcor=0.0;
@@ -52,14 +51,10 @@ void SpeedTest()
 
 		double t1 = GetPreciseTime();
 		vector2f com = tracker->ComputeBgCorrectedCOM();
-		vector2f initial = {com.x, com.y};
+		vector2f initial(com.x, com.y);
 		double t2 = GetPreciseTime();
 		bool boundaryHit = false;
 		vector2f xcor = tracker->ComputeXCorInterpolated(initial, xcor_iterations, 16, boundaryHit);
-		if (k == 1) {
-			tracker.OutputDebugInfo();
-			writeImageAsCSV("test.csv", tracker.srcImage, tracker.width, tracker.height);
-		}
 		if (boundaryHit)
 			dbgprintf("xcor boundaryhit!!\n");
 
@@ -136,7 +131,7 @@ void SmallImageTest()
 	vector2f com = tracker->ComputeBgCorrectedCOM();
 	dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
 	
-	vector2f initial = {15,15};
+	vector2f initial(15,15);
 	bool boundaryHit = false;
 	vector2f xcor = tracker->ComputeXCorInterpolated(initial, 2, 16, boundaryHit);
 	dbgout(SPrintf("XCor: %f,%f\n", xcor.x, xcor.y));
@@ -218,7 +213,7 @@ void PixelationErrorTest()
 		vector2f com = tracker->ComputeBgCorrectedCOM();
 		//dbgout(SPrintf("COM: %f,%f\n", com.x, com.y));
 
-		vector2f initial = {X,Y};
+		vector2f initial(X,Y);
 		bool boundaryHit = false;
 		vector2f xcorInterp = tracker->ComputeXCorInterpolated(initial, 3, 32, boundaryHit);
 		dbgout(SPrintf("xpos:%f, COM err: %f, XCorInterp err: %f\n", xpos, com.x-xpos, xcorInterp.x-xpos));
@@ -231,7 +226,7 @@ float EstimateZError(int zplanes)
 	// build LUT
 	CPUTracker *tracker = new CPUTracker(128,128, 64);
 
-	vector2f center = { tracker->GetWidth()/2, tracker->GetHeight()/2 };
+	vector2f center( tracker->GetWidth()/2, tracker->GetHeight()/2 );
 	int radialSteps = 64;
 	float* zlut = new float[radialSteps*zplanes];
 	float zmin = 2, zmax = 8;
@@ -278,7 +273,8 @@ void ZTrackingTest()
 		dbgout(SPrintf("average Z difference: %f. zplanes=%d\n", err, k));
 	}
 }
-*/
+
+
 /*
 void Test2DTracking()
 {
@@ -325,17 +321,12 @@ void Test2DTracking()
 	dbgprintf("Average dist XCor 2D: %f\n", dist2D/N);
 }*/
 
-/*
+
 void QTrkTest()
 {
 	QTrkSettings cfg;
 	cfg.width = cfg.height = 80;
 	cfg.qi_iterations = 3;
-	cfg.qi_maxradius = 40;
-	cfg.qi_radialsteps = 32;
-	cfg.qi_angsteps_per_quadrant = 32;
-	cfg.zlut_radialsteps = 32;
-	cfg.zlut_angularsteps = 128;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1; // direct processing, dont use queue
@@ -350,10 +341,11 @@ void QTrkTest()
 	qtrk.SetZLUT(NULL, 1, zplanes, 0);
 	if (haveZLUT) {
 		for (int x=0;x<zplanes;x++)  {
-			vector2f center = { cfg.width/2, cfg.height/2 };
+			vector2f center(cfg.width/2, cfg.height/2 );
 			float s = zmin + (zmax-zmin) * x/(float)(zplanes-1);
 			GenerateTestImage(ImageData(image, cfg.width, cfg.height), center.x, center.y, s, 0.0f);
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, (LocalizeType)(LocalizeBuildZLUT|LocalizeQI), x, 0, 0, x);
+			LocalizationJob job( (LocalizeType)(LocalizeBuildZLUT|LocalizeQI), x, 0, x, 0);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float),QTrkFloat, &job);
 		}
 		// wait to finish ZLUT
 		while(true) {
@@ -364,8 +356,8 @@ void QTrkTest()
 		}
 		float* zlut = qtrk.GetZLUT(0,0);
 		qtrk.ClearResults();
-		uchar* zlut_bytes = floatToNormalizedInt(zlut, cfg.zlut_radialsteps, zplanes, (uchar)255);
-		WriteJPEGFile(zlut_bytes, cfg.zlut_radialsteps, zplanes, "qtrkzlut.jpg", 99);
+		uchar* zlut_bytes = floatToNormalizedInt(zlut, qtrk.cfg.zlut_radialsteps, zplanes, (uchar)255);
+		WriteJPEGFile(zlut_bytes, qtrk.cfg.zlut_radialsteps, zplanes, "qtrkzlut.jpg", 99);
 		delete[] zlut; delete[] zlut_bytes;
 		qtrk.Break(true);
 	}
@@ -392,8 +384,10 @@ void QTrkTest()
 
 		GenerateTestImage(ImageData(image, cfg.width, cfg.height), xp, yp, z, 10000);
 		double t2 = GetPreciseTime();
-		for (int k=0;k<JobsPerImg;k++)
-			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, (LocalizeType)(LocalizeQI| (haveZLUT ? LocalizeZ : 0)), n, 0, 0, 0);
+		for (int k=0;k<JobsPerImg;k++) {
+			LocalizationJob job( (LocalizeType)(LocalizeQI| (haveZLUT ? LocalizeZ : 0)),n,0,0,0);
+			qtrk.ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, &job);
+		}
 		double t3 = GetPreciseTime();
 		tgen += t2-t1;
 		tschedule += t3-t2;
@@ -426,7 +420,7 @@ void QTrkTest()
 		LocalizationResult result;
 
 		if (qtrk.PollFinished(&result, 1)) {
-			int iid = result.id;
+			int iid = result.job.frame;
 			float x = fabs(truepos[iid*3+0]-result.pos.x);
 			float y = fabs(truepos[iid*3+1]-result.pos.y);
 			result.pos.z = zmin + (zmax-zmin) * result.pos.z / (float)(zplanes-1); // transform from index scale to coordinate scale
@@ -451,7 +445,7 @@ void BuildConvergenceMap(int iterations)
 	float testrange=20;
 	int steps=100;
 	float step=testrange/steps;
-	vector2f errXCor={}, errQI = {};
+	vector2f errXCor, errQI;
 	CPUTracker trk(W,H,40);
 
 	// Get a good starting estimate
@@ -466,7 +460,7 @@ void BuildConvergenceMap(int iterations)
 	for (int y=0;y<steps;y++){
 		for (int x=0;x<steps;x++)
 		{
-			vector2f initial = { cmp.x+step*(x-steps/2), cmp.y+step*(y-steps/2) };
+			vector2f initial (cmp.x+step*(x-steps/2), cmp.y+step*(y-steps/2) );
 			vector2f xcor = trk.ComputeXCorInterpolated(initial, iterations, 64, boundaryHit);
 			vector2f qi = trk.ComputeQI(initial, iterations, 80, 64,2,30,boundaryHit);
 
@@ -504,7 +498,7 @@ void CRP_TestGeneratedData()
 	uchar* lut;
 	ReadJPEGFile(&lutdata[0], lutdata.size(), &lut, &lutw, &luth);
 	delete[] img;
-}*/
+}
 
 ImageData ReadJPEGFile(const char*fn)
 {
@@ -569,21 +563,11 @@ void WriteRadialProf(const char *file, ImageData& d)
 	WriteImageAsCSV(file, radprof, radialsteps, 1);
 }
 
-
-
-void FastCameraTest()
-{
-
-}
-
-
 int main()
 {
-	FastCameraTest();
-
-	//SpeedTest();
+	SpeedTest();
 	//SmallImageTest();
-	//PixelationErrorTest();
+	PixelationErrorTest();
 	//ZTrackingTest();
 	//Test2DTracking();
 	//TestBoundCheck();

@@ -1,11 +1,12 @@
 #include "std_incl.h"
 #include "QueuedCPUTracker.h"
+#include <float.h>
 
 #ifndef CUDA_TRACK
-CDLL_EXPORT QueuedTracker* CreateQueuedTracker(QTrkSettings* s) {
-	return new QueuedCPUTracker(s);
+QueuedTracker* CreateQueuedTracker(const QTrkComputedConfig& cc){ 
+	return new QueuedCPUTracker(cc);
 }
-CDLL_EXPORT void SetCUDADevices(int* dev, int ndev) {
+void SetCUDADevices(int* dev, int ndev) {
 }
 #endif
 
@@ -39,6 +40,7 @@ void QueuedCPUTracker::JobFinished(QueuedCPUTracker::Job* j)
 {
 	jobs_buffer_mutex.lock();
 	jobs_buffer.push_back(j);
+	jobsInProgress--;
 	jobs_buffer_mutex.unlock();
 }
 
@@ -50,6 +52,7 @@ QueuedCPUTracker::Job* QueuedCPUTracker::GetNextJob()
 		j = jobs.front();
 		jobs.pop_front();
 		jobCount --;
+		jobsInProgress ++;
 	}
 	jobs_mutex.unlock();
 	return j;
@@ -76,18 +79,22 @@ void QueuedCPUTracker::AddJob(Job* j)
 	jobs_mutex.unlock();
 }
 
-int QueuedCPUTracker::GetQueueLength()
+int QueuedCPUTracker::GetQueueLength(int *maxQueueLength)
 {
 	int jc;
 	jobs_mutex.lock();
-	jc = jobCount;
+	jc = jobCount + jobsInProgress;
 	jobs_mutex.unlock();
+
+	if (maxQueueLength) 
+		*maxQueueLength = this->maxQueueSize;
+
 	return jc;
 }
 
-QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
+QueuedCPUTracker::QueuedCPUTracker(const QTrkComputedConfig& cc) 
 {
-	cfg = *pcfg;
+	cfg = cc;
 	quitWork = false;
 
 	if (cfg.numThreads < 0) {
@@ -99,12 +106,15 @@ QueuedCPUTracker::QueuedCPUTracker(QTrkSettings* pcfg)
 		noThreadTracker = new CPUTracker(cfg.width, cfg.height, cfg.xc1_profileLength);
 	} else
 		noThreadTracker = 0;
+
+	maxQueueSize = std::max(2,cfg.numThreads) * 50;
 	jobCount = 0;
 	resultCount = 0;
 
 	zluts = 0;
 	zlut_count = zlut_planes = 0;
 	processJobs = false;
+	jobsInProgress = 0;
 
 	Start();
 }
@@ -171,9 +181,7 @@ void QueuedCPUTracker::WorkerThreadMain(void* arg)
 			this_->ProcessJob(th->tracker, j);
 			this_->JobFinished(j);
 		} else {
-			#ifdef WIN32
-				Threads::Sleep(1);
-			#endif
+			Threads::Sleep(1);
 		}
 	}
 	dbgprintf("Thread %p ending.\n", arg);
@@ -196,6 +204,9 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 
 	vector2f com = trk->ComputeBgCorrectedCOM(cfg.com_bgcorrection);
 
+	if (_isnan(com.x) || _isnan(com.y))
+		com = vector2f(cfg.width/2,cfg.height/2);
+
 	LocalizeType locType = (LocalizeType)(j->job.locType&Localize2DMask);
 	bool boundaryHit = false;
 
@@ -212,7 +223,7 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 		break;
 	case LocalizeQI:{
 		result.firstGuess = com;
-		vector2f resultPos = trk->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angsteps_per_quadrant, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
+		vector2f resultPos = trk->ComputeQI(com, cfg.qi_iterations, cfg.qi_radialsteps, cfg.qi_angstepspq, cfg.qi_minradius, cfg.qi_maxradius, boundaryHit);
 		result.pos.x = resultPos.x;
 		result.pos.y = resultPos.y;
 		break;}
@@ -300,7 +311,7 @@ float* QueuedCPUTracker::GetZLUT(int *count, int* planes)
 void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo)
 {
 	if (processJobs) {
-		while(cfg.maxQueueSize != 0 && GetQueueLength () >= cfg.maxQueueSize)
+		while(maxQueueSize != 0 && GetQueueLength () >= maxQueueSize)
 			Threads::Sleep(5);
 	}
 
@@ -316,6 +327,11 @@ void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDa
 
 	j->dataType = pdt;
 	j->job = *jobInfo;
+	if (!zluts || jobInfo->zlutIndex < 0 || jobInfo->zlutIndex>=this->zlut_count || 
+		( (jobInfo->locType&LocalizeBuildZLUT) && ( jobInfo->zlutPlane < 0 || jobInfo->zlutPlane >= this->zlut_planes) ))
+	{
+		j->job.locType &= ~(LocalizeBuildZLUT|LocalizeZ);
+	}
 
 #ifdef _DEBUG
 	dbgprintf("Scheduled job: frame %d, bead %d\n", j->job.zlutPlane, j->job.zlutIndex);

@@ -59,7 +59,7 @@ struct ZLUTMapping {
 
 class QueuedCUDATracker : public QueuedTracker {
 public:
-	QueuedCUDATracker(QTrkSettings* cfg, int batchSize=-1);
+	QueuedCUDATracker(const QTrkComputedConfig& cc, int batchSize=-1);
 	~QueuedCUDATracker();
 	void EnableTextureCache(bool useTextureCache) { this->useTextureCache=useTextureCache; }
 	
@@ -80,7 +80,7 @@ public:
 	// Force the current waiting batch to be processed. Useful when number of localizations is not a multiple of internal batch size (almost always)
 	void Flush() override;
 	
-	int GetQueueLength() override;
+	int GetQueueLength(int* maxQueueLen) override;
 	bool IsIdle() override;
 	int GetResultCount() override;
 

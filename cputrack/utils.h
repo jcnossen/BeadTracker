@@ -87,6 +87,8 @@ void WriteComplexImageAsCSV(const char* file, std::complex<float>* d, int w,int 
 
 int ReadJPEGFile(uchar* srcbuf, int srclen, uchar** data, int* width, int*height);
 void WriteJPEGFile(uchar* data,int w,int h, const char * filename, int quality);
+int NearestPowerOf2(int v);
+int NearestPowerOf3(int v);
 
 std::vector<uchar> ReadToByteBuffer(const char* filename);
 double GetPreciseTime();

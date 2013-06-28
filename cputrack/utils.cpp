@@ -11,7 +11,7 @@
 #include "LsqQuadraticFit.h"
 #include "QueuedTracker.h"
 
-CDLL_EXPORT void DestroyQueuedTracker(QueuedTracker* qtrk)
+void DestroyQueuedTracker(QueuedTracker* qtrk)
 {
 	delete qtrk;
 }
@@ -322,7 +322,7 @@ std::vector<uchar> ReadToByteBuffer(const char *filename)
 	return buf;
 }
 
-CDLL_EXPORT void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelDataType pdt, float* dst)
+void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelDataType pdt, float* dst)
 {
 	if (pdt == QTrkU8) {
 		for (int y=0;y<height;y++) {
@@ -363,3 +363,24 @@ double GetPreciseTime()
 }
 
 
+
+
+int NearestPowerOf2(int v)
+{
+	int r=1;
+	while (r < v) 
+		r *= 2;
+	if ( fabsf(r-v) < fabsf(r/2-v) )
+		return r;
+	return r/2;
+}
+
+int NearestPowerOf3(int v)
+{
+	int r=1;
+	while (r < v) 
+		r *= 3;
+	if ( fabsf(r-v) < fabsf(r/3-v) )
+		return r;
+	return r/3;
+}

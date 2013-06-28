@@ -116,17 +116,12 @@ void QTrkTest()
 	QTrkSettings cfg;
 	cfg.width = cfg.height = 120;
 	cfg.qi_iterations = 1;
-	cfg.qi_maxradius = 25;
 	cfg.xc1_iterations = 2;
 	cfg.xc1_profileLength = 64;
 	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
-	cfg.zlut_maxradius = 30;
-	cfg.zlut_radialsteps = 64;
-	cfg.zlut_angularsteps = 128;
 	bool haveZLUT = false;
 #ifdef _DEBUG
-	cfg.qi_radialsteps=16;
 	cfg.numThreads = 2;
 	cfg.qi_iterations=1;
 	int total= 10;
@@ -138,8 +133,8 @@ void QTrkTest()
 	int batchSize = 512;
 #endif
 
-	QueuedCUDATracker qtrk(&cfg, batchSize);
-	QueuedCPUTracker qtrkcpu(&cfg);
+	QueuedCUDATracker qtrk(cfg, batchSize);
+	QueuedCPUTracker qtrkcpu(cfg);
 	float *image = new float[cfg.width*cfg.height];
 	bool cpucmp = true;
 
@@ -183,12 +178,12 @@ void QTrkTest()
 	if (cpucmp) { 
 		float* zlutcpu = qtrkcpu.GetZLUT(0,0);
 
-		WriteImageAsCSV("zlut-cpu.txt", zlutcpu, cfg.zlut_radialsteps, zplanes);
-		WriteImageAsCSV("zlut-gpu.txt", zlut, cfg.zlut_radialsteps, zplanes);
+		WriteImageAsCSV("zlut-cpu.txt", zlutcpu, qtrkcpu.cfg.zlut_radialsteps, zplanes);
+		WriteImageAsCSV("zlut-gpu.txt", zlut, qtrkcpu.cfg.zlut_radialsteps, zplanes);
 	}
 	qtrk.ClearResults();
 	if (cpucmp) qtrkcpu.ClearResults();
-	FloatToJPEGFile ("qtrkzlutcuda.jpg", zlut, cfg.zlut_radialsteps, zplanes);
+	FloatToJPEGFile ("qtrkzlutcuda.jpg", zlut, qtrk.cfg.zlut_radialsteps, zplanes);
 	delete[] zlut;
 	
 	// Schedule images to localize on
@@ -242,6 +237,8 @@ void QTrkTest()
 		qtrk.PollFinished(&results[i], 1);
 		if (cpucmp) qtrkcpu.PollFinished(&resultscpu[i], 1);
 	}
+
+	// if you wonder about this syntax, google C++ lambda functions
 	std::sort(results, results+rcount, [](LocalizationResult a, LocalizationResult b) -> bool { return a.job.frame > b.job.frame; });
 	if(cpucmp) std::sort(resultscpu, resultscpu+rcount, [](LocalizationResult a, LocalizationResult b) -> bool { return a.job.frame > b.job.frame; });
 	for (int i=0;i<rcount;i++) {
@@ -440,28 +437,23 @@ SpeedInfo SpeedCompareTest(int w)
 	bool haveZLUT = false;
 	LocalizeType locType = LocalizeQI;
 
-	QTrkSettings cfg;
+	QTrkComputedConfig cfg;
 	cfg.width = cfg.height = w;
 	cfg.qi_iterations = 4;
-	cfg.qi_maxradius = cfg.width/2-8;
 	//std::vector<int> devices(1); devices[0]=1;
 	//SetCUDADevices(devices);
 	cfg.cuda_device = QTrkCUDA_UseAll;
-	cfg.qi_angsteps_per_quadrant = 32;
-	cfg.qi_radialsteps = (int) (cfg.qi_maxradius-cfg.qi_minradius);
 	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
-	cfg.zlut_maxradius = 40;
-	cfg.zlut_radialsteps = 64;
-	cfg.zlut_angularsteps = 128;
+	cfg.Update();
 	dbgprintf("Width: %d, QI radius: %f, radialsteps: %d\n", w, cfg.qi_maxradius, cfg.qi_radialsteps);
 
 	SpeedInfo info;
-	QueuedCPUTracker *cputrk = new QueuedCPUTracker(&cfg);
+	QueuedCPUTracker *cputrk = new QueuedCPUTracker(cfg);
 	info.speed_cpu = SpeedTest(cfg, cputrk, count, haveZLUT, locType, &info.sched_cpu, true);
 	delete cputrk;
 
-	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(&cfg, cudaBatchSize);
+	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(cfg, cudaBatchSize);
 	info.speed_gpu = SpeedTest(cfg, cudatrk, count, haveZLUT, locType, &info.sched_gpu, true);
 	//info.speed_gpu = SpeedTest(cfg, cudatrk, count, haveZLUT, locType, &info.sched_gpu);
 	std::string report = cudatrk->GetProfileReport();
@@ -554,17 +546,9 @@ void CompareAccuracy ()
 	QTrkSettings cfg;
 	cfg.width = cfg.height = 80;
 	cfg.qi_iterations = 4;
-	cfg.qi_maxradius = cfg.width/2-8;
-	//std::vector<int> devices(1); devices[0]=1;
-	//SetCUDADevices(devices);
 	cfg.cuda_device = QTrkCUDA_UseBest;
-	cfg.qi_angsteps_per_quadrant = 32;
-	cfg.qi_radialsteps = NearestPowerOfTwo(cfg.qi_maxradius);
 	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
-	cfg.zlut_maxradius = cfg.qi_maxradius;
-	cfg.zlut_radialsteps = 64;
-	cfg.zlut_angularsteps = 128;
 
 	int n = 5000;
 #ifdef _DEBUG
@@ -583,11 +567,11 @@ void CompareAccuracy ()
 	}
 
 	std::vector<QueuedTracker*> trackers;
-	trackers.push_back (new QueuedCUDATracker(&cfg));
+	trackers.push_back (new QueuedCUDATracker(cfg));
 	((QueuedCUDATracker*) trackers.back())->EnableTextureCache(true);
-	trackers.push_back (new QueuedCUDATracker(&cfg));
+	trackers.push_back (new QueuedCUDATracker(cfg));
 	((QueuedCUDATracker*) trackers.back())->EnableTextureCache(false);
-	trackers.push_back(new QueuedCPUTracker(&cfg));
+	trackers.push_back(new QueuedCPUTracker(cfg));
 
 	auto results = new vector3f[ trackers.size() * n ];
 
@@ -700,9 +684,9 @@ void MultipleLUTTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int numBeads,
 
 	float* zlutData = qtrk->GetZLUT();
 	for (int i=0;i<numBeads;i++) {
-		float* beadlut = zlutData + i* cfg.zlut_radialsteps * zplanes;
+		float* beadlut = zlutData + i*qtrk->cfg.zlut_radialsteps * zplanes;
 		std::string filename=SPrintf("zlut-bead%d.jpg", i);
-		FloatToJPEGFile(filename.c_str(), beadlut, cfg.zlut_radialsteps, zplanes);
+		FloatToJPEGFile(filename.c_str(), beadlut, qtrk->cfg.zlut_radialsteps, zplanes);
 	}
 	
 	// Schedule images to localize on
@@ -752,19 +736,13 @@ void MultipleLUTTest()
 	QTrkSettings cfg;
 	cfg.width = cfg.height = 80;
 	cfg.qi_iterations = 4;
-	cfg.qi_maxradius = cfg.width/2-8;
 	//std::vector<int> devices(1); devices[0]=1;
 	//SetCUDADevices(devices);
 	cfg.cuda_device = QTrkCUDA_UseBest;
-	cfg.qi_angsteps_per_quadrant = 32;
-	cfg.qi_radialsteps = NearestPowerOfTwo(cfg.qi_maxradius);
 	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
-	cfg.zlut_maxradius = cfg.qi_maxradius;
-	cfg.zlut_radialsteps = 64;
-	cfg.zlut_angularsteps = 128;
 
-	QueuedCUDATracker* qtrk = new QueuedCUDATracker(&cfg);
+	QueuedCUDATracker* qtrk = new QueuedCUDATracker(cfg);
 	//QueuedCPUTracker* qtrk = new QueuedCPUTracker(&cfg);
 	MultipleLUTTest(cfg, qtrk,4);
 	delete qtrk;

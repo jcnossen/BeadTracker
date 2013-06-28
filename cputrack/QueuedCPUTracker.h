@@ -9,13 +9,13 @@
 
 class QueuedCPUTracker : public QueuedTracker {
 public:
-	QueuedCPUTracker(QTrkSettings* settings);
+	QueuedCPUTracker(const QTrkComputedConfig& cc);
 	~QueuedCPUTracker();
 	void Start();
 	void Break(bool pause);
 	void GenerateTestImage(float* dst, float xp, float yp, float z, float photoncount);
 	int NumThreads() { return cfg.numThreads; }
-	int GetQueueLength() override;
+	int GetQueueLength(int *maxQueueLength=0) override; // In queue + in progress
 
 	// QueuedTracker interface
 	void SetZLUT(float* data, int num_zluts, int planes, float* zcmp=0) override;
@@ -60,6 +60,8 @@ private:
 	std::vector<Job*> jobs_buffer; // stores memory
 	std::deque<LocalizationResult> results;
 	int resultCount;
+	int maxQueueSize;
+	int jobsInProgress;
 
 	std::vector<Thread> threads;
 	float* zluts;
