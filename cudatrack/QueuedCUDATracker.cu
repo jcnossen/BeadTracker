@@ -49,35 +49,25 @@ Issues:
 #ifdef TRK_PROFILE
 	class ProfileBlock
 	{
+		double* time;
 		double start;
-		const char *name;
-
 	public:
 		typedef std::pair<int, double> Item;
 		static std::map<const char*, Item> results;
 
-		ProfileBlock(const char* name) : name (name) {
+		ProfileBlock(double *time) :  time(time) {
 			start = GetPreciseTime();
 		}
 		~ProfileBlock() {
 			double end = GetPreciseTime();
-			//dbgprintf("%s took %.2f ms\n", name, (end-start)*1000.0f);
-			if (results.find(name) == results.end())
-				results[name] = Item(1, end-start);
-			else {
-				Item prev = results[name];
-				results[name] = Item (prev.first+1, end-start + prev.second);
-			}
+			*time += start-end;
 		}
 	};
-	QueuedCUDATracker::ProfileResults ProfileBlock::results;
-	QueuedCUDATracker::ProfileResults QueuedCUDATracker::GetProfilingResults() { return ProfileBlock::results; };
 #else
 	class ProfileBlock {
 	public:
-		ProfileBlock(const char *name) {}
+		ProfileBlock(double* time) {}
 	};
-	QueuedCUDATracker::ProfileResults QueuedCUDATracker::GetProfilingResults() { return QueuedCUDATracker::ProfileResults(); };
 #endif
 
 static std::vector<int> cudaDeviceList; 
@@ -226,7 +216,6 @@ QueuedCUDATracker::QueuedCUDATracker(const QTrkComputedConfig& cc, int batchSize
 	streams[0]->OutputMemoryUse();
 
 	batchesDone = 0;
-	time_QI = time_COM = time_ZCompute = time_imageCopy = 0.0;
 	useTextureCache = true;
 }
 
@@ -584,7 +573,7 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 
 	cudaEventRecord(s->batchStart, s->stream);
 	
-	{ProfileBlock p("image to gpu");
+	{ProfileBlock p(&cpu_time.imageCopy);
 	s->images.copyToDevice(s->hostImageBuf.data(), true, s->stream); }
 	//cudaMemcpy2DAsync( s->images.data, s->images.pitch, s->hostImageBuf.data(), sizeof(float)*s->images.w, s->images.w*sizeof(float), s->images.h * s->JobCount(), cudaMemcpyHostToDevice, s->stream); }
 	//{ ProfileBlock p("jobs to gpu");
@@ -592,19 +581,16 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	cudaEventRecord(s->imageCopyDone, s->stream);
 
 	TImageSampler::BindTexture(s->images);
-	{ ProfileBlock p("COM");
+	{ ProfileBlock p(&cpu_time.com);
 	BgCorrectedCOM<TImageSampler> <<< blocks(s->JobCount()), threads(), 0, s->stream >>> 
 		(s->JobCount(), s->images, s->d_com.data, cfg.com_bgcorrection);
 	checksum(s->d_com.data, 1, s->JobCount(), "com");
 	}
 	cudaEventRecord(s->comDone, s->stream);
 
-//	{ ProfileBlock p("COM results to host");
-	s->d_com.copyToHost(s->com.data(), true, s->stream);
-
 	device_vec<float3> *curpos = &s->d_com;
 	if (s->localizeFlags & LocalizeQI) {
-		ProfileBlock p("QI");
+		ProfileBlock p(&cpu_time.qi);
 
 		float angsteps = cfg.qi_angstepspq / powf(cfg.qi_angstep_factor, cfg.qi_iterations);
 		
@@ -616,40 +602,39 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	}
 	cudaEventRecord(s->qiDone, s->stream);
 
+	{ProfileBlock p(&cpu_time.zcompute);
+
 	// Compute radial profiles
 	if (s->localizeFlags & (LocalizeZ | LocalizeBuildZLUT)) {
 		dim3 numThreads(16, 16);
 		dim3 numBlocks( (s->JobCount() + numThreads.x - 1) / numThreads.x, 
 				(cfg.zlut_radialsteps + numThreads.y - 1) / numThreads.y);
-		{ ProfileBlock p("ZLUT radial profile");
 		ZLUT_RadialProfileKernel<TImageSampler> <<< numBlocks , numThreads, 0, s->stream >>>
-			(s->JobCount(), s->images, kernelParams.zlut, curpos->data, s->d_radialprofiles.data); }
-
-		{ ProfileBlock p("ZLUT normalize profiles");
-		ZLUT_NormalizeProfiles<<< blocks(s->JobCount()), threads(), 0, s->stream >>> (s->JobCount(), kernelParams.zlut, s->d_radialprofiles.data); }
+			(s->JobCount(), s->images, kernelParams.zlut, curpos->data, s->d_radialprofiles.data);
+		ZLUT_NormalizeProfiles<<< blocks(s->JobCount()), threads(), 0, s->stream >>> (s->JobCount(), kernelParams.zlut, s->d_radialprofiles.data);
 
 		s->d_zlutmapping.copyToDevice(s->zlutmapping.data(), s->JobCount(), true, s->stream);
 	}
 	// Store profile in LUT
 	if (s->localizeFlags & LocalizeBuildZLUT) {
-		{ ProfileBlock p("ZLUT build zlut");
-		ZLUT_ProfilesToZLUT <<< blocks(s->JobCount()), threads(), 0, s->stream >>> (s->JobCount(), s->images, kernelParams.zlut, curpos->data, s->d_zlutmapping.data, s->d_radialprofiles.data); }
+		ZLUT_ProfilesToZLUT <<< blocks(s->JobCount()), threads(), 0, s->stream >>> (s->JobCount(), s->images, kernelParams.zlut, curpos->data, s->d_zlutmapping.data, s->d_radialprofiles.data);
 	}
 	// Compute Z 
 	if (s->localizeFlags & LocalizeZ) {
 		int zplanes = kernelParams.zlut.planes;
 		dim3 numThreads(8, 16);
-		{ ProfileBlock p("ZLUT compute Z");
 		ZLUT_ComputeProfileMatchScores <<< dim3( (s->JobCount() + numThreads.x - 1) / numThreads.x, (zplanes  + numThreads.y - 1) / numThreads.y), numThreads, 0, s->stream >>> 
 			(s->JobCount(), kernelParams.zlut, s->d_radialprofiles.data, s->d_zlutcmpscores.data, s->d_zlutmapping.data);
 		ZLUT_ComputeZ <<< blocks(s->JobCount()), threads(), 0, s->stream >>> (s->JobCount(), kernelParams.zlut, curpos->data, s->d_zlutcmpscores.data, s->d_zlutmapping.data);
-		}
+	}
 	}
 	TImageSampler::UnbindTexture(s->images);
 	cudaEventRecord(s->zcomputeDone, s->stream);
 
-	{ ProfileBlock p("Results to host");
-	curpos->copyToHost(s->results.data(), true, s->stream);}
+	{ ProfileBlock p(&cpu_time.getResults);
+	s->d_com.copyToHost(s->com.data(), true, s->stream);
+	curpos->copyToHost(s->results.data(), true, s->stream);
+	}
 
 	// Make sure we can query the all done signal
 	cudaEventRecord(s->localizationDone, s->stream);
@@ -688,15 +673,17 @@ void QueuedCUDATracker::CopyStreamResults(Stream *s)
 	}
 
 	// Update times
-	float qi, com, imagecopy, zcomp;
+	float qi, com, imagecopy, zcomp, getResults;
 	cudaEventElapsedTime(&imagecopy, s->batchStart, s->imageCopyDone);
 	cudaEventElapsedTime(&com, s->imageCopyDone, s->comDone);
 	cudaEventElapsedTime(&qi, s->comDone, s->qiDone);
 	cudaEventElapsedTime(&zcomp, s->qiDone, s->zcomputeDone);
-	time_COM += com;
-	time_QI += qi;
-	time_imageCopy += imagecopy;
-	time_ZCompute += zcomp;
+	cudaEventElapsedTime(&getResults, s->zcomputeDone, s->localizationDone);
+	time.com += com;
+	time.qi += qi;
+	time.imageCopy += imagecopy;
+	time.zcompute += zcomp;
+	time.getResults += getResults;
 	batchesDone ++;
 	
 	s->jobs.clear();
@@ -800,12 +787,12 @@ std::string QueuedCUDATracker::GetProfileReport()
 {
 	float f = 1.0f/batchesDone;
 
-	return deviceReport + "GPU time profiling: \n" +
+	return deviceReport + "Time profiling: [GPU], [CPU] \n" +
 		SPrintf("%d batches done of size %d, on %d streams", batchesDone, batchSize, streams.size()) + "\n" +
-		SPrintf("Image copying: %f ms per image\n", time_imageCopy*f) +
-		SPrintf("QI: %f ms per image\n", time_QI*f) +
-		SPrintf("COM: %f ms per image\n", time_COM*f) +
-		SPrintf("Z Computing: %f ms per image\n", time_ZCompute*f);
+		SPrintf("Image copying: %.2f,\t%.2f ms\n", time.imageCopy*f, cpu_time.imageCopy*f) +
+		SPrintf("QI:            %.2f,\t%.2f ms\n", time.qi*f, cpu_time.qi*f) +
+		SPrintf("COM:           %.2f,\t%.2f ms\n", time.com*f, cpu_time.com*f) +
+		SPrintf("Z Computing:   %.2f,\t%.2f ms\n", time.zcompute*f, cpu_time.zcompute*f);
 }
 
 

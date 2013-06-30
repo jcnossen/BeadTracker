@@ -174,6 +174,8 @@ protected:
 	cudaDeviceProp deviceProp;
 	KernelParams kernelParams;
 
+	Threads::Handle *schedulingThread;
+
 	int FetchResults();
 	template<typename TImageSampler> void ExecuteBatch(Stream *s);
 	Stream* GetReadyStream(); // get a stream that not currently executing, and still has room for images
@@ -185,11 +187,12 @@ protected:
 	void StreamUpdateZLUTSize(Stream *s);
 
 public:
-	typedef std::map<const char*, std::pair<int, double> > ProfileResults;
-	static ProfileResults GetProfilingResults();
-
 	// Profiling
-	double time_COM, time_QI, time_imageCopy, time_ZCompute;
+	struct KernelProfileTime {
+		KernelProfileTime() {com=qi=imageCopy=zcompute=getResults=0.0;}
+		double com, qi, imageCopy, zcompute, getResults;
+	};
+	KernelProfileTime time, cpu_time;
 	int batchesDone;
 	std::string deviceReport;
 };
