@@ -139,15 +139,12 @@ protected:
 		uint localizeFlags; // Indicates whether kernels should be ran for building zlut, z computing, or QI
 		Device* device;
 
-		Threads::Mutex mutex; // Mutex to lock when queing jobs or copying results
-		void lock() { mutex.lock(); }
-		void unlock() { mutex.unlock(); }
-
 		enum State {
 			StreamIdle,
 			StreamExecuting
 		};
-		volatile State state; // I'm assuming this variable is atomic
+		State state; // I'm assuming this variable is atomic
+		Threads::Mutex imageBufMutex;
 	};
 
 	int numThreads;
@@ -166,6 +163,8 @@ protected:
 	std::vector<Stream*> streams;
 	Stream* currentStream;
 	std::list<LocalizationResult> results;
+	int resultCount;
+	Threads::Mutex resultMutex;
 	std::vector<Device*> devices;
 	bool useTextureCache; // speed up, but more numerical errors
 	
@@ -175,6 +174,9 @@ protected:
 	KernelParams kernelParams;
 
 	Threads::Handle *schedulingThread;
+	volatile bool quitScheduler, flushAllBatches;
+	void SchedulingThreadMain();
+	static void SchedulingThreadEntryPoint(void *param);
 
 	int FetchResults();
 	template<typename TImageSampler> void ExecuteBatch(Stream *s);

@@ -3,7 +3,10 @@ Quadrant Interpolation on CUDA
 
 Method:
 
--Batch images into host-side buffer
+-Load images into host-side image buffer
+
+-Scheduling thread executes any batch that is filled
+
 -Running batch:
 	- Async copy host-side buffer to device
 	- Bind image
@@ -20,10 +23,8 @@ Method:
 	- Unbind image
 	- Async copy results to host
 
-
 Issues:
 - Due to FPU operations on texture coordinates, there are small numerical differences between localizations of the same image at a different position in the batch
-- 
 */
 #include "std_incl.h"
 #include <algorithm>
@@ -217,10 +218,17 @@ QueuedCUDATracker::QueuedCUDATracker(const QTrkComputedConfig& cc, int batchSize
 
 	batchesDone = 0;
 	useTextureCache = true;
+	resultCount = 0;
+
+	quitScheduler=false;
+	schedulingThread = Threads::Create(SchedulingThreadEntryPoint, this);
 }
 
 QueuedCUDATracker::~QueuedCUDATracker()
 {
+	quitScheduler=true;
+	Threads::WaitAndClose(schedulingThread);
+
 	DeleteAllElems(streams);
 	DeleteAllElems(devices);	
 }
@@ -229,6 +237,28 @@ QueuedCUDATracker::Device::~Device()
 {
 	cudaSetDevice(index);
 	zlut.free();
+}
+
+void QueuedCUDATracker::SchedulingThreadEntryPoint(void *param)
+{
+	((QueuedCUDATracker*)param)->SchedulingThreadMain();
+}
+
+void QueuedCUDATracker::SchedulingThreadMain()
+{
+	while (!quitScheduler) {
+
+		bool flushing = flushAllBatches;
+		for (int i=0;i<streams.size();i++) 
+		{
+			// Launch filled batches, or if flushing launch every batch with nonzero jobs
+
+		}
+		if (flushing) {
+			flushAllBatches=false;
+		}
+		Threads::Sleep(1);
+	}
 }
 
 
@@ -328,7 +358,7 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream(Device* device)
 }
 
 
- // get a stream that not currently executing, and still has room for images
+ // get a stream that is not currently executing, and still has room for images
 QueuedCUDATracker::Stream* QueuedCUDATracker::GetReadyStream()
 {
 	if (currentStream && currentStream->state != Stream::StreamExecuting && 
@@ -355,12 +385,6 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::GetReadyStream()
 }
 
 
-
-void QueuedCUDATracker::ClearResults()
-{
-	FetchResults();
-	results.clear();
-}
 
 
 // All streams on StreamIdle?
@@ -435,17 +459,7 @@ void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 
 void QueuedCUDATracker::Flush()
 {
-	if (currentStream && currentStream->state == Stream::StreamIdle) {
-		currentStream->lock();
-
-		if (useTextureCache) 
-			ExecuteBatch<ImageSampler_Tex> (currentStream);
-		else 
-			ExecuteBatch<ImageSampler_MemCopy> (currentStream);
-
-		currentStream->unlock();
-		currentStream = 0;
-	}
+	flushAllBatches = true;
 }
 
 
@@ -659,9 +673,9 @@ int QueuedCUDATracker::FetchResults()
 
 void QueuedCUDATracker::CopyStreamResults(Stream *s)
 {
+	resultMutex.lock();
 	for (int a=0;a<s->JobCount();a++) {
 		LocalizationJob& j = s->jobs[a];
-
 		LocalizationResult r;
 		r.job = j;
 		r.firstGuess =  vector2f( s->com[a].x, s->com[a].y );
@@ -671,6 +685,7 @@ void QueuedCUDATracker::CopyStreamResults(Stream *s)
 
 		results.push_back(r);
 	}
+	resultMutex.unlock();
 
 	// Update times
 	float qi, com, imagecopy, zcomp, getResults;
@@ -692,13 +707,14 @@ void QueuedCUDATracker::CopyStreamResults(Stream *s)
 
 int QueuedCUDATracker::PollFinished(LocalizationResult* dstResults, int maxResults)
 {
-	FetchResults();
-
+	resultMutex.lock();
 	int numResults = 0;
 	while (numResults < maxResults && !results.empty()) {
 		dstResults[numResults++] = results.front();
 		results.pop_front();
+		resultCount++;
 	}
+	resultMutex.unlock();
 	return numResults;
 }
 
@@ -761,7 +777,18 @@ float* QueuedCUDATracker::GetZLUT(int *count, int* planes)
 
 int QueuedCUDATracker::GetResultCount()
 {
-	return FetchResults();
+	resultMutex.lock();
+	int r = resultCount;
+	resultMutex.unlock();
+	return r;
+}
+
+void QueuedCUDATracker::ClearResults()
+{
+	resultMutex.lock();
+	results.clear();
+	resultCount=0;
+	resultMutex.unlock();
 }
 
 
