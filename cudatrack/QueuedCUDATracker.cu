@@ -7,6 +7,12 @@ Method:
 
 -Scheduling thread executes any batch that is filled
 
+- Mutexes:
+	* JobQueueMutex: controlling access to state and jobs. 
+		Used by ScheduleLocalization, scheduler thread, and GetQueueLen
+	* ResultMutex: controlling access to the results list, 
+		locked by the scheduler whenever results come available, and by calling threads when they run GetResults/Count
+
 -Running batch:
 	- Async copy host-side buffer to device
 	- Bind image
@@ -213,7 +219,6 @@ QueuedCUDATracker::QueuedCUDATracker(const QTrkComputedConfig& cc, int batchSize
 		throw;
 	}
 
-	currentStream=streams[0];
 	streams[0]->OutputMemoryUse();
 
 	batchesDone = 0;
@@ -246,17 +251,44 @@ void QueuedCUDATracker::SchedulingThreadEntryPoint(void *param)
 
 void QueuedCUDATracker::SchedulingThreadMain()
 {
+	std::vector<Stream*> activeStreams;
+
 	while (!quitScheduler) {
-
-		bool flushing = flushAllBatches;
+		jobQueueMutex.lock();
+		Stream* s = 0;
 		for (int i=0;i<streams.size();i++) 
-		{
-			// Launch filled batches, or if flushing launch every batch with nonzero jobs
+			if (streams[i]->state == Stream::StreamPendingExec) {
+				s=streams[i];
+				break;
+			}
+		jobQueueMutex.unlock();
 
+		if (s) {
+			s->imageBufMutex.lock();
+			// Launch filled batches, or if flushing launch every batch with nonzero jobs
+			if (useTextureCache)
+				ExecuteBatch<ImageSampler_Tex> (s);
+			else
+				ExecuteBatch<ImageSampler_MemCopy> (s);
+			s->imageBufMutex.unlock();
+			activeStreams.push_back(s);
 		}
-		if (flushing) {
-			flushAllBatches=false;
+
+		// Fetch results
+		for (int a=0;a<activeStreams.size();a++) {
+			Stream* s = activeStreams[a];
+			if (s->IsExecutionDone()) {
+				CopyStreamResults(s);
+				s->localizeFlags = 0; // reset this for the next batch
+				jobQueueMutex.lock();
+				s->jobs.clear();
+				s->state = Stream::StreamIdle;
+				jobQueueMutex.unlock();
+				activeStreams.erase(std::find(activeStreams.begin(),activeStreams.end(),s));
+				break;
+			}
 		}
+
 		Threads::Sleep(1);
 	}
 }
@@ -268,7 +300,7 @@ QueuedCUDATracker::Stream::Stream()
 	hostImageBuf = 0; 
 	images.data=0; 
 	stream=0;
-	state = StreamIdle;
+	state=StreamIdle;
 	localizeFlags=0;
 }
 
@@ -361,58 +393,42 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream(Device* device)
  // get a stream that is not currently executing, and still has room for images
 QueuedCUDATracker::Stream* QueuedCUDATracker::GetReadyStream()
 {
-	if (currentStream && currentStream->state != Stream::StreamExecuting && 
-		currentStream->jobs.size() < batchSize) {
-		return currentStream;
-	}
+	while (true) {
+		jobQueueMutex.lock();
 
-	// Find another stream that is ready
-	// First round: Check streams with current non-updated state. 
-	// Second round: Query the GPU again for updated stream state.
-	// Further rounds: Wait 1 ms and try again.
-	for (int i = 0; true; i ++) {
-		for (uint a=0;a<streams.size();a++) {
-			Stream *s = streams[a];
-			if (s->state != Stream::StreamExecuting) {
-				currentStream = s;
-				dbgprintf("Switching to stream %d\n", a);
-				return s;
-			}
+		Stream *best = 0;
+		for (int i=0;i<streams.size();i++) 
+		{
+			Stream*s = streams[i];
+			if (!best || (s->state == Stream::StreamIdle && s->JobCount() > best->JobCount()))
+				best = s;
 		}
-		FetchResults();
-		if (i > 0) Threads::Sleep(1);
+
+		jobQueueMutex.unlock();
+
+		if (best) 
+			return best;
+
+		Threads::Sleep(1);
 	}
 }
 
 
-
-
-// All streams on StreamIdle?
 bool QueuedCUDATracker::IsIdle()
 {
-	return CheckAllStreams(Stream::StreamIdle) && (!currentStream || currentStream->jobs.empty() ) && IsAsyncSchedulerIdle();
+	int ql = GetQueueLength(0);
+	return ql == 0;
 }
-
-
-bool QueuedCUDATracker::CheckAllStreams(Stream::State s)
-{
-	FetchResults();
-	for (uint a=0;a<streams.size();a++){
-		if (streams[a]->state != s)
-			return false;
-	}
-	return true;
-}
-
 
 int QueuedCUDATracker::GetQueueLength(int *maxQueueLen)
 {
+	jobQueueMutex.lock();
 	int qlen = 0;
 	for (uint a=0;a<streams.size();a++){
-		streams[a]->lock();
 		qlen += streams[a]->JobCount();
-		streams[a]->unlock();
 	}
+	jobQueueMutex.unlock();
+
 	if (maxQueueLen) {
 		*maxQueueLen = streams.size()*batchSize;
 	}
@@ -424,8 +440,8 @@ int QueuedCUDATracker::GetQueueLength(int *maxQueueLen)
 void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, const LocalizationJob* jobInfo )
 {
 	Stream* s = GetReadyStream();
-	s->lock();
 
+	jobQueueMutex.lock();
 	int jobIndex = s->jobs.size();
 	LocalizationJob job = *jobInfo;
 	job.locType = jobInfo->LocType();
@@ -437,29 +453,27 @@ void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 	s->zlutmapping[jobIndex].zlutIndex = jobInfo->zlutIndex;
 	s->zlutmapping[jobIndex].zlutPlane = jobInfo->zlutPlane;
 
+	if (s->jobs.size() == batchSize) {
+		s->state = Stream::StreamPendingExec;
+	}
+	jobQueueMutex.unlock();
+
+	s->imageBufMutex.lock();
 	// Copy the image to the batch image buffer (CPU side)
 	float* hostbuf = &s->hostImageBuf[cfg.height*cfg.width*jobIndex];
 	CopyImageToFloat(data, cfg.width, cfg.height, pitch, pdt, hostbuf);
-
-//	tmp = floatToNormalizedInt( (float*)hostbuf, cfg.width,cfg.height,(uchar)255);
-//	WriteJPEGFile(tmp, cfg.width,cfg.height, "writehostbuf2.jpg", 99);
-//	delete[] tmp;
-
-	// If batch is filled, copy the image to video memory asynchronously, and start the localization
-	if (s->jobs.size() == batchSize) {
-		if (useTextureCache)
-			ExecuteBatch<ImageSampler_Tex> (s);
-		else
-			ExecuteBatch<ImageSampler_MemCopy> (s);
-	}
-
-	s->unlock();
+	s->imageBufMutex.unlock();
 }
 
 
 void QueuedCUDATracker::Flush()
 {
-	flushAllBatches = true;
+	jobQueueMutex.lock();
+	for (int i=0;i<streams.size();i++) {
+		if(streams[i]->JobCount()>0) 
+			streams[i]->state = Stream::StreamPendingExec;
+	}
+	jobQueueMutex.unlock();
 }
 
 
@@ -652,24 +666,8 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 
 	// Make sure we can query the all done signal
 	cudaEventRecord(s->localizationDone, s->stream);
-
-	s->state = Stream::StreamExecuting;
 }
 
-
-int QueuedCUDATracker::FetchResults()
-{
-	for (uint a=0;a<streams.size();a++) {
-		Stream* s = streams[a];
-		if (s->state == Stream::StreamExecuting && s->IsExecutionDone()) {
-			s->lock();
-			CopyStreamResults(s);
-			s->state = Stream::StreamIdle;
-			s->unlock();
-		}
-	}
-	return results.size();
-}
 
 void QueuedCUDATracker::CopyStreamResults(Stream *s)
 {
@@ -700,9 +698,6 @@ void QueuedCUDATracker::CopyStreamResults(Stream *s)
 	time.zcompute += zcomp;
 	time.getResults += getResults;
 	batchesDone ++;
-	
-	s->jobs.clear();
-	s->localizeFlags = 0; // reset this for the next batch
 }
 
 int QueuedCUDATracker::PollFinished(LocalizationResult* dstResults, int maxResults)

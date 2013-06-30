@@ -114,6 +114,7 @@ protected:
 		cudaImageListf images; 
 		pinned_array<float, cudaHostAllocWriteCombined> hostImageBuf; // original image format pixel buffer
 		//pinned_array<float> hostImageBuf; // original image format pixel buffer
+		Threads::Mutex imageBufMutex;
 
 		// CUDA objects
 		cudaStream_t stream; // Stream used
@@ -141,10 +142,9 @@ protected:
 
 		enum State {
 			StreamIdle,
-			StreamExecuting
+			StreamPendingExec
 		};
-		State state; // I'm assuming this variable is atomic
-		Threads::Mutex imageBufMutex;
+		volatile State state;
 	};
 
 	int numThreads;
@@ -161,10 +161,9 @@ protected:
 	}
 
 	std::vector<Stream*> streams;
-	Stream* currentStream;
 	std::list<LocalizationResult> results;
 	int resultCount;
-	Threads::Mutex resultMutex;
+	Threads::Mutex resultMutex, jobQueueMutex;
 	std::vector<Device*> devices;
 	bool useTextureCache; // speed up, but more numerical errors
 	
@@ -174,7 +173,7 @@ protected:
 	KernelParams kernelParams;
 
 	Threads::Handle *schedulingThread;
-	volatile bool quitScheduler, flushAllBatches;
+	volatile bool quitScheduler;
 	void SchedulingThreadMain();
 	static void SchedulingThreadEntryPoint(void *param);
 
@@ -182,7 +181,6 @@ protected:
 	template<typename TImageSampler> void ExecuteBatch(Stream *s);
 	Stream* GetReadyStream(); // get a stream that not currently executing, and still has room for images
 	template<typename TImageSampler> void QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s, int angularSteps);
-	bool CheckAllStreams(Stream::State state);
 	void InitializeDeviceList();
 	Stream* CreateStream(Device* device);
 	void CopyStreamResults(Stream* s);
