@@ -157,7 +157,7 @@ QueuedCUDATracker::QueuedCUDATracker(const QTrkComputedConfig& cc, int batchSize
 
 	// We take numThreads to be the number of CUDA streams
 	if (cfg.numThreads < 1) {
-		cfg.numThreads = devices.size()*3;
+		cfg.numThreads = devices.size()*4;
 	}
 	int numStreams = cfg.numThreads;
 
@@ -280,7 +280,7 @@ bool QueuedCUDATracker::Stream::IsExecutionDone()
 
 void QueuedCUDATracker::Stream::OutputMemoryUse()
 {
-	int deviceMem = d_com.memsize() + d_zlutmapping.memsize() + d_QIprofiles.memsize() + d_QIprofiles_reverse.memsize() + d_radialprofiles.memsize() + d_imgmeans.memsize() +
+	int deviceMem = d_com.memsize() + d_zlutmapping.memsize() + d_QIprofiles.memsize() + d_QIprofiles_reverse.memsize() + d_radialprofiles.memsize() +
 		d_quadrants.memsize() + d_resultpos.memsize() + d_zlutcmpscores.memsize() + images.totalNumBytes();
 
 	int hostMem = hostImageBuf.memsize() + com.memsize() + zlutmapping.memsize() + results.memsize();
@@ -313,7 +313,6 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream(Device* device)
 		s->d_QIprofiles.init(batchSize*2*qi_FFT_length); // (2 axis) * (2 radialsteps) = 8 * nr = 2 * qi_FFT_length
 		s->d_QIprofiles_reverse.init(batchSize*2*qi_FFT_length);
 		s->d_radialprofiles.init(cfg.zlut_radialsteps*batchSize);
-		s->d_imgmeans.init(batchSize);
 		s->d_shiftbuffer.init(qi_FFT_length * batchSize);
 		
 		// 2* batchSize, since X & Y both need an FFT transform
@@ -501,7 +500,7 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 	if (0) {
 		dim3 qdrDim( (njobs + qdrThreads.x - 1) / qdrThreads.x, (cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y, 4 );
 		QI_ComputeQuadrants<TImageSampler> <<< qdrDim , qdrThreads, 0, s->stream >>> 
-			(njobs, s->images, initial->data, s->d_quadrants.data, s->d_imgmeans.data, kernelParams.qi);
+			(njobs, s->images, initial->data, s->d_quadrants.data, kernelParams.qi);
 
 		QI_QuadrantsToProfiles <<< blocks(njobs), threads(), 0, s->stream >>> 
 			(njobs, s->images, s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, kernelParams.qi);
@@ -511,7 +510,7 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 		qiparams.angularSteps = angularSteps;
 
 		QI_ComputeProfile <TImageSampler> <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
-			s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, s->d_imgmeans.data,  qiparams);
+			s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, qiparams);
 	}
 	/*
 	cudaStreamSynchronize(s->stream);
@@ -595,7 +594,7 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	TImageSampler::BindTexture(s->images);
 	{ ProfileBlock p("COM");
 	BgCorrectedCOM<TImageSampler> <<< blocks(s->JobCount()), threads(), 0, s->stream >>> 
-		(s->JobCount(), s->images, s->d_com.data, s->d_imgmeans.data, cfg.com_bgcorrection);
+		(s->JobCount(), s->images, s->d_com.data, cfg.com_bgcorrection);
 	checksum(s->d_com.data, 1, s->JobCount(), "com");
 	}
 	cudaEventRecord(s->comDone, s->stream);
@@ -624,7 +623,7 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 				(cfg.zlut_radialsteps + numThreads.y - 1) / numThreads.y);
 		{ ProfileBlock p("ZLUT radial profile");
 		ZLUT_RadialProfileKernel<TImageSampler> <<< numBlocks , numThreads, 0, s->stream >>>
-			(s->JobCount(), s->images, kernelParams.zlut, curpos->data, s->d_radialprofiles.data,  s->d_imgmeans.data); }
+			(s->JobCount(), s->images, kernelParams.zlut, curpos->data, s->d_radialprofiles.data); }
 
 		{ ProfileBlock p("ZLUT normalize profiles");
 		ZLUT_NormalizeProfiles<<< blocks(s->JobCount()), threads(), 0, s->stream >>> (s->JobCount(), kernelParams.zlut, s->d_radialprofiles.data); }
@@ -801,7 +800,7 @@ std::string QueuedCUDATracker::GetProfileReport()
 {
 	float f = 1.0f/batchesDone;
 
-	return deviceReport + "Profiling: \n" +
+	return deviceReport + "GPU time profiling: \n" +
 		SPrintf("%d batches done of size %d, on %d streams", batchesDone, batchSize, streams.size()) + "\n" +
 		SPrintf("Image copying: %f ms per image\n", time_imageCopy*f) +
 		SPrintf("QI: %f ms per image\n", time_QI*f) +

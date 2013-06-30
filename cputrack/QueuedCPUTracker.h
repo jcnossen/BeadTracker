@@ -15,7 +15,6 @@ public:
 	void Break(bool pause);
 	void GenerateTestImage(float* dst, float xp, float yp, float z, float photoncount);
 	int NumThreads() { return cfg.numThreads; }
-	int GetQueueLength(int *maxQueueLength=0) override; // In queue + in progress
 
 	// QueuedTracker interface
 	void SetZLUT(float* data, int num_zluts, int planes, float* zcmp=0) override;
@@ -25,6 +24,7 @@ public:
 	void ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
 		const LocalizationJob *jobInfo) override;
 	
+	int GetQueueLength(int *maxQueueLength=0) override; // In queue + in progress
 	int PollFinished(LocalizationResult* results, int maxResults) override;
 	void ClearResults() override;
 	void Flush() override { };

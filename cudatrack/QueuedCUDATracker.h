@@ -133,7 +133,6 @@ protected:
 		
 		device_vec<float> d_radialprofiles;// [ radialsteps * njobs ] for Z computation
 		device_vec<float> d_zlutcmpscores; // [ zlutplanes * njobs ]
-		device_vec<float> d_imgmeans; // image mean value [njobs]
 
 		device_vec<float> d_shiftbuffer; // [QI_fftlength * njobs] ComputeMaxInterp temp space
 
