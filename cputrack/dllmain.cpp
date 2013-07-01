@@ -8,7 +8,6 @@
 
 
 
-
 int __stdcall DllMain (void *hinstDLL, int fdwReason, void *lpvReserved)
 {
 	if (fdwReason == DLL_PROCESS_ATTACH)

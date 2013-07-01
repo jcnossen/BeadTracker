@@ -11,6 +11,22 @@
 #include "LsqQuadraticFit.h"
 #include "QueuedTracker.h"
 
+std::string GetLocalModuleFilename()
+{
+#ifdef WIN32
+	char path[256];
+	HMODULE hm = NULL;
+
+    GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                            (LPCSTR) &GetLocalModuleFilename, &hm);
+
+    GetModuleFileNameA(hm, path, sizeof(path));
+	return path;
+#else
+	#error GetLocalModuleName() not implemented for this platform
+#endif
+}
+
 void DestroyQueuedTracker(QueuedTracker* qtrk)
 {
 	delete qtrk;
@@ -115,7 +131,7 @@ void ComputeCRP(float* dst, int radialSteps, int angularSteps, float minradius, 
 	}
 }
 
-
+// One-dimensional background corrected center-of-mass
 float ComputeBgCorrectedCOM1D(float *data, int len, float cf)
 {
 	float sum=0, sum2=0;
@@ -173,7 +189,7 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 			}
 		}
 
-		dst[i] = sum/nsamples;
+		dst[i] = nsamples > 0 ? sum/nsamples : 0;
 		totalsum += sum;
 		totalsmp += nsamples;
 	}

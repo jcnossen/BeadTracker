@@ -167,6 +167,10 @@ CDLL_EXPORT void qtrk_queue_u8(QueuedTracker* qtrk, ErrorCluster* error, LVArray
 {
 	if (CheckImageInput(qtrk, data, error))
 	{
+#ifdef _DEBUG
+	dbgprintf("Job: 8bit image, frame %d, bead %d, zplane %d\n", jobInfo->frame, jobInfo->zlutIndex, jobInfo->zlutPlane);
+#endif
+
 		qtrk->ScheduleLocalization( (*data)->elem, sizeof(uchar)*(*data)->dimSizes[1], QTrkU8, jobInfo);
 	}
 }

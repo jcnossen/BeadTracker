@@ -183,3 +183,9 @@ void WriteJPEGFile(uchar* data,int w,int h, const char * filename, int quality)
 }
 
 
+void FloatToJPEGFile (const char *name, float* d, int w,int h)
+{
+	uchar* zlut_bytes = floatToNormalizedInt(d, w,h, (uchar)255);
+	WriteJPEGFile(zlut_bytes, w, h, name, 99);
+	delete[] zlut_bytes;
+}

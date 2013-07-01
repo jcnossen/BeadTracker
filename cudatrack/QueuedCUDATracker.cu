@@ -770,8 +770,15 @@ float* QueuedCUDATracker::GetZLUT(int *count, int* planes)
 	float* data = new float[zlut->h * cfg.zlut_radialsteps * zlut->count];
 	if (zlut->data) {
 		//zlut->copyToHost(data, false);
-		for (int i=0;i<zlut->count;i++)
-			zlut->copyImageToHost(i, &data[i*cfg.zlut_radialsteps*zlut->h]);
+		for (int i=0;i<zlut->count;i++) {
+			float* img = &data[i*cfg.zlut_radialsteps*zlut->h];
+			zlut->copyImageToHost(i, img);
+
+		#ifdef _DEBUG
+			std::string path = SPrintf("D:\\labview\\jelmer\\version ctrl\\bin\\zlut-bead%d.jpg",  i);
+			FloatToJPEGFile(path.c_str(), img, cfg.zlut_radialsteps, zlut->h);	
+		#endif
+		}
 	} else
 		std::fill(data, data+(cfg.zlut_radialsteps*zlut->h*zlut->count), 0.0f);
 

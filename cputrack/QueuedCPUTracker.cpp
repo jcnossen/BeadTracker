@@ -337,10 +337,6 @@ void QueuedCPUTracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDa
 		j->job.locType &= ~(LocalizeBuildZLUT|LocalizeZ);
 	}
 
-#ifdef _DEBUG
-	dbgprintf("Scheduled job: frame %d, bead %d\n", j->job.zlutPlane, j->job.zlutIndex);
-#endif
-
 	AddJob(j);
 
 	if (noThreadTracker) {

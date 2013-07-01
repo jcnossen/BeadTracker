@@ -442,7 +442,7 @@ void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, 
 			}
 		}
 
-		dst[i] = sum/nPixels;
+		dst[i] = nPixels>0 ? sum/nPixels : 0;
 		total += dst[i];
 	}
 }

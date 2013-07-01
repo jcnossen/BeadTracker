@@ -44,7 +44,7 @@ __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, float* d
 			}
 		}
 
-		dst[i] = sum/count;
+		dst[i] = count > 0 ? sum/count : 0;
 		total += dst[i];
 	}
 }
@@ -383,7 +383,7 @@ __global__ void ZLUT_RadialProfileKernel(int njobs, cudaImageListf images, ZLUTP
 		sum += TImageSampler::Interpolated(images, x,y, jobIdx, outside);
 		if (!outside) count++;
 	}
-	dstprof [radialIdx] = sum/count;
+	dstprof [radialIdx] = count>0 ? sum/count : 0;
 }
 
 

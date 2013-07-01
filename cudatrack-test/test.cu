@@ -104,13 +104,6 @@ void TestSharedMem()
 	dbgprintf("Speed of shared comp: %f, speed of global comp: %f\n", n/(t2-t1), n/(t1-t0));
 }
 
-void FloatToJPEGFile (const char *name, float* d, int w,int h)
-{
-	uchar* zlut_bytes = floatToNormalizedInt(d, w,h, (uchar)255);
-	WriteJPEGFile(zlut_bytes, w, h, name, 99);
-	delete[] zlut_bytes;
-}
-
 void QTrkCompareTest()
 {
 	QTrkSettings cfg;
