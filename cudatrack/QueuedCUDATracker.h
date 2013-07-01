@@ -142,7 +142,8 @@ protected:
 
 		enum State {
 			StreamIdle,
-			StreamPendingExec
+			StreamPendingExec,
+			StreamExecuting
 		};
 		volatile State state;
 	};

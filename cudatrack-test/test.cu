@@ -111,7 +111,7 @@ void FloatToJPEGFile (const char *name, float* d, int w,int h)
 	delete[] zlut_bytes;
 }
 
-void QTrkTest()
+void QTrkCompareTest()
 {
 	QTrkSettings cfg;
 	cfg.width = cfg.height = 120;
@@ -459,12 +459,6 @@ SpeedInfo SpeedCompareTest(int w)
 	std::string report = cudatrk->GetProfileReport();
 	delete cudatrk;
 
-	auto profiling = QueuedCUDATracker::GetProfilingResults();
-	for (auto i = profiling.begin(); i != profiling.end(); ++i) {
-		auto r = i->second;
-		dbgprintf("%s took %f ms on average\n", i->first, 1000*r.second/r.first);
-	}
-
 	dbgprintf("CPU tracking speed: %d img/s\n", (int)info.speed_cpu);
 	dbgprintf("GPU tracking speed: %d img/s\n", (int)info.speed_gpu);
 
@@ -748,6 +742,37 @@ void MultipleLUTTest()
 	delete qtrk;
 }
 
+
+void BasicQTrkTest()
+{
+	QTrkComputedConfig cc;
+	cc.width = cc.height = 80;
+	QueuedCUDATracker qtrk(cc);
+
+	float zmin=1,zmax=5;
+	float* image=new float[cc.width*cc.height];
+	GenerateTestImage(ImageData(image, cc.width, cc.height), cc.width/2, cc.height/2, (zmin+zmax)/2, 0);
+	
+	int N=1000;
+	for (int i=0;i<N;i++)
+	{
+		LocalizationJob job (LocalizeQI, i, 0, 0, 0);
+		qtrk.ScheduleLocalization((uchar*)image, sizeof(float)*cc.width, QTrkFloat, &job);
+	}
+
+	qtrk.Flush();
+
+	int displayrc=0,rc=0;
+	while ( (rc = qtrk.GetResultCount ()) != N) {
+		while (displayrc<rc) {
+			if( displayrc%(N/10)==0) dbgprintf("Done: %d / %d\n", displayrc, N);
+			displayrc++;
+		}
+		Threads::Sleep(50);
+	}
+
+}
+
 int main(int argc, char *argv[])
 {
 	listDevices();
@@ -757,8 +782,10 @@ int main(int argc, char *argv[])
 
 	//MultipleLUTTest();
 
+	BasicQTrkTest();
+
 	//CompareAccuracy();
-	QTrkTest();
+	//QTrkCompareTest();
 //	ProfileSpeedVsROI();
 ///	auto info = SpeedCompareTest(80);
 	//dbgprintf("CPU: %f, GPU: %f, GPU(tc): %f\n", info.cpu, info.gpu, info.gputex); 

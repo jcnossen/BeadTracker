@@ -259,12 +259,15 @@ void QueuedCUDATracker::SchedulingThreadMain()
 		for (int i=0;i<streams.size();i++) 
 			if (streams[i]->state == Stream::StreamPendingExec) {
 				s=streams[i];
+				s->state = Stream::StreamExecuting;
+				dbgprintf("Executing stream [%d]\n", i);
 				break;
 			}
 		jobQueueMutex.unlock();
 
 		if (s) {
 			s->imageBufMutex.lock();
+
 			// Launch filled batches, or if flushing launch every batch with nonzero jobs
 			if (useTextureCache)
 				ExecuteBatch<ImageSampler_Tex> (s);
@@ -395,7 +398,7 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::GetReadyStream()
 {
 	while (true) {
 		jobQueueMutex.lock();
-
+		
 		Stream *best = 0;
 		for (int i=0;i<streams.size();i++) 
 		{
@@ -683,6 +686,8 @@ void QueuedCUDATracker::CopyStreamResults(Stream *s)
 
 		results.push_back(r);
 	}
+	resultCount+=s->JobCount();
+	dbgprintf("Result count: %d\n", resultCount);
 	resultMutex.unlock();
 
 	// Update times
