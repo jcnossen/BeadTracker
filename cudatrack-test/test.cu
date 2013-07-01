@@ -719,7 +719,7 @@ void MultipleLUTTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int numBeads,
 
 void MultipleLUTTest()
 {
-	QTrkSettings cfg;
+	QTrkComputedConfig cfg;
 	cfg.width = cfg.height = 80;
 	cfg.qi_iterations = 4;
 	//std::vector<int> devices(1); devices[0]=1;
@@ -727,6 +727,9 @@ void MultipleLUTTest()
 	cfg.cuda_device = QTrkCUDA_UseBest;
 	cfg.numThreads = -1;
 	cfg.com_bgcorrection = 0.0f;
+	cfg.zlut_radial_coverage = 3;
+	cfg.Update();
+
 
 	QueuedCUDATracker* qtrk = new QueuedCUDATracker(cfg);
 	//QueuedCPUTracker* qtrk = new QueuedCPUTracker(&cfg);
@@ -774,9 +777,9 @@ int main(int argc, char *argv[])
 
 	//TestTextureFetch();
 
-	//MultipleLUTTest();
+	MultipleLUTTest();
 
-	BasicQTrkTest();
+	//BasicQTrkTest();
 
 	//CompareAccuracy();
 	//QTrkCompareTest();
