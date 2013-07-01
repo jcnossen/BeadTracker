@@ -285,7 +285,7 @@ void TestAsync()
 
 	device_vec<float> A(N);
 
-	cudaStream_t s0, s1;
+	cudaStream_t s0;
 	cudaEvent_t done;
 
 	cudaStreamCreate(&s0);
@@ -314,7 +314,7 @@ void TestAsync()
 __global__ void emptyKernel()
 {}
 
-float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool haveZLUT, LocalizeType locType, float* scheduleTime, bool asyncSchedule)
+float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool haveZLUT, LocalizeType locType, float* scheduleTime)
 {
 	float *image = new float[cfg.width*cfg.height];
 	srand(1);
@@ -359,12 +359,8 @@ float SpeedTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int count, bool ha
 		double t0 = GetPreciseTime();
 		///qtrk->ScheduleLocalization((uchar*)image, cfg.width*sizeof(float), QTrkFloat, flags, n, 0, 0, 0, 0);
 		ROIPosition roipos[]={ {0,0} };
-		LocalizationJob job;
-		job.frame = n;
-		if (asyncSchedule)
-			qtrk->ScheduleFrameAsync((uchar*)image, cfg.width*sizeof(float),cfg.width,cfg.height, roipos, 1, QTrkFloat, &job);
-		else 
-			qtrk->ScheduleFrame((uchar*)image, cfg.width*sizeof(float),cfg.width,cfg.height, roipos, 1, QTrkFloat, &job);
+		LocalizationJob job(flags, n, 0, 0,0);
+		qtrk->ScheduleFrame((uchar*)image, cfg.width*sizeof(float),cfg.width,cfg.height, roipos, 1, QTrkFloat, &job);
 		double dt = GetPreciseTime() - t0;
 		maxScheduleTime = std::max(maxScheduleTime, dt);
 		sumScheduleTime += dt;
@@ -450,11 +446,11 @@ SpeedInfo SpeedCompareTest(int w)
 
 	SpeedInfo info;
 	QueuedCPUTracker *cputrk = new QueuedCPUTracker(cfg);
-	info.speed_cpu = SpeedTest(cfg, cputrk, count, haveZLUT, locType, &info.sched_cpu, true);
+	info.speed_cpu = SpeedTest(cfg, cputrk, count, haveZLUT, locType, &info.sched_cpu);
 	delete cputrk;
 
 	QueuedCUDATracker *cudatrk = new QueuedCUDATracker(cfg, cudaBatchSize);
-	info.speed_gpu = SpeedTest(cfg, cudatrk, count, haveZLUT, locType, &info.sched_gpu, true);
+	info.speed_gpu = SpeedTest(cfg, cudatrk, count, haveZLUT, locType, &info.sched_gpu);
 	//info.speed_gpu = SpeedTest(cfg, cudatrk, count, haveZLUT, locType, &info.sched_gpu);
 	std::string report = cudatrk->GetProfileReport();
 	delete cudatrk;
@@ -508,7 +504,6 @@ std::vector<vector3f> LocalizeGeneratedImages(const QTrkSettings& cfg, QueuedTra
 		}
 	}
 	qtrk->ClearResults();
-	int rc = 0, displayrc=0;
 	for (int n=0;n<count;n++) {
 		vector3f pos = positions[n];
 		LocalizeType flags = (LocalizeType)(locType| (haveZLUT ? LocalizeZ : 0) );
@@ -695,11 +690,8 @@ void MultipleLUTTest(const QTrkSettings& cfg, QueuedTracker* qtrk, int numBeads,
 			positions[i].push_back(pos);
 
 			GenerateTestImage(ImageData(image, cfg.width, cfg.height), pos.x, pos.y, pos.z, 0);
-			LocalizeType flags = (LocalizeType)(locType| LocalizeZ);
-
 			ROIPosition roipos[]={ {0,0} };
-			LocalizationJob job;
-			job.frame = n;
+			LocalizationJob job((LocalizeType)(locType| LocalizeZ), n, 0, 0, 0);
 			qtrk->ScheduleFrame((uchar*)image, cfg.width*sizeof(float),cfg.width,cfg.height, roipos, 1, QTrkFloat, &job);
 			if (n % 10 == 0) {
 				rc = qtrk->GetResultCount();
@@ -747,13 +739,14 @@ void BasicQTrkTest()
 {
 	QTrkComputedConfig cc;
 	cc.width = cc.height = 80;
+	cc.Update();
 	QueuedCUDATracker qtrk(cc);
 
 	float zmin=1,zmax=5;
 	float* image=new float[cc.width*cc.height];
 	GenerateTestImage(ImageData(image, cc.width, cc.height), cc.width/2, cc.height/2, (zmin+zmax)/2, 0);
 	
-	int N=1000;
+	int N=4000;
 	for (int i=0;i<N;i++)
 	{
 		LocalizationJob job (LocalizeQI, i, 0, 0, 0);
@@ -771,6 +764,7 @@ void BasicQTrkTest()
 		Threads::Sleep(50);
 	}
 
+	delete[] image;
 }
 
 int main(int argc, char *argv[])

@@ -126,8 +126,6 @@ struct QTrkComputedConfig : public QTrkSettings
 	float qi_maxradius;
 };
 
-class AsyncScheduler;
-
 // Abstract tracker interface, implementated by QueuedCUDATracker and QueuedCPUTracker
 class QueuedTracker
 {
@@ -159,11 +157,6 @@ public:
 	QTrkComputedConfig cfg;
 
 	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, LocalizeType locType, uint frame, uint timestamp, vector3f* initial, uint zlutIndex, uint zlutPlane);
-	void ScheduleFrameAsync(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo);
-	bool IsAsyncScheduleDone(uchar* imgptr);
-	bool IsAsyncSchedulerIdle();
-protected:
-	AsyncScheduler* asyncScheduler;	
 };
 
 void CopyImageToFloat(uchar* data, int width, int height, int pitch, QTRK_PixelDataType pdt, float* dst);

@@ -47,7 +47,6 @@ struct Threads
 #undef max
 #undef min
 
-
 struct Threads
 {
 	typedef void (*ThreadEntryPoint)(void* param);
@@ -60,10 +59,19 @@ struct Threads
 
 	struct Mutex {
 		HANDLE h;
-		Mutex() { h=CreateMutex(0,FALSE,0); }
-		~Mutex() { CloseHandle(h); }
-		void lock() { WaitForSingleObject(h, INFINITE); }
-		void unlock() { ReleaseMutex(h); }
+		std::string name;
+		bool trace;
+		Mutex(const char*name=0) : name(name?name:"") { msg("create"); h=CreateMutex(0,FALSE,0); trace=false;}
+		~Mutex() { msg("end");  CloseHandle(h); }
+		void lock() { msg("lock"); WaitForSingleObject(h, INFINITE); }
+		void unlock() { msg("unlock"); ReleaseMutex(h); }
+		void msg(const char* m) {
+			if(name.length()>0 && trace) {
+				char buf[32];
+				SNPRINTF(buf, sizeof(buf), "mutex %s: %s\n", name.c_str(), m);
+				OutputDebugString(buf);
+			}
+		}
 	};
 
 	static DWORD WINAPI ThreadCaller (void *param) {

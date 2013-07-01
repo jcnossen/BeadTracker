@@ -227,19 +227,8 @@ CDLL_EXPORT uint qtrk_queue_frame(QueuedTracker* qtrk, uchar* image, int pitch, 
 	if (flags & (QFF_ReadTimestampFromFrame | QFF_ReadTimestampFromFrameRev)) 
 		jobInfo.timestamp = qtrk_read_timestamp(image, w,h, flags);
 
-	if (flags & QFF_Async) {
-		qtrk->ScheduleFrameAsync(image, pitch, w,h, pos, numROI, (QTRK_PixelDataType)pdt, &jobInfo);
-	} else
-		qtrk->ScheduleFrame(image, pitch, w,h, pos, numROI, (QTRK_PixelDataType)pdt, &jobInfo);
+	qtrk->ScheduleFrame(image, pitch, w,h, pos, numROI, (QTRK_PixelDataType)pdt, &jobInfo);
 	return jobInfo.timestamp;
-}
-
-CDLL_EXPORT void qtrk_wait_for_queue_frame(QueuedTracker* qtrk, uchar* imgptr, ErrorCluster* e)
-{
-	if (ValidateTracker(qtrk, e, "wait for queue frame")) {
-		while (!qtrk->IsAsyncScheduleDone(imgptr)) {
-		}
-	}
 }
 
 CDLL_EXPORT void qtrk_clear_results(QueuedTracker* qtrk, ErrorCluster* e)

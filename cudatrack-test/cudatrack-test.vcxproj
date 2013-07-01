@@ -110,7 +110,6 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <CudaCompile Include="test.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\cputrack\AsyncScheduler.h" />
     <ClInclude Include="..\cputrack\cpu_tracker.h" />
     <ClInclude Include="..\cputrack\QueuedCPUTracker.h" />
     <ClInclude Include="..\cputrack\QueuedTracker.h" />

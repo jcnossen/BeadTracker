@@ -17,7 +17,7 @@ static int PDT_BytesPerPixel(QTRK_PixelDataType pdt) {
 
 bool QueuedCPUTracker::IsIdle()
 {
-	return IsAsyncSchedulerIdle() && GetQueueLength() == 0;
+	return GetQueueLength() == 0;
 }
 
 int QueuedCPUTracker::GetResultCount()
@@ -96,6 +96,7 @@ int QueuedCPUTracker::GetQueueLength(int *maxQueueLength)
 }
 
 QueuedCPUTracker::QueuedCPUTracker(const QTrkComputedConfig& cc) 
+	: jobs_mutex("jobs"), jobs_buffer_mutex("jobs_buffer"), results_mutex("results")
 {
 	cfg = cc;
 	quitWork = false;

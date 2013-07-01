@@ -99,7 +99,7 @@ protected:
 	};
 
 	struct Stream {
-		Stream();
+		Stream(int streamIndex);
 		~Stream();
 		bool IsExecutionDone();
 		void OutputMemoryUse();
@@ -183,7 +183,7 @@ protected:
 	Stream* GetReadyStream(); // get a stream that not currently executing, and still has room for images
 	template<typename TImageSampler> void QI_Iterate(device_vec<float3>* initial, device_vec<float3>* newpos, Stream *s, int angularSteps);
 	void InitializeDeviceList();
-	Stream* CreateStream(Device* device);
+	Stream* CreateStream(Device* device, int streamIndex);
 	void CopyStreamResults(Stream* s);
 	void StreamUpdateZLUTSize(Stream *s);
 

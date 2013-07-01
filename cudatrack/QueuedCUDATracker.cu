@@ -147,6 +147,7 @@ void QueuedCUDATracker::InitializeDeviceList()
 
 
 QueuedCUDATracker::QueuedCUDATracker(const QTrkComputedConfig& cc, int batchSize) 
+	: resultMutex("result"), jobQueueMutex("jobqueue")
 {
 	cfg = cc;
 
@@ -212,7 +213,7 @@ QueuedCUDATracker::QueuedCUDATracker(const QTrkComputedConfig& cc, int batchSize
 	streams.reserve(numStreams);
 	try {
 		for (int i=0;i<numStreams;i++)
-			streams.push_back( CreateStream( devices[i%devices.size()] ) );
+			streams.push_back( CreateStream( devices[i%devices.size()], i ) );
 	}
 	catch(...) {
 		DeleteAllElems(streams);
@@ -260,7 +261,7 @@ void QueuedCUDATracker::SchedulingThreadMain()
 			if (streams[i]->state == Stream::StreamPendingExec) {
 				s=streams[i];
 				s->state = Stream::StreamExecuting;
-				dbgprintf("Executing stream [%d]\n", i);
+			//	dbgprintf("Executing stream %p [%d]. %d jobs\n", s, i, s->JobCount());
 				break;
 			}
 		jobQueueMutex.unlock();
@@ -281,6 +282,7 @@ void QueuedCUDATracker::SchedulingThreadMain()
 		for (int a=0;a<activeStreams.size();a++) {
 			Stream* s = activeStreams[a];
 			if (s->IsExecutionDone()) {
+		//		dbgprintf("Stream %p done.\n", s);
 				CopyStreamResults(s);
 				s->localizeFlags = 0; // reset this for the next batch
 				jobQueueMutex.lock();
@@ -297,7 +299,8 @@ void QueuedCUDATracker::SchedulingThreadMain()
 }
 
 
-QueuedCUDATracker::Stream::Stream()
+QueuedCUDATracker::Stream::Stream(int streamIndex)
+	: imageBufMutex(SPrintf("imagebuf%d", streamIndex).c_str())
 { 
 	device = 0;
 	hostImageBuf = 0; 
@@ -343,9 +346,9 @@ void QueuedCUDATracker::Stream::OutputMemoryUse()
 }
 
 
-QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream(Device* device)
+QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream(Device* device, int streamIndex)
 {
-	Stream* s = new Stream();
+	Stream* s = new Stream(streamIndex);
 
 	try {
 		s->device = device;
@@ -403,8 +406,11 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::GetReadyStream()
 		for (int i=0;i<streams.size();i++) 
 		{
 			Stream*s = streams[i];
-			if (!best || (s->state == Stream::StreamIdle && s->JobCount() > best->JobCount()))
-				best = s;
+
+			if (s->state == Stream::StreamIdle) {
+				if (!best || (s->JobCount() > best->JobCount()))
+					best = s;
+			}
 		}
 
 		jobQueueMutex.unlock();
@@ -456,9 +462,8 @@ void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 	s->zlutmapping[jobIndex].zlutIndex = jobInfo->zlutIndex;
 	s->zlutmapping[jobIndex].zlutPlane = jobInfo->zlutPlane;
 
-	if (s->jobs.size() == batchSize) {
+	if (s->jobs.size() == batchSize)
 		s->state = Stream::StreamPendingExec;
-	}
 	jobQueueMutex.unlock();
 
 	s->imageBufMutex.lock();
@@ -466,6 +471,8 @@ void QueuedCUDATracker::ScheduleLocalization(uchar* data, int pitch, QTRK_PixelD
 	float* hostbuf = &s->hostImageBuf[cfg.height*cfg.width*jobIndex];
 	CopyImageToFloat(data, cfg.width, cfg.height, pitch, pdt, hostbuf);
 	s->imageBufMutex.unlock();
+
+	//dbgprintf("Job: %d\n", jobIndex);
 }
 
 
@@ -473,7 +480,7 @@ void QueuedCUDATracker::Flush()
 {
 	jobQueueMutex.lock();
 	for (int i=0;i<streams.size();i++) {
-		if(streams[i]->JobCount()>0) 
+		if(streams[i]->JobCount()>0 && streams[i]->state != Stream::StreamExecuting)
 			streams[i]->state = Stream::StreamPendingExec;
 	}
 	jobQueueMutex.unlock();
@@ -687,7 +694,7 @@ void QueuedCUDATracker::CopyStreamResults(Stream *s)
 		results.push_back(r);
 	}
 	resultCount+=s->JobCount();
-	dbgprintf("Result count: %d\n", resultCount);
+//	dbgprintf("Result count: %d\n", resultCount);
 	resultMutex.unlock();
 
 	// Update times
