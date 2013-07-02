@@ -11,6 +11,7 @@ ResultManager::ResultManager(const char *outfile, const char* frameInfoFile, Res
 	startFrame = 0;
 	lastSaveFrame = 0;
 	processedFrames = 0;
+	capturedFrames = 0;
 
 	qtrk = 0;
 
@@ -206,7 +207,7 @@ void ResultManager::GetFrameCounters(int* startFrame, int *processedFrames, int 
 
 	if (capturedFrames) {
 		resultMutex.lock();
-		*capturedFrames = this->frameResults.size();
+		*capturedFrames = this->capturedFrames;
 		resultMutex.unlock();
 	}
 }
@@ -239,7 +240,7 @@ int ResultManager::StoreFrameInfo(double timestamp, float* columns)
 	for(int i=0;i<config.numFrameInfoColumns;i++)
 		fr->frameInfo[i]=columns[i];
 	frameResults.push_back (fr);
-	int nfr = frameResults.size();
+	int nfr = ++capturedFrames;
 	resultMutex.unlock();
 	return nfr;
 }
@@ -248,7 +249,7 @@ int ResultManager::StoreFrameInfo(double timestamp, float* columns)
 int ResultManager::GetFrameCount()
 {
 	resultMutex.lock();
-	int nfr = frameResults.size(); 
+	int nfr = capturedFrames;
 	resultMutex.unlock();
 	return nfr;
 }

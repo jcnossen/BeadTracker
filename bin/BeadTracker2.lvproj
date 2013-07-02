@@ -183,6 +183,7 @@
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
 				<Item Name="BuildHelpPath.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/BuildHelpPath.vi"/>
+				<Item Name="Bytes At Serial Port.vi" Type="VI" URL="/&lt;vilib&gt;/Instr/serial.llb/Bytes At Serial Port.vi"/>
 				<Item Name="Check if File or Folder Exists.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/libraryn.llb/Check if File or Folder Exists.vi"/>
 				<Item Name="Check Special Tags.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Check Special Tags.vi"/>
 				<Item Name="Clear Errors.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Clear Errors.vi"/>
@@ -257,6 +258,7 @@
 				<Item Name="NI_Vision_Development_Module.lvlib" Type="Library" URL="/&lt;vilib&gt;/vision/NI_Vision_Development_Module.lvlib"/>
 				<Item Name="Not Found Dialog.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Not Found Dialog.vi"/>
 				<Item Name="Open File+.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Open File+.vi"/>
+				<Item Name="Open Serial Driver.vi" Type="VI" URL="/&lt;vilib&gt;/Instr/_sersup.llb/Open Serial Driver.vi"/>
 				<Item Name="Read File+ (string).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Read File+ (string).vi"/>
 				<Item Name="Read From Spreadsheet File (DBL).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Read From Spreadsheet File (DBL).vi"/>
 				<Item Name="Read From Spreadsheet File (I64).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Read From Spreadsheet File (I64).vi"/>
@@ -264,6 +266,10 @@
 				<Item Name="Read From Spreadsheet File.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Read From Spreadsheet File.vi"/>
 				<Item Name="Read Lines From File.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Read Lines From File.vi"/>
 				<Item Name="Search and Replace Pattern.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Search and Replace Pattern.vi"/>
+				<Item Name="Serial Port Init.vi" Type="VI" URL="/&lt;vilib&gt;/Instr/serial.llb/Serial Port Init.vi"/>
+				<Item Name="Serial Port Read.vi" Type="VI" URL="/&lt;vilib&gt;/Instr/serial.llb/Serial Port Read.vi"/>
+				<Item Name="Serial Port Write.vi" Type="VI" URL="/&lt;vilib&gt;/Instr/serial.llb/Serial Port Write.vi"/>
+				<Item Name="serpConfig.vi" Type="VI" URL="/&lt;vilib&gt;/Instr/serial.llb/serpConfig.vi"/>
 				<Item Name="SessionLookUp.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/SessionLookUp.vi"/>
 				<Item Name="Set Bold Text.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Set Bold Text.vi"/>
 				<Item Name="Set String Value.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Set String Value.vi"/>
@@ -271,6 +277,9 @@
 				<Item Name="Three Button Dialog CORE.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Three Button Dialog CORE.vi"/>
 				<Item Name="Three Button Dialog.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Three Button Dialog.vi"/>
 				<Item Name="Trim Whitespace.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Trim Whitespace.vi"/>
+				<Item Name="VISA Configure Serial Port" Type="VI" URL="/&lt;vilib&gt;/Instr/_visa.llb/VISA Configure Serial Port"/>
+				<Item Name="VISA Configure Serial Port (Instr).vi" Type="VI" URL="/&lt;vilib&gt;/Instr/_visa.llb/VISA Configure Serial Port (Instr).vi"/>
+				<Item Name="VISA Configure Serial Port (Serial Instr).vi" Type="VI" URL="/&lt;vilib&gt;/Instr/_visa.llb/VISA Configure Serial Port (Serial Instr).vi"/>
 				<Item Name="Vision Acquisition CalculateFPS.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/Vision Acquisition Express Utility VIs.llb/Vision Acquisition CalculateFPS.vi"/>
 				<Item Name="Vision Acquisition IMAQ Filter Stop Trigger Error.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/Vision Acquisition Express Utility VIs.llb/Vision Acquisition IMAQ Filter Stop Trigger Error.vi"/>
 				<Item Name="whitespace.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/whitespace.ctl"/>
@@ -280,37 +289,80 @@
 				<Item Name="Write To Spreadsheet File (string).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Write To Spreadsheet File (string).vi"/>
 				<Item Name="Write To Spreadsheet File.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Write To Spreadsheet File.vi"/>
 			</Item>
+			<Item Name="#7.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/#7.vi"/>
+			<Item Name="*IDN?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/*IDN?.vi"/>
+			<Item Name="Assign values from string to axes.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Assign values from string to axes.vi"/>
+			<Item Name="BDR.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/BDR.vi"/>
+			<Item Name="Build command substring.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Build command substring.vi"/>
+			<Item Name="Build query command substring.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Build query command substring.vi"/>
+			<Item Name="C843_E665_Configuration_Self.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/C843_E665_Configuration_Self.vi"/>
+			<Item Name="Close connection if open.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Close connection if open.vi"/>
 			<Item Name="CmdEnum_CameraOut.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraOut.ctl"/>
+			<Item Name="Commanded axes connected?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Commanded axes connected?.vi"/>
+			<Item Name="Commanded stage name available?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Commanded stage name available?.vi"/>
 			<Item Name="ConfigureDalsa.vi" Type="VI" URL="../Modules/DalsaCamera.llb/ConfigureDalsa.vi"/>
+			<Item Name="Controller names.ctl" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Controller names.ctl"/>
+			<Item Name="conv_turns_steps.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/conv_turns_steps.vi"/>
 			<Item Name="CreateFileDirectory.vi" Type="VI" URL="../BeadTracker2.llb/CreateFileDirectory.vi"/>
+			<Item Name="CST.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/CST.vi"/>
 			<Item Name="DalsaGetCameraConfig.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaGetCameraConfig.vi"/>
 			<Item Name="DalsaModule.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaModule.vi"/>
 			<Item Name="DalsaSettings.ctl" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaSettings.ctl"/>
+			<Item Name="Define connected axes.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Define connected axes.vi"/>
+			<Item Name="ERR?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/ERR?.vi"/>
+			<Item Name="GCSTranslator DLL Functions.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/GCSTranslator DLL Functions.vi"/>
+			<Item Name="GCSTranslator.dll" Type="Document" URL="../Setups/D020R/GCSTranslator.dll"/>
+			<Item Name="Get lines from string.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Get lines from string.vi"/>
 			<Item Name="GetSetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/GetSetMotorAxisValue.vi"/>
+			<Item Name="Global1.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Global1.vi"/>
+			<Item Name="Global2.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Global2.vi"/>
 			<Item Name="imaq.dll" Type="Document" URL="imaq.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
+			<Item Name="INI.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/INI.vi"/>
 			<Item Name="InitializeCamera.vi" Type="VI" URL="../Modules/DalsaCamera.llb/InitializeCamera.vi"/>
 			<Item Name="kernel32.dll" Type="Document" URL="kernel32.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
-			<Item Name="lvanlys.dll" Type="Document" URL="/C/Program Files (x86)/National Instruments/LabVIEW 2011/resource/lvanlys.dll"/>
+			<Item Name="Longlasting one-axis command.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Longlasting one-axis command.vi"/>
+			<Item Name="lvanlys.dll" Type="Document" URL="/C/Program Files/National Instruments/LabVIEW 2011/resource/lvanlys.dll"/>
 			<Item Name="MakeStetsonWindow.vi" Type="VI" URL="../QTrk.llb/MakeStetsonWindow.vi"/>
+			<Item Name="MeasureCurrentPos.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/MeasureCurrentPos.vi"/>
+			<Item Name="MOV.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/MOV.vi"/>
+			<Item Name="MOV?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/MOV?.vi"/>
+			<Item Name="MoveSingleAxis.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/MoveSingleAxis.vi"/>
+			<Item Name="MPL.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/MPL.vi"/>
 			<Item Name="nivision.dll" Type="Document" URL="nivision.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
 			<Item Name="nivissvc.dll" Type="Document" URL="nivissvc.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
+			<Item Name="PI Open Interface.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/PI Open Interface.vi"/>
+			<Item Name="PI Receive String.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/PI Receive String.vi"/>
+			<Item Name="PI ReceiveNCharacters RS232.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/PI ReceiveNCharacters RS232.vi"/>
+			<Item Name="PI ReceiveString GPIB.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/PI ReceiveString GPIB.vi"/>
+			<Item Name="PI Send String.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/PI Send String.vi"/>
+			<Item Name="PI_Stages_Main.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/PI_Stages_Main.vi"/>
+			<Item Name="PIMoveSingleAxis.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/PIMoveSingleAxis.vi"/>
+			<Item Name="POS?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/POS?.vi"/>
 			<Item Name="QTrkComputedSettings.ctl" Type="VI" URL="../QTrk.llb/QTrkComputedSettings.ctl"/>
 			<Item Name="QTrkGetDerivedSettings.vi" Type="VI" URL="../QTrk.llb/QTrkGetDerivedSettings.vi"/>
 			<Item Name="QTrkGetProfilingReport.vi" Type="VI" URL="../QTrk.llb/QTrkGetProfilingReport.vi"/>
 			<Item Name="QTrkLocalizationJob.ctl" Type="VI" URL="../QTrk.llb/QTrkLocalizationJob.ctl"/>
 			<Item Name="RMGetBeadResults.vi" Type="VI" URL="../QTrk.llb/RMGetBeadResults.vi"/>
 			<Item Name="RunGrabSession.vi" Type="VI" URL="../Modules/DalsaCamera.llb/RunGrabSession.vi"/>
+			<Item Name="SAI?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/SAI?.vi"/>
 			<Item Name="SelectBeads.vi" Type="VI" URL="../BeadTracker2.llb/SelectBeads.vi"/>
 			<Item Name="SerialCmd.vi" Type="VI" URL="../Modules/DalsaCamera.llb/SerialCmd.vi"/>
 			<Item Name="ShowSettingsDialog.vi" Type="VI" URL="../Modules/DalsaCamera.llb/ShowSettingsDialog.vi"/>
+			<Item Name="Split num query command.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Split num query command.vi"/>
+			<Item Name="SVA?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/SVA?.vi"/>
+			<Item Name="SVO.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/SVO.vi"/>
+			<Item Name="VEL.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/VEL.vi"/>
+			<Item Name="VOL?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/VOL?.vi"/>
+			<Item Name="VST?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/VST?.vi"/>
+			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Wait for answer of longlasting command.vi"/>
 			<Item Name="XYZf.ctl" Type="VI" URL="../QTrk.llb/XYZf.ctl"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>

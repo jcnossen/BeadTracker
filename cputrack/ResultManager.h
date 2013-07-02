@@ -57,6 +57,7 @@ protected:
 	int startFrame; // startFrame for frameResults
 	int processedFrames; // frame where all data is retrieved (all beads)
 	int lastSaveFrame;
+	int capturedFrames;  // lock by resultMutex
 	ResultManagerConfig config;
 
 	QueuedTracker* qtrk;
