@@ -53,13 +53,13 @@ CDLL_EXPORT int DLL_CALLCONV rm_store_frame_info(ResultManager* rm, double times
 	return 0;
 }
 
-CDLL_EXPORT int DLL_CALLCONV rm_getbeadresults(ResultManager* rm, int start, int end, int bead, LocalizationResult* results, ErrorCluster* err)
+CDLL_EXPORT int DLL_CALLCONV rm_getbeadresults(ResultManager* rm, int start, int numFrames, int bead, LocalizationResult* results, ErrorCluster* err)
 {
 	if (ValidRM(rm, err)) {
 		if (bead < 0 || bead >= rm->Config().numBeads)
 			ArgumentErrorMsg(err,SPrintf( "Invalid bead index: %d. Accepted range: [0-%d]", bead, rm->Config().numBeads));
 		else
-			return rm->GetBeadPositions(start,end,bead,results);
+			return rm->GetBeadPositions(start,start+numFrames,bead,results);
 	}
 	return 0;
 }

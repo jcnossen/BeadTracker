@@ -692,6 +692,9 @@ void QueuedCUDATracker::CopyStreamResults(Stream *s)
 			r.pos.z = 0.0f;
 
 		results.push_back(r);
+#ifdef _DEBUG
+		dbgprintf("Bead: %d, Plane: %d, XYZ: %.4f, %.4f, %.4f\n", j.zlutIndex, j.zlutPlane, r.pos.x, r.pos.y, r.pos.z);
+#endif
 	}
 	resultCount+=s->JobCount();
 //	dbgprintf("Result count: %d\n", resultCount);

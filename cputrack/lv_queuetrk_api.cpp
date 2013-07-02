@@ -230,6 +230,9 @@ CDLL_EXPORT uint qtrk_queue_frame(QueuedTracker* qtrk, uchar* image, int pitch, 
 	LocalizationJob jobInfo = *pJobInfo;
 	if (flags & (QFF_ReadTimestampFromFrame | QFF_ReadTimestampFromFrameRev)) 
 		jobInfo.timestamp = qtrk_read_timestamp(image, w,h, flags);
+	#ifdef _DEBUG
+		dbgprintf("QueueFrame: frame %d, bead %d, zplane %d\n", jobInfo.frame, jobInfo.zlutIndex, jobInfo.zlutPlane);
+	#endif
 
 	qtrk->ScheduleFrame(image, pitch, w,h, pos, numROI, (QTRK_PixelDataType)pdt, &jobInfo);
 	return jobInfo.timestamp;
