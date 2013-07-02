@@ -300,14 +300,14 @@
 			<Item Name="CmdEnum_CameraOut.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraOut.ctl"/>
 			<Item Name="Commanded axes connected?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Commanded axes connected?.vi"/>
 			<Item Name="Commanded stage name available?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Commanded stage name available?.vi"/>
-			<Item Name="ConfigureDalsa.vi" Type="VI" URL="../Setups/D020R/DalsaCamera.llb/ConfigureDalsa.vi"/>
+			<Item Name="ConfigureDalsa.vi" Type="VI" URL="../Modules/DalsaCamera.llb/ConfigureDalsa.vi"/>
 			<Item Name="Controller names.ctl" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Controller names.ctl"/>
 			<Item Name="conv_turns_steps.vi" Type="VI" URL="../Setups/D020R/PIMotorController.llb/conv_turns_steps.vi"/>
 			<Item Name="CreateFileDirectory.vi" Type="VI" URL="../BeadTracker2.llb/CreateFileDirectory.vi"/>
 			<Item Name="CST.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/CST.vi"/>
-			<Item Name="DalsaGetCameraConfig.vi" Type="VI" URL="../Setups/D020R/DalsaCamera.llb/DalsaGetCameraConfig.vi"/>
-			<Item Name="DalsaModule.vi" Type="VI" URL="../Setups/D020R/DalsaCamera.llb/DalsaModule.vi"/>
-			<Item Name="DalsaSettings.ctl" Type="VI" URL="../Setups/D020R/DalsaCamera.llb/DalsaSettings.ctl"/>
+			<Item Name="DalsaGetCameraConfig.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaGetCameraConfig.vi"/>
+			<Item Name="DalsaModule.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaModule.vi"/>
+			<Item Name="DalsaSettings.ctl" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaSettings.ctl"/>
 			<Item Name="Define connected axes.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Define connected axes.vi"/>
 			<Item Name="ERR?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/ERR?.vi"/>
 			<Item Name="GCSTranslator DLL Functions.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/GCSTranslator DLL Functions.vi"/>
@@ -320,7 +320,7 @@
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
 			<Item Name="INI.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/INI.vi"/>
-			<Item Name="InitializeCamera.vi" Type="VI" URL="../Setups/D020R/DalsaCamera.llb/InitializeCamera.vi"/>
+			<Item Name="InitializeCamera.vi" Type="VI" URL="../Modules/DalsaCamera.llb/InitializeCamera.vi"/>
 			<Item Name="kernel32.dll" Type="Document" URL="kernel32.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
@@ -351,11 +351,11 @@
 			<Item Name="QTrkGetProfilingReport.vi" Type="VI" URL="../QTrk.llb/QTrkGetProfilingReport.vi"/>
 			<Item Name="QTrkLocalizationJob.ctl" Type="VI" URL="../QTrk.llb/QTrkLocalizationJob.ctl"/>
 			<Item Name="RMGetBeadResults.vi" Type="VI" URL="../QTrk.llb/RMGetBeadResults.vi"/>
-			<Item Name="RunGrabSession.vi" Type="VI" URL="../Setups/D020R/DalsaCamera.llb/RunGrabSession.vi"/>
+			<Item Name="RunGrabSession.vi" Type="VI" URL="../Modules/DalsaCamera.llb/RunGrabSession.vi"/>
 			<Item Name="SAI?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/SAI?.vi"/>
 			<Item Name="SelectBeads.vi" Type="VI" URL="../BeadTracker2.llb/SelectBeads.vi"/>
-			<Item Name="SerialCmd.vi" Type="VI" URL="../Setups/D020R/DalsaCamera.llb/SerialCmd.vi"/>
-			<Item Name="ShowSettingsDialog.vi" Type="VI" URL="../Setups/D020R/DalsaCamera.llb/ShowSettingsDialog.vi"/>
+			<Item Name="SerialCmd.vi" Type="VI" URL="../Modules/DalsaCamera.llb/SerialCmd.vi"/>
+			<Item Name="ShowSettingsDialog.vi" Type="VI" URL="../Modules/DalsaCamera.llb/ShowSettingsDialog.vi"/>
 			<Item Name="Split num query command.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/Split num query command.vi"/>
 			<Item Name="SVA?.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/SVA?.vi"/>
 			<Item Name="SVO.vi" Type="VI" URL="../Setups/D020R/PI Stage Control.llb/SVO.vi"/>
