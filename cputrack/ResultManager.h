@@ -32,7 +32,7 @@ public:
 	int GetResults(LocalizationResult* results, int startFrame, int numResults);
 	void Flush();
 
-	void GetFrameCounters(int* startFrame, int *processedFrames, int *lastSaveFrame, int *capturedFrames);
+	void GetFrameCounters(int* startFrame=0, int *processedFrames=0, int *lastSaveFrame=0, int *capturedFrames=0, int *localizationsDone=0);
 	int StoreFrameInfo(double timestamp, float* columns); // return #frames
 	int GetFrameCount();
 
@@ -58,6 +58,7 @@ protected:
 	int processedFrames; // frame where all data is retrieved (all beads)
 	int lastSaveFrame;
 	int capturedFrames;  // lock by resultMutex
+	int localizationsDone;
 	ResultManagerConfig config;
 
 	QueuedTracker* qtrk;

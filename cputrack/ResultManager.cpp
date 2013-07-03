@@ -12,18 +12,17 @@ ResultManager::ResultManager(const char *outfile, const char* frameInfoFile, Res
 	lastSaveFrame = 0;
 	processedFrames = 0;
 	capturedFrames = 0;
+	localizationsDone = 0;
 
 	qtrk = 0;
 
 	thread = Threads::Create(ThreadLoop, this);
 	quit=false;
 
-	frameResults.resize(100);
-	for (int i=0;i<frameResults.size();i++) 
-		frameResults[i] =new FrameResult(config.numBeads, config.numFrameInfoColumns);
-
 	remove(outfile);
 	remove(frameInfoFile);
+
+	dbgprintf("Allocating ResultManager with %d beads and writeinterval %d\n", cfg->numBeads, cfg->writeInterval);
 }
 
 ResultManager::~ResultManager()
@@ -40,6 +39,8 @@ void ResultManager::StoreResult(LocalizationResult *r)
 	int index = r->job.frame - startFrame;
 
 	if (index >= frameResults.size()) {
+		dbgprintf("dropping result. Result provided for unregistered frame %d. Current frames registered: %d\n", 
+			r->job.frame, startFrame + frameResults.size());
 		return; // add errors?
 	}
 
@@ -55,6 +56,7 @@ void ResultManager::StoreResult(LocalizationResult *r)
 	frameCountMutex.lock();
 	while (processedFrames - startFrame < frameResults.size() && frameResults[processedFrames-startFrame]->count == config.numBeads)
 		processedFrames ++;
+	localizationsDone ++;
 	frameCountMutex.unlock();
 }
 
@@ -124,7 +126,7 @@ bool ResultManager::Update()
 		return 0;
 	}
 
-	const int NResultBuf = 10;
+	const int NResultBuf = 40;
 	LocalizationResult resultbuf[NResultBuf];
 
 	int count = qtrk->PollFinished( resultbuf, NResultBuf );
@@ -194,15 +196,33 @@ int ResultManager::GetBeadPositions(int startFrame, int endFrame, int bead, Loca
 void ResultManager::Flush()
 {
 	Write();
+
+	resultMutex.lock();
+
+	// Dump stats about unfinished frames for debugging
+	for (int i=0;i<frameResults.size();i++) {
+		FrameResult *fr = frameResults[i];
+		dbgprintf("Frame %d. TS: %f, Count: %d\n", i, fr->timestamp, fr->count);
+		if (fr->count != config.numBeads) {
+			for (int j=0;j<fr->results.size();j++) {
+				if( fr->results[j].job.locType == 0 )
+					dbgprintf("%d, ", j );
+			}
+			dbgprintf("\n");
+		}
+	}
+
+	resultMutex.unlock();
 }
 
 
-void ResultManager::GetFrameCounters(int* startFrame, int *processedFrames, int *lastSaveFrame, int *capturedFrames)
+void ResultManager::GetFrameCounters(int* startFrame, int *processedFrames, int *lastSaveFrame, int *capturedFrames, int *localizationsDone)
 {
 	frameCountMutex.lock();
 	if (startFrame) *startFrame = this->startFrame;
 	if (processedFrames) *processedFrames = this->processedFrames;
 	if (lastSaveFrame) *lastSaveFrame = this->lastSaveFrame;
+	if (localizationsDone) *localizationsDone = this->localizationsDone;
 	frameCountMutex.unlock();
 
 	if (capturedFrames) {

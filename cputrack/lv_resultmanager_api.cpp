@@ -65,12 +65,13 @@ CDLL_EXPORT int DLL_CALLCONV rm_getbeadresults(ResultManager* rm, int start, int
 }
 
 
-CDLL_EXPORT void DLL_CALLCONV rm_getframecounters(ResultManager* rm, int* startFrame, int* lastSaveFrame, int* endFrame, int *capturedFrames, ErrorCluster* err)
+CDLL_EXPORT void DLL_CALLCONV rm_getframecounters(ResultManager* rm, int* startFrame, int* lastSaveFrame, int* endFrame, int *capturedFrames, int *localizationsDone, ErrorCluster* err)
 {
 	if (ValidRM(rm, err)) {
-		rm->GetFrameCounters(startFrame, endFrame, lastSaveFrame, capturedFrames);
+		rm->GetFrameCounters(startFrame, endFrame, lastSaveFrame, capturedFrames, localizationsDone);
 	}
 }
+
 
 CDLL_EXPORT void DLL_CALLCONV rm_flush(ResultManager* rm, ErrorCluster* err)
 {
