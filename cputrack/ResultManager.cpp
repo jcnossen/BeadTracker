@@ -62,46 +62,53 @@ void ResultManager::StoreResult(LocalizationResult *r)
 
 void ResultManager::Write()
 {
-	FILE* f = fopen(outputFile.c_str(), "a");
-	FILE* finfo = fopen(frameInfoFile.c_str(), "a");
+	FILE* f = outputFile.empty () ? 0 : fopen(outputFile.c_str(), "a");
+	FILE* finfo = frameInfoFile.empty() ? 0 : fopen(frameInfoFile.c_str(), "a");
 	
 	resultMutex.lock();
 	if (config.binaryOutput) {
 		for (uint j=lastSaveFrame; j<processedFrames;j++)
 		{
 			auto fr = frameResults[j-startFrame];
-			fwrite(&j, sizeof(uint), 1, f);
-			fwrite(&fr->timestamp, sizeof(double), 1, f);
-			fwrite(&fr->timestamp, sizeof(double), 1, finfo);
-			for (int i=0;i<config.numBeads;i++) 
-			{
-				LocalizationResult *r = &fr->results[i];
-				fwrite(&r->pos, sizeof(vector3f), 1, f);
+			if (f) {
+				fwrite(&j, sizeof(uint), 1, f);
+				fwrite(&fr->timestamp, sizeof(double), 1, f);
+				for (int i=0;i<config.numBeads;i++) 
+				{
+					LocalizationResult *r = &fr->results[i];
+					fwrite(&r->pos, sizeof(vector3f), 1, f);
+				}
 			}
+			if (finfo)
+				fwrite(&fr->timestamp, sizeof(double), 1, finfo);
 		}
 	}
 	else {
 		for (uint k=lastSaveFrame; k<processedFrames;k++)
 		{
 			auto fr = frameResults[k-startFrame];
-			fprintf(f,"%d\t%f\t", k, fr->timestamp);
-			fprintf(finfo,"%d\t%f\t", k, fr->timestamp);
-			for (int i=0;i<config.numFrameInfoColumns;i++)
-				fprintf(finfo, "%.5f\t", fr->frameInfo[i]);
-			fputs("\n", finfo);
-			for (int i=0;i<config.numBeads;i++) 
-			{
-				LocalizationResult *r = &fr->results[i];
-				fprintf(f, "%.5f\t%.5f\t%.5f\t", r->pos.x,r->pos.y,r->pos.z);
+			if (f) {
+				fprintf(f,"%d\t%f\t", k, fr->timestamp);
+				for (int i=0;i<config.numBeads;i++) 
+				{
+					LocalizationResult *r = &fr->results[i];
+					fprintf(f, "%.5f\t%.5f\t%.5f\t", r->pos.x,r->pos.y,r->pos.z);
+				}
+				fputs("\n", f);
 			}
-			fputs("\n", f);
+			if (finfo) {
+				fprintf(finfo,"%d\t%f\t", k, fr->timestamp);
+				for (int i=0;i<config.numFrameInfoColumns;i++)
+					fprintf(finfo, "%.5f\t", fr->frameInfo[i]);
+				fputs("\n", finfo);
+			}
 		}
 	}
 
 	dbgprintf("Saved frame %d to %d\n", lastSaveFrame, processedFrames);
 
-	fclose(f);
-	fclose(finfo);
+	if(f) fclose(f);
+	if(finfo) fclose(finfo);
 	frameCountMutex.lock();
 	lastSaveFrame = processedFrames;
 	frameCountMutex.unlock();
