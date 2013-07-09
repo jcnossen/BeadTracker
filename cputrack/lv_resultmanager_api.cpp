@@ -4,10 +4,10 @@
 #include "std_incl.h"
 #include "labview.h"
 #include "ResultManager.h"
-#include "hash_templates.h"
 #include "utils.h"
+#include <unordered_set>
 
-static qtrk::hash_set <ResultManager*> rm_instances;
+static  std::unordered_set<ResultManager*> rm_instances;
 
 static bool ValidRM(ResultManager* rm, ErrorCluster* err)
 {

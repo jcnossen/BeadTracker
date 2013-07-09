@@ -66,6 +66,8 @@
 			<Item Name="Typedefs" Type="Folder">
 				<Item Name="Cmd_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/Cmd_CameraIn.ctl"/>
 				<Item Name="Cmd_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/Cmd_MotorIn.ctl"/>
+				<Item Name="CmdData_GrabToTracker.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_GrabToTracker.ctl"/>
+				<Item Name="CmdData_GrabToTracker_NotifierMsgType.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_GrabToTracker_NotifierMsgType.ctl"/>
 				<Item Name="CmdData_NewFrame.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_NewFrame.ctl"/>
 				<Item Name="CmdData_SetMotorPos.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_SetMotorPos.ctl"/>
 				<Item Name="CmdEnum_CameraFrameType.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraFrameType.ctl"/>
@@ -88,9 +90,9 @@
 			<Item Name="ClearResults.vi" Type="VI" URL="../BeadTracker2.llb/ClearResults.vi"/>
 			<Item Name="ClusterToValueList.vi" Type="VI" URL="../BeadTracker2.llb/ClusterToValueList.vi"/>
 			<Item Name="ComputeHighFreqNoise.vi" Type="VI" URL="../BeadTracker2.llb/ComputeHighFreqNoise.vi"/>
+			<Item Name="CreateNoiseCorrectionImage.vi" Type="VI" URL="../BeadTracker2.llb/CreateNoiseCorrectionImage.vi"/>
 			<Item Name="DeleteFileIfExisting.vi" Type="VI" URL="../BeadTracker2.llb/DeleteFileIfExisting.vi"/>
 			<Item Name="ExtractBeadROI.vi" Type="VI" URL="../BeadTracker2.llb/ExtractBeadROI.vi"/>
-			<Item Name="FreeCameraQueue.vi" Type="VI" URL="../BeadTracker2.llb/FreeCameraQueue.vi"/>
 			<Item Name="GenerateNewFilename.vi" Type="VI" URL="../BeadTracker2.llb/GenerateNewFilename.vi"/>
 			<Item Name="GenerateTracePlotData.vi" Type="VI" URL="../BeadTracker2.llb/GenerateTracePlotData.vi"/>
 			<Item Name="GetExperimentPaths.vi" Type="VI" URL="../BeadTracker2.llb/GetExperimentPaths.vi"/>
@@ -106,6 +108,8 @@
 			<Item Name="SendMotorCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorCmd.vi"/>
 			<Item Name="SetMotorAxisPos.vi" Type="VI" URL="../BeadTracker2.llb/SetMotorAxisPos.vi"/>
 			<Item Name="ShowRenameIfExistingExpDialog.vi" Type="VI" URL="../BeadTracker2.llb/ShowRenameIfExistingExpDialog.vi"/>
+			<Item Name="StartImageAcquisition.vi" Type="VI" URL="../BeadTracker2.llb/StartImageAcquisition.vi"/>
+			<Item Name="StopImageAcquisition.vi" Type="VI" URL="../BeadTracker2.llb/StopImageAcquisition.vi"/>
 			<Item Name="StoreFrameInfo.vi" Type="VI" URL="../BeadTracker2.llb/StoreFrameInfo.vi"/>
 			<Item Name="WriteArrayAsImage.vi" Type="VI" URL="../BeadTracker2.llb/WriteArrayAsImage.vi"/>
 			<Item Name="WriteSectionFrame.vi" Type="VI" URL="../BeadTracker2.llb/WriteSectionFrame.vi"/>
