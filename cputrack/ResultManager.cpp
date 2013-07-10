@@ -180,12 +180,14 @@ void ResultManager::ThreadLoop(void *param)
 
 int ResultManager::GetBeadPositions(int startFrame, int endFrame, int bead, LocalizationResult* results)
 {
+	frameCountMutex.lock();
 	int start = startFrame - this->startFrame;
 
 	if (endFrame > processedFrames)
 		endFrame = processedFrames;
 
 	int end = endFrame - this->startFrame;
+	frameCountMutex.unlock();
 
 	if (start < 0)
 		return 0;

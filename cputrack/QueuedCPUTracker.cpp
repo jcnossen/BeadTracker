@@ -246,7 +246,7 @@ void QueuedCPUTracker::ProcessJob(CPUTracker* trk, Job* j)
 	}
 
 #ifdef _DEBUG
-	dbgprintf("pos[%d]: x=%f, y=%f, z=%f\n", result.job.zlutIndex, result.pos.x, result.pos.y, result.pos.z);
+	dbgprintf("fr:%d, bead: %d: x=%f, y=%f, z=%f\n",result.job.frame, result.job.zlutIndex, result.pos.x, result.pos.y, result.pos.z);
 #endif
 
 	result.error = boundaryHit ? 1 : 0;
@@ -367,19 +367,24 @@ void QueuedCPUTracker::GenerateTestImage(float* dst, float xp,float yp, float z,
 }
 
 
-void QueuedCPUTracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo)
+int QueuedCPUTracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo)
 {
 	uchar* img = (uchar*)imgptr;
 	int bpp = PDT_BytesPerPixel(pdt);
+	int count=0;
 	for (int i=0;i<numROI;i++){
 		ROIPosition& pos = positions[i];
 
-		if (pos.x < 0 || pos.y < 0 || pos.x + cfg.width > width || pos.y + cfg.height > height)
+		if (pos.x < 0 || pos.y < 0 || pos.x + cfg.width > width || pos.y + cfg.height > height) {
+			dbgprintf("Skipping ROI %d. Outside of image.\n", i);
 			continue;
+		}
 
 		uchar *roiptr = &img[pitch * pos.y + pos.x * bpp];
 		LocalizationJob job = *jobInfo;
 		job.zlutIndex = i + jobInfo->zlutIndex; // used as offset
 		ScheduleLocalization(roiptr, pitch, pdt, &job);
+		count++;
 	}
+	return count;
 }

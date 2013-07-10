@@ -125,7 +125,7 @@ private:
 };
 
 // Computes the interpolated maximum position
-template<typename T, int numPts=7>
+template<typename T, int numPts=3>
 class ComputeMaxInterp {
 public:
 	static LSQFIT_FUNC T max_(T a, T b) { return a>b ? a : b; }
@@ -141,12 +141,12 @@ public:
 				iMax = k;
 			}
 		}
-		T xs[numPts]; 
+		T xs[numPts];
 		int startPos = max_(iMax-numPts/2, 0);
 		int endPos = min_(iMax+(numPts-numPts/2), len);
 		int numpoints = endPos - startPos;
 
-		if (numpoints<3) 
+		if (numpoints<3)
 			return iMax;
 		else {
 			for(int i=startPos;i<endPos;i++)

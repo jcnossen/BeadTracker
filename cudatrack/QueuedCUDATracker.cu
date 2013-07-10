@@ -365,6 +365,7 @@ QueuedCUDATracker::Stream* QueuedCUDATracker::CreateStream(Device* device, int s
 		s->d_resultpos.init(batchSize);
 		s->results.init(batchSize);
 		s->zlutmapping.init(batchSize);
+		s->d_imgmeans.init(batchSize);
 		s->d_zlutmapping.init(batchSize);
 		s->d_quadrants.init(qi_FFT_length*batchSize*2);
 		s->d_QIprofiles.init(batchSize*2*qi_FFT_length); // (2 axis) * (2 radialsteps) = 8 * nr = 2 * qi_FFT_length
@@ -621,7 +622,7 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 	TImageSampler::BindTexture(s->images);
 	{ ProfileBlock p(&cpu_time.com);
 	BgCorrectedCOM<TImageSampler> <<< blocks(s->JobCount()), threads(), 0, s->stream >>> 
-		(s->JobCount(), s->images, s->d_com.data, cfg.com_bgcorrection);
+		(s->JobCount(), s->images, s->d_com.data, cfg.com_bgcorrection, s->d_imgmeans.data);
 	checksum(s->d_com.data, 1, s->JobCount(), "com");
 	}
 	cudaEventRecord(s->comDone, s->stream);
@@ -648,7 +649,7 @@ void QueuedCUDATracker::ExecuteBatch(Stream *s)
 		dim3 numBlocks( (s->JobCount() + numThreads.x - 1) / numThreads.x, 
 				(cfg.zlut_radialsteps + numThreads.y - 1) / numThreads.y);
 		ZLUT_RadialProfileKernel<TImageSampler> <<< numBlocks , numThreads, 0, s->stream >>>
-			(s->JobCount(), s->images, kernelParams.zlut, curpos->data, s->d_radialprofiles.data);
+			(s->JobCount(), s->images, kernelParams.zlut, curpos->data, s->d_radialprofiles.data, s->d_imgmeans.data);
 		ZLUT_NormalizeProfiles<<< blocks(s->JobCount()), threads(), 0, s->stream >>> (s->JobCount(), kernelParams.zlut, s->d_radialprofiles.data);
 
 		s->d_zlutmapping.copyToDevice(s->zlutmapping.data(), s->JobCount(), true, s->stream);
@@ -809,12 +810,13 @@ void QueuedCUDATracker::ClearResults()
 }
 
 
-void QueuedCUDATracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob* jobInfo)
+int QueuedCUDATracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob* jobInfo)
 {
 	uchar* img = (uchar*)imgptr;
 	int bpp = sizeof(float);
 	if (pdt == QTrkU8) bpp = 1;
 	else if (pdt == QTrkU16) bpp = 2;
+	int count=0;
 	for (int i=0;i<numROI;i++){
 		ROIPosition pos = positions[i];
 		if (pos.x < 0 || pos.y < 0 || pos.x + cfg.width > width || pos.y + cfg.height > height)
@@ -824,7 +826,9 @@ void QueuedCUDATracker::ScheduleFrame(uchar *imgptr, int pitch, int width, int h
 		LocalizationJob job = *jobInfo;
 		job.zlutIndex = i + jobInfo->zlutIndex;
 		ScheduleLocalization(roiptr, pitch, pdt, &job);
+		count ++;
 	}
+	return count;
 }
 
 std::string QueuedCUDATracker::GetProfileReport()

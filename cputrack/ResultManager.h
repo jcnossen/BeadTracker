@@ -54,11 +54,11 @@ protected:
 	Threads::Mutex frameCountMutex, resultMutex, trackerMutex;
 
 	std::deque< FrameResult* > frameResults;
-	int startFrame; // startFrame for frameResults
-	int processedFrames; // frame where all data is retrieved (all beads)
-	int lastSaveFrame;
-	int capturedFrames;  // lock by resultMutex
-	int localizationsDone;
+	volatile int startFrame; // startFrame for frameResults
+	volatile int processedFrames; // frame where all data is retrieved (all beads)
+	volatile int lastSaveFrame;
+	volatile int capturedFrames;  // lock by resultMutex
+	volatile int localizationsDone;
 	ResultManagerConfig config;
 
 	QueuedTracker* qtrk;

@@ -23,9 +23,8 @@ enum QueueFrameFlags {
 };
 
 CDLL_EXPORT uint qtrk_read_timestamp(uchar* image, int w, int h, QueueFrameFlags flags);
-CDLL_EXPORT uint DLL_CALLCONV qtrk_queue_frame(QueuedTracker* qtrk, uchar* image, int pitch, int w,int h, uint pdt, ROIPosition* pos, int numROI, const LocalizationJob *pJobInfo, QueueFrameFlags flags);
+CDLL_EXPORT uint DLL_CALLCONV qtrk_queue_frame(QueuedTracker* qtrk, uchar* image, int pitch, int w,int h, uint pdt, ROIPosition* pos, int numROI, const LocalizationJob *pJobInfo, QueueFrameFlags flags, ErrorCluster* e);
 CDLL_EXPORT void DLL_CALLCONV qtrk_clear_results(QueuedTracker* qtrk, ErrorCluster* e);
-CDLL_EXPORT int DLL_CALLCONV qtrk_hasfullqueue(QueuedTracker* qtrk, ErrorCluster* e);
 CDLL_EXPORT int DLL_CALLCONV qtrk_resultcount(QueuedTracker* qtrk, ErrorCluster* e);
 CDLL_EXPORT void DLL_CALLCONV qtrk_flush(QueuedTracker* qtrk, ErrorCluster* e);
 CDLL_EXPORT int DLL_CALLCONV qtrk_get_results(QueuedTracker* qtrk, LocalizationResult* results, int maxResults, int sortByID, ErrorCluster* e);

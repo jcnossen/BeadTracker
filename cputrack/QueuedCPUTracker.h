@@ -21,7 +21,7 @@ public:
 	float* GetZLUT(int *num_zluts, int* planes) override;
 	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo) override;
 	// Schedule an entire frame at once, allowing for further optimizations
-	void ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
+	int ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, 
 		const LocalizationJob *jobInfo) override;
 	
 	int GetQueueLength(int *maxQueueLength=0) override; // In queue + in progress

@@ -66,7 +66,7 @@ public:
 	void ScheduleLocalization(uchar* data, int pitch, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo) override;
 	
 	// Schedule an entire frame at once, allowing for further optimizations
-	void ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo) override;
+	int ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo) override;
 
 	void ClearResults() override;
 
@@ -131,10 +131,10 @@ protected:
 		device_vec<float2> d_QIprofiles;
 		device_vec<float2> d_QIprofiles_reverse;
 		device_vec<float> d_quadrants;
+		device_vec<float> d_imgmeans; // [ njobs ]
 		
 		device_vec<float> d_radialprofiles;// [ radialsteps * njobs ] for Z computation
 		device_vec<float> d_zlutcmpscores; // [ zlutplanes * njobs ]
-
 		device_vec<float> d_shiftbuffer; // [QI_fftlength * njobs] ComputeMaxInterp temp space
 
 		uint localizeFlags; // Indicates whether kernels should be ran for building zlut, z computing, or QI

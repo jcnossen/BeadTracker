@@ -283,11 +283,13 @@ __device__ float2 BgCorrectedCOM(int idx, cudaImageListf images, float correctio
 }
 
 template<typename TImageSampler>
-__global__ void BgCorrectedCOM(int count, cudaImageListf images,float3* d_com, float bgCorrectionFactor) {
+__global__ void BgCorrectedCOM(int count, cudaImageListf images,float3* d_com, float bgCorrectionFactor, float* d_imgmeans) {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
 	if (idx < count) {
-		float2 com = BgCorrectedCOM<TImageSampler> (idx, images, bgCorrectionFactor, 0);
+		float mean;
+		float2 com = BgCorrectedCOM<TImageSampler> (idx, images, bgCorrectionFactor, &mean);
 		d_com[idx] = make_float3(com.x,com.y,0.0f);
+		d_imgmeans[idx] = mean;
 	}
 }
 
@@ -362,7 +364,7 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 
 // Compute a single ZLUT radial profile element (looping through all the pixels at constant radial distance)
 template<typename TImageSampler>
-__global__ void ZLUT_RadialProfileKernel(int njobs, cudaImageListf images, ZLUTParams params, float3* positions, float* profiles)
+__global__ void ZLUT_RadialProfileKernel(int njobs, cudaImageListf images, ZLUTParams params, float3* positions, float* profiles, float* means)
 {
 	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
 	int radialIdx = threadIdx.y + blockIdx.y * blockDim.y;
@@ -383,7 +385,7 @@ __global__ void ZLUT_RadialProfileKernel(int njobs, cudaImageListf images, ZLUTP
 		sum += TImageSampler::Interpolated(images, x,y, jobIdx, outside);
 		if (!outside) count++;
 	}
-	dstprof [radialIdx] = count>0 ? sum/count : 0;
+	dstprof [radialIdx] = count>MIN_RADPROFILE_SMP_COUNT ? sum/count : means[jobIdx];
 }
 
 

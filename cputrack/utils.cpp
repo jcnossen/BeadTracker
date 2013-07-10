@@ -159,7 +159,7 @@ float ComputeBgCorrectedCOM1D(float *data, int len, float cf)
 }
 
 void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float minradius, float maxradius,
-	vector2f center, ImageData* img, float paddingValue)
+	vector2f center, ImageData* img, float mean)
 {
 	vector2f* radialDirs = (vector2f*)ALLOCA(sizeof(vector2f)*angularSteps);
 	for (int j=0;j<angularSteps;j++) {
@@ -169,6 +169,8 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 
 	for (int i=0;i<radialSteps;i++)
 		dst[i]=0.0f;
+
+	bool trace=false;
 
 	double totalrmssum2 = 0.0f, totalsum=0.0;
 	float rstep = (maxradius-minradius) / radialSteps;
@@ -189,10 +191,16 @@ void ComputeRadialProfile(float* dst, int radialSteps, int angularSteps, float m
 			}
 		}
 
-		dst[i] = nsamples > 0 ? sum/nsamples : 0;
+		if (trace) {
+			dbgprintf("%f,[%d]; ", sum, nsamples);
+		}
+
+		dst[i] = nsamples > MIN_RADPROFILE_SMP_COUNT ? sum/nsamples : mean;
 		totalsum += sum;
 		totalsmp += nsamples;
 	}
+	if(trace)
+		dbgprintf("\n");
 	float substr = totalsum/totalsmp;
 	for (int i=0;i<radialSteps;i++)
 		dst[i] -= substr;

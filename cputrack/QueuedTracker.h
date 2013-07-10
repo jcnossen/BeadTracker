@@ -6,6 +6,9 @@
 #include "std_incl.h" 
 #include "threads.h"
 
+// minimum number of samples for a profile radial bin. Below this the image mean will be used
+#define MIN_RADPROFILE_SMP_COUNT 8 
+
 enum LocalizeType {
 	// Flags for selecting 2D localization type
 	LocalizeOnlyCOM = 0, // use only COM
@@ -141,7 +144,7 @@ public:
 	virtual void Flush() = 0; // stop waiting for more jobs to do, and just process the current batch
 
 	// Schedule an entire frame at once, allowing for further optimizations
-	virtual void ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo) = 0;
+	virtual int ScheduleFrame(uchar *imgptr, int pitch, int width, int height, ROIPosition *positions, int numROI, QTRK_PixelDataType pdt, const LocalizationJob *jobInfo) = 0;
 	
 	// data can be zero to allocate ZLUT data. zcmp has to have 'res' elements
 	virtual void SetZLUT(float* data, int count, int planes, float* zcmp=0) = 0; 

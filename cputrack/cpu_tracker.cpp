@@ -14,6 +14,7 @@ CPU only tracker
 
 #pragma warning(disable: 4996) // Function call with parameters that may be unsafe
 
+#include "QueuedTracker.h"
 #include "cpu_tracker.h"
 #include "LsqQuadraticFit.h"
 #include "random_distr.h"
@@ -442,7 +443,7 @@ void CPUTracker::ComputeQuadrantProfile(CPUTracker::qi_t* dst, int radialSteps, 
 			}
 		}
 
-		dst[i] = nPixels>0 ? sum/nPixels : 0;
+		dst[i] = nPixels>MIN_RADPROFILE_SMP_COUNT ? sum/nPixels : mean;
 		total += dst[i];
 	}
 }
