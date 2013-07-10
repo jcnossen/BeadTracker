@@ -528,7 +528,7 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 	if (0) {
 		dim3 qdrDim( (njobs + qdrThreads.x - 1) / qdrThreads.x, (cfg.qi_radialsteps + qdrThreads.y - 1) / qdrThreads.y, 4 );
 		QI_ComputeQuadrants<TImageSampler> <<< qdrDim , qdrThreads, 0, s->stream >>> 
-			(njobs, s->images, initial->data, s->d_quadrants.data, kernelParams.qi);
+			(njobs, s->images, initial->data, s->d_quadrants.data, kernelParams.qi, s->d_imgmeans.data);
 
 		QI_QuadrantsToProfiles <<< blocks(njobs), threads(), 0, s->stream >>> 
 			(njobs, s->images, s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, kernelParams.qi);
@@ -538,7 +538,7 @@ void QueuedCUDATracker::QI_Iterate(device_vec<float3>* initial, device_vec<float
 		qiparams.angularSteps = angularSteps;
 
 		QI_ComputeProfile <TImageSampler> <<< blocks(njobs), threads(), 0, s->stream >>> (njobs, s->images, initial->data, 
-			s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, qiparams);
+			s->d_quadrants.data, s->d_QIprofiles.data, s->d_QIprofiles_reverse.data, qiparams, s->d_imgmeans.data);
 	}
 	/*
 	cudaStreamSynchronize(s->stream);

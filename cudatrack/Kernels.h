@@ -11,7 +11,7 @@ typedef float2 qicomplex_t;
 
 
 template<typename TImageSampler>
-__device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, float* dst, const QIParams& params, int quadrant, float2 center)
+__device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, float* dst, const QIParams& params, int quadrant, float2 center, float mean)
 {
 	const int qmat[] = {
 		1, 1,
@@ -44,20 +44,22 @@ __device__ void ComputeQuadrantProfile(cudaImageListf& images, int idx, float* d
 			}
 		}
 
-		dst[i] = count > 0 ? sum/count : 0;
+		dst[i] = count > MIN_RADPROFILE_SMP_COUNT ? sum/count : mean;
 		total += dst[i];
 	}
 }
 
 template<typename TImageSampler>
-__global__ void QI_ComputeProfile(int count, cudaImageListf images, float3* positions, float* quadrants, float2* profiles, float2* reverseProfiles, QIParams params)
+__global__ void QI_ComputeProfile(int count, cudaImageListf images, float3* positions, float* quadrants, float2* profiles, float2* reverseProfiles, QIParams params, float *imgmeans)
 {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
 	if (idx < count) {
 		int fftlen = params.radialSteps*2;
 		float* img_qdr = &quadrants[ idx * params.radialSteps * 4 ];
-		for (int q=0;q<4;q++)
-			ComputeQuadrantProfile<TImageSampler> (images, idx, &img_qdr[q*params.radialSteps], params, q, make_float2(positions[idx].x, positions[idx].y));
+		for (int q=0;q<4;q++) {
+			ComputeQuadrantProfile<TImageSampler> (images, idx, &img_qdr[q*params.radialSteps], params, q, 
+				make_float2(positions[idx].x, positions[idx].y), imgmeans[idx]);
+		}
 
 		int nr = params.radialSteps;
 		qicomplex_t* imgprof = (qicomplex_t*) &profiles[idx * fftlen*2];
@@ -156,7 +158,7 @@ __global__ void QI_OffsetPositions(int njobs, float3* current, float3* dst, cuff
 	kernel gets called with dim3(images.count, radialsteps, 4) elements
 */
 template<typename TImageSampler>
-__global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* positions, float* dst_quadrants, const QIParams params)
+__global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* positions, float* dst_quadrants, const QIParams params, float* imgmeans)
 {
 	int jobIdx = threadIdx.x + blockIdx.x * blockDim.x;
 	int rIdx = threadIdx.y + blockIdx.y * blockDim.y;
@@ -188,7 +190,7 @@ __global__ void QI_ComputeQuadrants(int njobs, cudaImageListf images, float3* po
 			sum += TImageSampler::Interpolated(images, x,y,jobIdx, outside);
 			if (!outside) count++;
 		}
-		qdr[rIdx] = sum/count;
+		qdr[rIdx] = count>MIN_RADPROFILE_SMP_COUNT ? sum/count : imgmeans[jobIdx];
 	}
 }
 
