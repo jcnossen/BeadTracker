@@ -17,7 +17,6 @@
 			<Item Name="CleanIT (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/CleanIT (SubVI).vi"/>
 			<Item Name="CleanROIs (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/CleanROIs (SubVI).vi"/>
 			<Item Name="draw rectangles.vi" Type="VI" URL="../AutoBeadFinder.llb/draw rectangles.vi"/>
-			<Item Name="LoadOneImageviaPath.vi" Type="VI" URL="../AutoBeadFinder.llb/LoadOneImageviaPath.vi"/>
 			<Item Name="MakeBigTemplate (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/MakeBigTemplate (SubVI).vi"/>
 			<Item Name="MinusMean2D (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/MinusMean2D (SubVI).vi"/>
 			<Item Name="RECenterROI (SubVI).vi" Type="VI" URL="../AutoBeadFinder.llb/RECenterROI (SubVI).vi"/>
@@ -50,31 +49,25 @@
 				<Item Name="SplitStringIntoArray.vi" Type="VI" URL="../BeadTracker2.llb/SplitStringIntoArray.vi"/>
 			</Item>
 			<Item Name="Tracking" Type="Folder">
-				<Item Name="AdvanceFramesAllDone.vi" Type="VI" URL="../BeadTracker2.llb/AdvanceFramesAllDone.vi"/>
-				<Item Name="AllocateMemoryForResults.vi" Type="VI" URL="../BeadTracker2.llb/AllocateMemoryForResults.vi"/>
 				<Item Name="BuildZLUT.vi" Type="VI" URL="../BeadTracker2.llb/BuildZLUT.vi"/>
 				<Item Name="ConvertBeadPosCornerCenter.vi" Type="VI" URL="../BeadTracker2.llb/ConvertBeadPosCornerCenter.vi"/>
 				<Item Name="CreateQTrkInstance.vi" Type="VI" URL="../BeadTracker2.llb/CreateQTrkInstance.vi"/>
 				<Item Name="DiscardBead.vi" Type="VI" URL="../BeadTracker2.llb/DiscardBead.vi"/>
 				<Item Name="EditQTrkSettingsDialog.vi" Type="VI" URL="../BeadTracker2.llb/EditQTrkSettingsDialog.vi"/>
-				<Item Name="FetchTrackingResults.vi" Type="VI" URL="../BeadTracker2.llb/FetchTrackingResults.vi"/>
 				<Item Name="GetResultScaleAndOffset.vi" Type="VI" URL="../BeadTracker2.llb/GetResultScaleAndOffset.vi"/>
 				<Item Name="SaveOrLoadBeadlist.vi" Type="VI" URL="../BeadTracker2.llb/SaveOrLoadBeadlist.vi"/>
-				<Item Name="SaveTrackingResults.vi" Type="VI" URL="../BeadTracker2.llb/SaveTrackingResults.vi"/>
 				<Item Name="TrackerMain.vi" Type="VI" URL="../BeadTracker2.llb/TrackerMain.vi"/>
 			</Item>
 			<Item Name="Typedefs" Type="Folder">
 				<Item Name="Cmd_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/Cmd_CameraIn.ctl"/>
 				<Item Name="Cmd_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/Cmd_MotorIn.ctl"/>
 				<Item Name="CmdData_GrabParams.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_GrabParams.ctl"/>
-				<Item Name="CmdData_GrabToTracker_NotifierMsgType.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_GrabToTracker_NotifierMsgType.ctl"/>
 				<Item Name="CmdData_NewFrame.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_NewFrame.ctl"/>
 				<Item Name="CmdData_SetMotorPos.ctl" Type="VI" URL="../BeadTracker2.llb/CmdData_SetMotorPos.ctl"/>
 				<Item Name="CmdEnum_CameraFrameType.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraFrameType.ctl"/>
 				<Item Name="CmdEnum_CameraIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraIn.ctl"/>
 				<Item Name="CmdEnum_MotorIn.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_MotorIn.ctl"/>
 				<Item Name="CmdEnum_UserInterfaceCmd.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_UserInterfaceCmd.ctl"/>
-				<Item Name="FrameInfoType.ctl" Type="VI" URL="../BeadTracker2.llb/FrameInfoType.ctl"/>
 				<Item Name="MeasureConfigOutputMode.ctl" Type="VI" URL="../BeadTracker2.llb/MeasureConfigOutputMode.ctl"/>
 				<Item Name="MeasureConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/MeasureConfigType.ctl"/>
 				<Item Name="MotorConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorConfigType.ctl"/>
@@ -82,14 +75,11 @@
 				<Item Name="MotorPosType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorPosType.ctl"/>
 				<Item Name="MotorStateType.ctl" Type="VI" URL="../BeadTracker2.llb/MotorStateType.ctl"/>
 				<Item Name="QueueListType.ctl" Type="VI" URL="../BeadTracker2.llb/QueueListType.ctl"/>
-				<Item Name="ResultsCollectionType.ctl" Type="VI" URL="../BeadTracker2.llb/ResultsCollectionType.ctl"/>
-				<Item Name="TrackedBeadPos.ctl" Type="VI" URL="../BeadTracker2.llb/TrackedBeadPos.ctl"/>
 				<Item Name="XYf.ctl" Type="VI" URL="../BeadTracker2.llb/XYf.ctl"/>
 			</Item>
 			<Item Name="AskForCreateNewDir.vi" Type="VI" URL="../BeadTracker2.llb/AskForCreateNewDir.vi"/>
 			<Item Name="ClearResults.vi" Type="VI" URL="../BeadTracker2.llb/ClearResults.vi"/>
 			<Item Name="ClusterToValueList.vi" Type="VI" URL="../BeadTracker2.llb/ClusterToValueList.vi"/>
-			<Item Name="ComputeHighFreqNoise.vi" Type="VI" URL="../BeadTracker2.llb/ComputeHighFreqNoise.vi"/>
 			<Item Name="CreateNoiseCorrectionImage.vi" Type="VI" URL="../BeadTracker2.llb/CreateNoiseCorrectionImage.vi"/>
 			<Item Name="DeleteFileIfExisting.vi" Type="VI" URL="../BeadTracker2.llb/DeleteFileIfExisting.vi"/>
 			<Item Name="ExtractBeadROI.vi" Type="VI" URL="../BeadTracker2.llb/ExtractBeadROI.vi"/>
@@ -101,7 +91,6 @@
 			<Item Name="LimitedMotorMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/LimitedMotorMoveCmd.vi"/>
 			<Item Name="LimitMotorPos.vi" Type="VI" URL="../BeadTracker2.llb/LimitMotorPos.vi"/>
 			<Item Name="MotorUI.vi" Type="VI" URL="../BeadTracker2.llb/MotorUI.vi"/>
-			<Item Name="OpenOrContinueResultFile.vi" Type="VI" URL="../BeadTracker2.llb/OpenOrContinueResultFile.vi"/>
 			<Item Name="RestoreMainImageView.vi" Type="VI" URL="../BeadTracker2.llb/RestoreMainImageView.vi"/>
 			<Item Name="RunSaveImagesExperiment.vi" Type="VI" URL="../BeadTracker2.llb/RunSaveImagesExperiment.vi"/>
 			<Item Name="SaveExperimentInfo.vi" Type="VI" URL="../BeadTracker2.llb/SaveExperimentInfo.vi"/>
@@ -231,7 +220,6 @@
 				<Item Name="IMAQ Image.ctl" Type="VI" URL="/&lt;vilib&gt;/vision/Image Controls.llb/IMAQ Image.ctl"/>
 				<Item Name="IMAQ ImageToArray" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ ImageToArray"/>
 				<Item Name="IMAQ Init.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqhl.llb/IMAQ Init.vi"/>
-				<Item Name="IMAQ ReadFile" Type="VI" URL="/&lt;vilib&gt;/vision/Files.llb/IMAQ ReadFile"/>
 				<Item Name="IMAQ Serial Read.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Serial Read.vi"/>
 				<Item Name="IMAQ Serial Write.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Serial Write.vi"/>
 				<Item Name="IMAQ Start.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Start.vi"/>
