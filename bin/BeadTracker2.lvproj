@@ -97,10 +97,10 @@
 			<Item Name="SendCameraCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendCameraCmd.vi"/>
 			<Item Name="SendMotorCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorCmd.vi"/>
 			<Item Name="SetMotorAxisPos.vi" Type="VI" URL="../BeadTracker2.llb/SetMotorAxisPos.vi"/>
-			<Item Name="ShowRenameIfExistingExpDialog.vi" Type="VI" URL="../BeadTracker2.llb/ShowRenameIfExistingExpDialog.vi"/>
 			<Item Name="StartImageAcquisition.vi" Type="VI" URL="../BeadTracker2.llb/StartImageAcquisition.vi"/>
 			<Item Name="StopImageAcquisition.vi" Type="VI" URL="../BeadTracker2.llb/StopImageAcquisition.vi"/>
 			<Item Name="StoreFrameInfo.vi" Type="VI" URL="../BeadTracker2.llb/StoreFrameInfo.vi"/>
+			<Item Name="VerifyMeasureConfig.vi" Type="VI" URL="../BeadTracker2.llb/VerifyMeasureConfig.vi"/>
 			<Item Name="WriteArrayAsImage.vi" Type="VI" URL="../BeadTracker2.llb/WriteArrayAsImage.vi"/>
 			<Item Name="WriteSectionFrame.vi" Type="VI" URL="../BeadTracker2.llb/WriteSectionFrame.vi"/>
 		</Item>
