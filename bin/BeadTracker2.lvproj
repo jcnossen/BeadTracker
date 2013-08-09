@@ -88,6 +88,7 @@
 			<Item Name="GetExperimentPaths.vi" Type="VI" URL="../BeadTracker2.llb/GetExperimentPaths.vi"/>
 			<Item Name="GetQueues.vi" Type="VI" URL="../BeadTracker2.llb/GetQueues.vi"/>
 			<Item Name="GlobalVariables.vi" Type="VI" URL="../BeadTracker2.llb/GlobalVariables.vi"/>
+			<Item Name="GrabSingleImage.vi" Type="VI" URL="../BeadTracker2.llb/GrabSingleImage.vi"/>
 			<Item Name="LimitedMotorMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/LimitedMotorMoveCmd.vi"/>
 			<Item Name="LimitMotorPos.vi" Type="VI" URL="../BeadTracker2.llb/LimitMotorPos.vi"/>
 			<Item Name="LogMsg.vi" Type="VI" URL="../BeadTracker2.llb/LogMsg.vi"/>
@@ -135,41 +136,37 @@
 		</Item>
 		<Item Name="QTrk" Type="Folder">
 			<Item Name="ResultManager" Type="Folder">
-				<Item Name="ResultManagerConfig.ctl" Type="VI" URL="../../qtrk/lv/QTrk.llb/ResultManagerConfig.ctl"/>
-				<Item Name="ResultManagerInstance.ctl" Type="VI" URL="../../qtrk/lv/QTrk.llb/ResultManagerInstance.ctl"/>
-				<Item Name="RMCreate.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/RMCreate.vi"/>
-				<Item Name="RMDestroy.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/RMDestroy.vi"/>
-				<Item Name="RMFlush.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/RMFlush.vi"/>
-				<Item Name="RMGetFrameCounters.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/RMGetFrameCounters.vi"/>
-				<Item Name="RMSetTracker.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/RMSetTracker.vi"/>
-				<Item Name="RMStoreFrameInfo.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/RMStoreFrameInfo.vi"/>
+				<Item Name="RMCreate.vi" Type="VI" URL="../qtrk/QTrk.llb/RMCreate.vi"/>
+				<Item Name="RMDestroy.vi" Type="VI" URL="../qtrk/QTrk.llb/RMDestroy.vi"/>
+				<Item Name="RMFlush.vi" Type="VI" URL="../qtrk/QTrk.llb/RMFlush.vi"/>
+				<Item Name="RMGetFrameCounters.vi" Type="VI" URL="../qtrk/QTrk.llb/RMGetFrameCounters.vi"/>
+				<Item Name="RMSetTracker.vi" Type="VI" URL="../qtrk/QTrk.llb/RMSetTracker.vi"/>
+				<Item Name="RMStoreFrameInfo.vi" Type="VI" URL="../qtrk/QTrk.llb/RMStoreFrameInfo.vi"/>
 			</Item>
-			<Item Name="QTrkCheckForDLL.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkCheckForDLL.vi"/>
-			<Item Name="QTrkClearResults.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkClearResults.vi"/>
-			<Item Name="QTrkCreate.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkCreate.vi"/>
-			<Item Name="QTrkDLL.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkDLL.vi"/>
-			<Item Name="QTrkFlush.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkFlush.vi"/>
-			<Item Name="QTrkFree.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkFree.vi"/>
-			<Item Name="QTrkFreeAllTrackers.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkFreeAllTrackers.vi"/>
-			<Item Name="QTrkGenerateSampleFromLUT.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkGenerateSampleFromLUT.vi"/>
-			<Item Name="QTrkGetQueueLength.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkGetQueueLength.vi"/>
-			<Item Name="QTrkGetResultCount.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkGetResultCount.vi"/>
-			<Item Name="QTrkGetZLUT.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkGetZLUT.vi"/>
-			<Item Name="QTrkInstance.ctl" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkInstance.ctl"/>
-			<Item Name="QTrkIsIdle.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkIsIdle.vi"/>
-			<Item Name="QTrkLocalizationResult.ctl" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkLocalizationResult.ctl"/>
-			<Item Name="QTrkLocalizationType.ctl" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkLocalizationType.ctl"/>
-			<Item Name="QTrkPixelDataType.ctl" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkPixelDataType.ctl"/>
-			<Item Name="QTrkQueueFrame.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkQueueFrame.vi"/>
-			<Item Name="QTrkQueueImageU8.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkQueueImageU8.vi"/>
-			<Item Name="QTrkSelectDLLDialog.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkSelectDLLDialog.vi"/>
-			<Item Name="QTrkSettings.ctl" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkSettings.ctl"/>
-			<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkSetZLUT.vi"/>
-			<Item Name="QTrkSpeedTest.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkSpeedTest.vi"/>
-			<Item Name="QTrkZCommandType.ctl" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkZCommandType.ctl"/>
+			<Item Name="QTrkCheckForDLL.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkCheckForDLL.vi"/>
+			<Item Name="QTrkClearResults.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkClearResults.vi"/>
+			<Item Name="QTrkCreate.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkCreate.vi"/>
+			<Item Name="QTrkFlush.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkFlush.vi"/>
+			<Item Name="QTrkFree.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkFree.vi"/>
+			<Item Name="QTrkFreeAllTrackers.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkFreeAllTrackers.vi"/>
+			<Item Name="QTrkGenerateSampleFromLUT.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkGenerateSampleFromLUT.vi"/>
+			<Item Name="QTrkGetQueueLength.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkGetQueueLength.vi"/>
+			<Item Name="QTrkGetResultCount.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkGetResultCount.vi"/>
+			<Item Name="QTrkGetZLUT.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkGetZLUT.vi"/>
+			<Item Name="QTrkInstance.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkInstance.ctl"/>
+			<Item Name="QTrkIsIdle.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkIsIdle.vi"/>
+			<Item Name="QTrkLocalizationResult.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkLocalizationResult.ctl"/>
+			<Item Name="QTrkLocalizationType.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkLocalizationType.ctl"/>
+			<Item Name="QTrkPixelDataType.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkPixelDataType.ctl"/>
+			<Item Name="QTrkQueueFrame.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkQueueFrame.vi"/>
+			<Item Name="QTrkQueueImageU8.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkQueueImageU8.vi"/>
+			<Item Name="QTrkSelectDLLDialog.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkSelectDLLDialog.vi"/>
+			<Item Name="QTrkSettings.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkSettings.ctl"/>
+			<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkSetZLUT.vi"/>
+			<Item Name="QTrkSpeedTest.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkSpeedTest.vi"/>
+			<Item Name="QTrkZCommandType.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkZCommandType.ctl"/>
 		</Item>
 		<Item Name="DisplaySpectrum.vi" Type="VI" URL="../Modules/DisplaySpectrum.vi"/>
-		<Item Name="GrabSingleImage.vi" Type="VI" URL="../BeadTracker2.llb/GrabSingleImage.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
@@ -329,7 +326,7 @@
 			</Item>
 			<Item Name="Longlasting one-axis command.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Longlasting one-axis command.vi"/>
 			<Item Name="lvanlys.dll" Type="Document" URL="/C/Program Files/National Instruments/LabVIEW 2011/resource/lvanlys.dll"/>
-			<Item Name="MakeStetsonWindow.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/MakeStetsonWindow.vi"/>
+			<Item Name="MakeStetsonWindow.vi" Type="VI" URL="../qtrk/QTrk.llb/MakeStetsonWindow.vi"/>
 			<Item Name="MeasureCurrentPos.vi" Type="VI" URL="../Setups/D012R/PIMotorController.llb/MeasureCurrentPos.vi"/>
 			<Item Name="MOV.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/MOV.vi"/>
 			<Item Name="MOV?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/MOV?.vi"/>
@@ -349,13 +346,15 @@
 			<Item Name="PI_Stages_Main.vi" Type="VI" URL="../Setups/D012R/PIMotorController.llb/PI_Stages_Main.vi"/>
 			<Item Name="PIMoveSingleAxis.vi" Type="VI" URL="../Setups/D012R/PIMotorController.llb/PIMoveSingleAxis.vi"/>
 			<Item Name="POS?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/POS?.vi"/>
-			<Item Name="QTrkAccurateTickCount.vi" Type="VI" URL="../QTrk.llb/QTrkAccurateTickCount.vi"/>
-			<Item Name="QTrkAccurateTickCount.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkAccurateTickCount.vi"/>
-			<Item Name="QTrkComputedSettings.ctl" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkComputedSettings.ctl"/>
-			<Item Name="QTrkGetDerivedSettings.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkGetDerivedSettings.vi"/>
-			<Item Name="QTrkGetProfilingReport.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkGetProfilingReport.vi"/>
-			<Item Name="QTrkLocalizationJob.ctl" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkLocalizationJob.ctl"/>
-			<Item Name="RMGetBeadResults.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/RMGetBeadResults.vi"/>
+			<Item Name="QTrkAccurateTickCount.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkAccurateTickCount.vi"/>
+			<Item Name="QTrkComputedSettings.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkComputedSettings.ctl"/>
+			<Item Name="QTrkDLL.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkDLL.vi"/>
+			<Item Name="QTrkGetDerivedSettings.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkGetDerivedSettings.vi"/>
+			<Item Name="QTrkGetProfilingReport.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkGetProfilingReport.vi"/>
+			<Item Name="QTrkLocalizationJob.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkLocalizationJob.ctl"/>
+			<Item Name="ResultManagerConfig.ctl" Type="VI" URL="../qtrk/QTrk.llb/ResultManagerConfig.ctl"/>
+			<Item Name="ResultManagerInstance.ctl" Type="VI" URL="../qtrk/QTrk.llb/ResultManagerInstance.ctl"/>
+			<Item Name="RMGetBeadResults.vi" Type="VI" URL="../qtrk/QTrk.llb/RMGetBeadResults.vi"/>
 			<Item Name="RunGrabSession.vi" Type="VI" URL="../Modules/DalsaCamera.llb/RunGrabSession.vi"/>
 			<Item Name="SAI?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/SAI?.vi"/>
 			<Item Name="SelectBeads.vi" Type="VI" URL="../BeadTracker2.llb/SelectBeads.vi"/>
@@ -368,7 +367,7 @@
 			<Item Name="VOL?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/VOL?.vi"/>
 			<Item Name="VST?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/VST?.vi"/>
 			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Wait for answer of longlasting command.vi"/>
-			<Item Name="XYZf.ctl" Type="VI" URL="../../qtrk/lv/QTrk.llb/XYZf.ctl"/>
+			<Item Name="XYZf.ctl" Type="VI" URL="../qtrk/QTrk.llb/XYZf.ctl"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
