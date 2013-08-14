@@ -382,6 +382,7 @@
 			<Item Name="nivissvc.dll" Type="Document" URL="nivissvc.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
+			<Item Name="NotifyUI.vi" Type="VI" URL="../BeadTracker2.llb/NotifyUI.vi"/>
 			<Item Name="ONT?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/ONT?.vi"/>
 			<Item Name="PI Open Interface of one system.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/PI Open Interface of one system.vi"/>
 			<Item Name="PI Receive String.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/PI Receive String.vi"/>
@@ -426,6 +427,7 @@
 			<Item Name="TrackingTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/TrackingTest.vi"/>
 			<Item Name="TRS?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/TRS?.vi"/>
 			<Item Name="TWG?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/WaveGenerator.llb/TWG?.vi"/>
+			<Item Name="UserInterfaceEventType.ctl" Type="VI" URL="../BeadTracker2.llb/UserInterfaceEventType.ctl"/>
 			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Wait for answer of longlasting command.vi"/>
 			<Item Name="Wait for axes to stop.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Wait for axes to stop.vi"/>
 			<Item Name="Wait for controller ready.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Wait for controller ready.vi"/>
