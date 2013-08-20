@@ -170,7 +170,9 @@
 			<Item Name="QTrkZCommandType.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkZCommandType.ctl"/>
 		</Item>
 		<Item Name="DisplaySpectrum.vi" Type="VI" URL="../Modules/DisplaySpectrum.vi"/>
+		<Item Name="FakeCameraAndMotors.vi" Type="VI" URL="../Modules/FakeCameraAndMotors.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
+		<Item Name="RMDiscardBead.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/RMDiscardBead.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
