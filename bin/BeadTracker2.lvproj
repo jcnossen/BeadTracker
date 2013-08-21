@@ -136,6 +136,7 @@
 				</Item>
 			</Item>
 			<Item Name="MotorControl" Type="Folder"/>
+			<Item Name="FakeCameraAndMotors.vi" Type="VI" URL="../Modules/FakeCameraAndMotors.vi"/>
 		</Item>
 		<Item Name="QTrk" Type="Folder">
 			<Item Name="ResultManager" Type="Folder">
@@ -170,9 +171,7 @@
 			<Item Name="QTrkZCommandType.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkZCommandType.ctl"/>
 		</Item>
 		<Item Name="DisplaySpectrum.vi" Type="VI" URL="../Modules/DisplaySpectrum.vi"/>
-		<Item Name="FakeCameraAndMotors.vi" Type="VI" URL="../Modules/FakeCameraAndMotors.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
-		<Item Name="RMDiscardBead.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/RMDiscardBead.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
@@ -308,6 +307,7 @@
 			<Item Name="QTrkSetPixelGainOffset.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkSetPixelGainOffset.vi"/>
 			<Item Name="ResultManagerConfig.ctl" Type="VI" URL="../qtrk/QTrk.llb/ResultManagerConfig.ctl"/>
 			<Item Name="ResultManagerInstance.ctl" Type="VI" URL="../qtrk/QTrk.llb/ResultManagerInstance.ctl"/>
+			<Item Name="RMDiscardBead.vi" Type="VI" URL="../qtrk/QTrk.llb/RMDiscardBead.vi"/>
 			<Item Name="RMGetBeadResults.vi" Type="VI" URL="../qtrk/QTrk.llb/RMGetBeadResults.vi"/>
 			<Item Name="SelectBeads.vi" Type="VI" URL="../BeadTracker2.llb/SelectBeads.vi"/>
 			<Item Name="UserInterfaceEventType.ctl" Type="VI" URL="../BeadTracker2.llb/UserInterfaceEventType.ctl"/>
