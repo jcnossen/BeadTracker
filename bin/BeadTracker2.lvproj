@@ -101,7 +101,6 @@
 			<Item Name="SendAxisMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendAxisMoveCmd.vi"/>
 			<Item Name="SendCameraCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendCameraCmd.vi"/>
 			<Item Name="SendMotorCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorCmd.vi"/>
-			<Item Name="SetMotorAxisPos.vi" Type="VI" URL="../BeadTracker2.llb/SetMotorAxisPos.vi"/>
 			<Item Name="StartImageAcquisition.vi" Type="VI" URL="../BeadTracker2.llb/StartImageAcquisition.vi"/>
 			<Item Name="StopImageAcquisition.vi" Type="VI" URL="../BeadTracker2.llb/StopImageAcquisition.vi"/>
 			<Item Name="StoreFrameInfo.vi" Type="VI" URL="../BeadTracker2.llb/StoreFrameInfo.vi"/>
@@ -136,7 +135,18 @@
 					<Item Name="VisionExpressCamera.vi" Type="VI" URL="../Modules/VisionExpressCamera.llb/VisionExpressCamera.vi"/>
 				</Item>
 			</Item>
-			<Item Name="MotorControl" Type="Folder"/>
+			<Item Name="PIMotorController" Type="Folder">
+				<Item Name="AxisEnumToAxisInfo.vi" Type="VI" URL="../Modules/PIMotorController.llb/AxisEnumToAxisInfo.vi"/>
+				<Item Name="Cmd_SetPosition.vi" Type="VI" URL="../Modules/PIMotorController.llb/Cmd_SetPosition.vi"/>
+				<Item Name="GCS_Interface.ctl" Type="VI" URL="../Modules/PIMotorController.llb/GCS_Interface.ctl"/>
+				<Item Name="GetSingleAxisPos.vi" Type="VI" URL="../Modules/PIMotorController.llb/GetSingleAxisPos.vi"/>
+				<Item Name="LoadGCSLowLevelVIs.vi" Type="VI" URL="../Modules/PIMotorController.llb/LoadGCSLowLevelVIs.vi"/>
+				<Item Name="MeasureCurrentPos.vi" Type="VI" URL="../Modules/PIMotorController.llb/MeasureCurrentPos.vi"/>
+				<Item Name="PI_Axis.ctl" Type="VI" URL="../Modules/PIMotorController.llb/PI_Axis.ctl"/>
+				<Item Name="PI_Axis_list.ctl" Type="VI" URL="../Modules/PIMotorController.llb/PI_Axis_list.ctl"/>
+				<Item Name="PIMotorController.vi" Type="VI" URL="../Modules/PIMotorController.llb/PIMotorController.vi"/>
+				<Item Name="PIAxisInfoGlobal.vi" Type="VI" URL="../Modules/PIMotorController.llb/PIAxisInfoGlobal.vi"/>
+			</Item>
 			<Item Name="FakeCameraAndMotors.vi" Type="VI" URL="../Modules/FakeCameraAndMotors.vi"/>
 		</Item>
 		<Item Name="QTrk" Type="Folder">
@@ -310,7 +320,6 @@
 			<Item Name="Available DLL interfaces.ctl" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/Available DLL interfaces.ctl"/>
 			<Item Name="Available DLLs.ctl" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/Available DLLs.ctl"/>
 			<Item Name="Available interfaces.ctl" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/Available interfaces.ctl"/>
-			<Item Name="AxisEnumToAxisInfo.vi" Type="VI" URL="../Modules/SharedMotorCode.llb/AxisEnumToAxisInfo.vi"/>
 			<Item Name="Build command substring.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Support.llb/Build command substring.vi"/>
 			<Item Name="Build query command substring.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Support.llb/Build query command substring.vi"/>
 			<Item Name="C-726.1CD.vi" Type="VI" URL="../Setups/D018R/MotorInit.llb/C-726.1CD.vi"/>
@@ -335,7 +344,6 @@
 			<Item Name="FPL.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Limits.llb/FPL.vi"/>
 			<Item Name="FRF.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Limits.llb/FRF.vi"/>
 			<Item Name="FRF?.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Limits.llb/FRF?.vi"/>
-			<Item Name="GCS_Interface.ctl" Type="VI" URL="../Modules/SharedMotorCode.llb/GCS_Interface.ctl"/>
 			<Item Name="GCSTranslateError.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Support.llb/GCSTranslateError.vi"/>
 			<Item Name="GCSTranslator DLL Functions.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/GCSTranslator DLL Functions.vi"/>
 			<Item Name="GCSTranslator.dll" Type="Document" URL="/C/GCS_Merged_mercury_E753/GCSMergedLabVIEW/Low Level/GCSTranslator.dll"/>
@@ -345,7 +353,6 @@
 			<Item Name="Get lines from string.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Support.llb/Get lines from string.vi"/>
 			<Item Name="Get subnet.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/Get subnet.vi"/>
 			<Item Name="GetSetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/GetSetMotorAxisValue.vi"/>
-			<Item Name="GetSingleAxisPos.vi" Type="VI" URL="../Modules/SharedMotorCode.llb/GetSingleAxisPos.vi"/>
 			<Item Name="Global Analog.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Analog control.llb/Global Analog.vi"/>
 			<Item Name="Global DaisyChain.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/Global DaisyChain.vi"/>
 			<Item Name="Global1.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/Global1.vi"/>
@@ -363,13 +370,10 @@
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
 			<Item Name="LIM?.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Limits.llb/LIM?.vi"/>
-			<Item Name="LimitedMotorMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/LimitedMotorMoveCmd.vi"/>
-			<Item Name="LoadGCSLowLevelVIs.vi" Type="VI" URL="../Modules/SharedMotorCode.llb/LoadGCSLowLevelVIs.vi"/>
 			<Item Name="Longlasting one-axis command.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Support.llb/Longlasting one-axis command.vi"/>
 			<Item Name="lvanlys.dll" Type="Document" URL="/C/Program Files/National Instruments/LabVIEW 2011/resource/lvanlys.dll"/>
 			<Item Name="MakeStetsonWindow.vi" Type="VI" URL="../qtrk/QTrk.llb/MakeStetsonWindow.vi"/>
 			<Item Name="MB_init_all_mod.vi" Type="VI" URL="../Setups/D018R/MotorInit.llb/MB_init_all_mod.vi"/>
-			<Item Name="MeasureCurrentPos.vi" Type="VI" URL="../Modules/SharedMotorCode.llb/MeasureCurrentPos.vi"/>
 			<Item Name="Mercury_GCS_Configuration_Setup.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Mercury_GCS_Configuration_Setup.vi"/>
 			<Item Name="MotorControlMain.vi" Type="VI" URL="../Setups/D018R/MotorControlMain.vi"/>
 			<Item Name="MOV.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/General command.llb/MOV.vi"/>
@@ -385,10 +389,6 @@
 			<Item Name="PI Receive String.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/PI Receive String.vi"/>
 			<Item Name="PI Send String.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/PI Send String.vi"/>
 			<Item Name="PI VISA Receive Characters.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/PI VISA Receive Characters.vi"/>
-			<Item Name="PI_Axis.ctl" Type="VI" URL="../Modules/SharedMotorCode.llb/PI_Axis.ctl"/>
-			<Item Name="PI_Axis_list.ctl" Type="VI" URL="../Modules/SharedMotorCode.llb/PI_Axis_list.ctl"/>
-			<Item Name="PI_Stages_Main.vi" Type="VI" URL="../Modules/SharedMotorCode.llb/PI_Stages_Main.vi"/>
-			<Item Name="PIAxisInfoGlobal.vi" Type="VI" URL="../Modules/SharedMotorCode.llb/PIAxisInfoGlobal.vi"/>
 			<Item Name="POS?.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/General command.llb/POS?.vi"/>
 			<Item Name="QTrkAccurateTickCount.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkAccurateTickCount.vi"/>
 			<Item Name="QTrkComputedSettings.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkComputedSettings.ctl"/>
