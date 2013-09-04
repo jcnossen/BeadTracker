@@ -377,6 +377,7 @@
 			<Item Name="Mercury_GCS_Configuration_Setup.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Mercury_GCS_Configuration_Setup.vi"/>
 			<Item Name="MotorControlMain.vi" Type="VI" URL="../Setups/D018R/MotorControlMain.vi"/>
 			<Item Name="MOV.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/General command.llb/MOV.vi"/>
+			<Item Name="MoveSingleAxis.vi" Type="VI" URL="../Modules/PIMotorController.llb/MoveSingleAxis.vi"/>
 			<Item Name="nivision.dll" Type="Document" URL="nivision.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
