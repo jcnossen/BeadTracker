@@ -378,6 +378,7 @@
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
 			<Item Name="LIM?.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Limits.llb/LIM?.vi"/>
+			<Item Name="LogCheckError.vi" Type="VI" URL="../BeadTracker2.llb/LogCheckError.vi"/>
 			<Item Name="Longlasting one-axis command.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Support.llb/Longlasting one-axis command.vi"/>
 			<Item Name="lvanlys.dll" Type="Document" URL="/C/Program Files/National Instruments/LabVIEW 2011/resource/lvanlys.dll"/>
 			<Item Name="MakeStetsonWindow.vi" Type="VI" URL="../qtrk/QTrk.llb/MakeStetsonWindow.vi"/>
