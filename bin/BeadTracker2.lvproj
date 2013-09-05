@@ -134,6 +134,17 @@
 				<Item Name="VisionExpressCamera.llb" Type="Folder">
 					<Item Name="VisionExpressCamera.vi" Type="VI" URL="../Modules/VisionExpressCamera.llb/VisionExpressCamera.vi"/>
 				</Item>
+				<Item Name="DalsaCamera" Type="Folder">
+					<Item Name="DalsaGetCameraConfig.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaGetCameraConfig.vi"/>
+					<Item Name="DalsaModule.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaModule.vi"/>
+					<Item Name="DalsaSettings.ctl" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaSettings.ctl"/>
+					<Item Name="DalsaTest.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaTest.vi"/>
+					<Item Name="DalseSetCameraConfig.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalseSetCameraConfig.vi"/>
+					<Item Name="InitializeCamera.vi" Type="VI" URL="../Modules/DalsaCamera.llb/InitializeCamera.vi"/>
+					<Item Name="RunGrabSession.vi" Type="VI" URL="../Modules/DalsaCamera.llb/RunGrabSession.vi"/>
+					<Item Name="SerialCmd.vi" Type="VI" URL="../Modules/DalsaCamera.llb/SerialCmd.vi"/>
+					<Item Name="ShowSettingsDialog.vi" Type="VI" URL="../Modules/DalsaCamera.llb/ShowSettingsDialog.vi"/>
+				</Item>
 			</Item>
 			<Item Name="PIMotorController" Type="Folder">
 				<Item Name="AxisEnumToAxisInfo.vi" Type="VI" URL="../Modules/PIMotorController.llb/AxisEnumToAxisInfo.vi"/>
@@ -182,6 +193,7 @@
 			<Item Name="QTrkZCommandType.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkZCommandType.ctl"/>
 		</Item>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
+		<Item Name="MB_C843.21_init_mod.vi" Type="VI" URL="../Setups/D018R/MB_C843.21_init_mod.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
@@ -327,13 +339,10 @@
 			<Item Name="CmdEnum_CameraOut.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraOut.ctl"/>
 			<Item Name="Commanded axes connected?.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Support.llb/Commanded axes connected?.vi"/>
 			<Item Name="Controller names.ctl" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/General command.llb/Controller names.ctl"/>
+			<Item Name="conv_turns_steps.vi" Type="VI" URL="../../../D012_MT_multi_beads_mk.llb/conv_turns_steps.vi"/>
 			<Item Name="CreateFileDirectory.vi" Type="VI" URL="../BeadTracker2.llb/CreateFileDirectory.vi"/>
 			<Item Name="CST?.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Special command.llb/CST?.vi"/>
 			<Item Name="Cut out additional spaces.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Support.llb/Cut out additional spaces.vi"/>
-			<Item Name="DalsaGetCameraConfig.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaGetCameraConfig.vi"/>
-			<Item Name="DalsaModule.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaModule.vi"/>
-			<Item Name="DalsaSettings.ctl" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaSettings.ctl"/>
-			<Item Name="DalseSetCameraConfig.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalseSetCameraConfig.vi"/>
 			<Item Name="Define axes to command from boolean array.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Support.llb/Define axes to command from boolean array.vi"/>
 			<Item Name="Define connected axes.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/General command.llb/Define connected axes.vi"/>
 			<Item Name="Define connected systems (Array).vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/General command.llb/Define connected systems (Array).vi"/>
@@ -364,7 +373,6 @@
 			<Item Name="Initialize Global1.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/Initialize Global1.vi"/>
 			<Item Name="Initialize Global2.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/General command.llb/Initialize Global2.vi"/>
 			<Item Name="InitializeC843Axis.vi" Type="VI" URL="../Setups/D018R/MotorInit.llb/InitializeC843Axis.vi"/>
-			<Item Name="InitializeCamera.vi" Type="VI" URL="../Modules/DalsaCamera.llb/InitializeCamera.vi"/>
 			<Item Name="Is DaisyChain open.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/Is DaisyChain open.vi"/>
 			<Item Name="kernel32.dll" Type="Document" URL="kernel32.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
@@ -408,17 +416,13 @@
 			<Item Name="RMGetBeadResults.vi" Type="VI" URL="../qtrk/QTrk.llb/RMGetBeadResults.vi"/>
 			<Item Name="RON.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Limits.llb/RON.vi"/>
 			<Item Name="RON?.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Limits.llb/RON?.vi"/>
-			<Item Name="RunGrabSession.vi" Type="VI" URL="../Modules/DalsaCamera.llb/RunGrabSession.vi"/>
 			<Item Name="SAI?.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/General command.llb/SAI?.vi"/>
 			<Item Name="Select DaisyChain device.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/Select DaisyChain device.vi"/>
 			<Item Name="Select host address.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/Select host address.vi"/>
 			<Item Name="Select USB device.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Communication.llb/Select USB device.vi"/>
 			<Item Name="Select values for chosen axes.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Support.llb/Select values for chosen axes.vi"/>
 			<Item Name="SelectBeads.vi" Type="VI" URL="../BeadTracker2.llb/SelectBeads.vi"/>
-			<Item Name="SerialCmd.vi" Type="VI" URL="../Modules/DalsaCamera.llb/SerialCmd.vi"/>
 			<Item Name="Set RON and return RON status.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Support.llb/Set RON and return RON status.vi"/>
-			<Item Name="SetSingleAxisPos.vi" Type="VI" URL="../Setups/D018R/PIMotorController.llb/SetSingleAxisPos.vi"/>
-			<Item Name="ShowSettingsDialog.vi" Type="VI" URL="../Modules/DalsaCamera.llb/ShowSettingsDialog.vi"/>
 			<Item Name="STA?.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Special command.llb/STA?.vi"/>
 			<Item Name="String with ASCII code conversion.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Support.llb/String with ASCII code conversion.vi"/>
 			<Item Name="Substract axes array subset from axes array.vi" Type="VI" URL="../Setups/D018R/GCSMergedLabVIEW/Low Level/Support.llb/Substract axes array subset from axes array.vi"/>
