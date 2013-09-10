@@ -146,6 +146,27 @@
 					<Item Name="SerialCmd.vi" Type="VI" URL="../Modules/DalsaCamera.llb/SerialCmd.vi"/>
 					<Item Name="ShowSettingsDialog.vi" Type="VI" URL="../Modules/DalsaCamera.llb/ShowSettingsDialog.vi"/>
 				</Item>
+				<Item Name="FastCMOS" Type="Folder">
+					<Item Name="BT2_CameraModule.vi" Type="VI" URL="../Modules/FastCMOS.llb/BT2_CameraModule.vi"/>
+					<Item Name="CameraConfig.ctl" Type="VI" URL="../Modules/FastCMOS.llb/CameraConfig.ctl"/>
+					<Item Name="GrabToFrameQueue.vi" Type="VI" URL="../Modules/FastCMOS.llb/GrabToFrameQueue.vi"/>
+					<Item Name="GrabToTracker.vi" Type="VI" URL="../Modules/FastCMOS.llb/GrabToTracker.vi"/>
+					<Item Name="mkAdjustROIPositions.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkAdjustROIPositions.vi"/>
+					<Item Name="mkConfigure.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkConfigure.vi"/>
+					<Item Name="mkConfigureBufferList.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkConfigureBufferList.vi"/>
+					<Item Name="mkGetROIs.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkGetROIs.vi"/>
+					<Item Name="mkGetSetCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkGetSetCamera.vi"/>
+					<Item Name="mkGetSetFramerate.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkGetSetFramerate.vi"/>
+					<Item Name="mkGetSetInFrameCounter.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkGetSetInFrameCounter.vi"/>
+					<Item Name="mkSendSerialCmd.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkSendSerialCmd.vi"/>
+					<Item Name="mkSetExposureGainOffset.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkSetExposureGainOffset.vi"/>
+					<Item Name="mkSetMode.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkSetMode.vi"/>
+					<Item Name="mkSetROIs.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkSetROIs.vi"/>
+					<Item Name="mkShowSettingsDialog.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkShowSettingsDialog.vi"/>
+					<Item Name="SimplerFastCMOSTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/SimplerFastCMOSTest.vi"/>
+					<Item Name="SimpleTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/SimpleTest.vi"/>
+					<Item Name="TrackingTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/TrackingTest.vi"/>
+				</Item>
 			</Item>
 			<Item Name="PIMotorController" Type="Folder">
 				<Item Name="AxisEnumToAxisInfo.vi" Type="VI" URL="../Modules/PIMotorController.llb/AxisEnumToAxisInfo.vi"/>
@@ -275,6 +296,7 @@
 				<Item Name="IMAQ Serial Read.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Serial Read.vi"/>
 				<Item Name="IMAQ Serial Write.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Serial Write.vi"/>
 				<Item Name="IMAQ Set Camera Attribute.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqhl.llb/IMAQ Set Camera Attribute.vi"/>
+				<Item Name="IMAQ SetImageSize" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ SetImageSize"/>
 				<Item Name="IMAQ Start.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Start.vi"/>
 				<Item Name="IMAQ Status.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Status.vi"/>
 				<Item Name="IMAQ Stop.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Stop.vi"/>
@@ -352,11 +374,14 @@
 			</Item>
 			<Item Name="#7.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/#7.vi"/>
 			<Item Name="*IDN?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/*IDN?.vi"/>
+			<Item Name="AccurateTickCount.vi" Type="VI" URL="../BeadTracker2.llb/AccurateTickCount.vi"/>
 			<Item Name="Assign values from string to axes.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Assign values from string to axes.vi"/>
 			<Item Name="BDR.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/BDR.vi"/>
+			<Item Name="BufferList_fill.vi" Type="VI" URL="../Modules/FastCMOS.llb/BufferList_fill.vi"/>
 			<Item Name="Build command substring.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Build command substring.vi"/>
 			<Item Name="Build query command substring.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Build query command substring.vi"/>
 			<Item Name="C843_E665_Configuration_Self.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/C843_E665_Configuration_Self.vi"/>
+			<Item Name="Check_ROI.vi" Type="VI" URL="../Modules/FastCMOS.llb/Check_ROI.vi"/>
 			<Item Name="Close connection if open.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Close connection if open.vi"/>
 			<Item Name="CmdEnum_CameraOut.ctl" Type="VI" URL="../BeadTracker2.llb/CmdEnum_CameraOut.ctl"/>
 			<Item Name="Commanded axes connected?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Commanded axes connected?.vi"/>
@@ -417,6 +442,7 @@
 			<Item Name="VOL?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/VOL?.vi"/>
 			<Item Name="VST?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/VST?.vi"/>
 			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Wait for answer of longlasting command.vi"/>
+			<Item Name="WriteToCam120828.vi" Type="VI" URL="../Modules/FastCMOS.llb/WriteToCam120828.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
