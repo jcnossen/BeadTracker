@@ -78,6 +78,10 @@
 				<Item Name="QueueListType.ctl" Type="VI" URL="../BeadTracker2.llb/QueueListType.ctl"/>
 				<Item Name="XYf.ctl" Type="VI" URL="../BeadTracker2.llb/XYf.ctl"/>
 				<Item Name="MotorCmd_MoveToLimit.ctl" Type="VI" URL="../BeadTracker2.llb/MotorCmd_MoveToLimit.ctl"/>
+				<Item Name="CameraInterface.ctl" Type="VI" URL="../BeadTracker2.llb/CameraInterface.ctl"/>
+				<Item Name="CIGrabParams.ctl" Type="VI" URL="../BeadTracker2.llb/CIGrabParams.ctl"/>
+				<Item Name="CIGrabControlMsg.ctl" Type="VI" URL="../BeadTracker2.llb/CIGrabControlMsg.ctl"/>
+				<Item Name="CIGrabControlMsgEnum.ctl" Type="VI" URL="../BeadTracker2.llb/CIGrabControlMsgEnum.ctl"/>
 			</Item>
 			<Item Name="ApplyOffsetGainToDisplayImage.vi" Type="VI" URL="../BeadTracker2.llb/ApplyOffsetGainToDisplayImage.vi"/>
 			<Item Name="AskForCreateNewDir.vi" Type="VI" URL="../BeadTracker2.llb/AskForCreateNewDir.vi"/>
@@ -109,25 +113,7 @@
 			<Item Name="VerifyMeasureConfig.vi" Type="VI" URL="../BeadTracker2.llb/VerifyMeasureConfig.vi"/>
 			<Item Name="WriteArrayAsImage.vi" Type="VI" URL="../BeadTracker2.llb/WriteArrayAsImage.vi"/>
 			<Item Name="WriteSectionFrame.vi" Type="VI" URL="../BeadTracker2.llb/WriteSectionFrame.vi"/>
-		</Item>
-		<Item Name="MessageQueue" Type="Folder">
-			<Item Name="ListenerType.ctl" Type="VI" URL="../MessageQueue.llb/ListenerType.ctl"/>
-			<Item Name="MessageQueue.ctl" Type="VI" URL="../MessageQueue.llb/MessageQueue.ctl"/>
-			<Item Name="MessageQueueExample.vi" Type="VI" URL="../MessageQueue.llb/MessageQueueExample.vi"/>
-			<Item Name="MessageQueueExample_TestDRV.vi" Type="VI" URL="../MessageQueue.llb/MessageQueueExample_TestDRV.vi"/>
-			<Item Name="MessageType.ctl" Type="VI" URL="../MessageQueue.llb/MessageType.ctl"/>
-			<Item Name="MsgQueue_Create.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_Create.vi"/>
-			<Item Name="MsgQueue_Delete.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_Delete.vi"/>
-			<Item Name="MsgQueue_Flush.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_Flush.vi"/>
-			<Item Name="MsgQueue_GetNumListeners.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_GetNumListeners.vi"/>
-			<Item Name="MsgQueue_GetQueueLengths.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_GetQueueLengths.vi"/>
-			<Item Name="MsgQueue_ListenerStatus.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_ListenerStatus.vi"/>
-			<Item Name="MsgQueue_ReadMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_ReadMsg.vi"/>
-			<Item Name="MsgQueue_RegisterListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_RegisterListener.vi"/>
-			<Item Name="MsgQueue_RemoveListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_RemoveListener.vi"/>
-			<Item Name="MsgQueue_SendMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_SendMsg.vi"/>
-			<Item Name="MsgQueue_WaitForListeners.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_WaitForListeners.vi"/>
-			<Item Name="MsgQueueRef.ctl" Type="VI" URL="../MessageQueue.llb/MsgQueueRef.ctl"/>
+			<Item Name="GenericCameraConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/GenericCameraConfigType.ctl"/>
 		</Item>
 		<Item Name="Modules" Type="Folder">
 			<Property Name="NI.SortType" Type="Int">3</Property>
@@ -144,24 +130,34 @@
 					<Item Name="ShowSettingsDialog.vi" Type="VI" URL="../Modules/DalsaCamera.llb/ShowSettingsDialog.vi"/>
 				</Item>
 				<Item Name="FastCMOS" Type="Folder">
-					<Item Name="BT2_CameraModule.vi" Type="VI" URL="../Modules/FastCMOS.llb/BT2_CameraModule.vi"/>
-					<Item Name="CameraConfig.ctl" Type="VI" URL="../Modules/FastCMOS.llb/CameraConfig.ctl"/>
-					<Item Name="GrabToFrameQueue.vi" Type="VI" URL="../Modules/FastCMOS.llb/GrabToFrameQueue.vi"/>
-					<Item Name="GrabToTracker.vi" Type="VI" URL="../Modules/FastCMOS.llb/GrabToTracker.vi"/>
-					<Item Name="mkAdjustROIPositions.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkAdjustROIPositions.vi"/>
-					<Item Name="mkConfigure.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkConfigure.vi"/>
-					<Item Name="mkConfigureBufferList.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkConfigureBufferList.vi"/>
-					<Item Name="mkGetROIs.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkGetROIs.vi"/>
-					<Item Name="mkGetSetCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkGetSetCamera.vi"/>
-					<Item Name="mkGetSetFramerate.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkGetSetFramerate.vi"/>
-					<Item Name="mkGetSetInFrameCounter.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkGetSetInFrameCounter.vi"/>
-					<Item Name="mkSendSerialCmd.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkSendSerialCmd.vi"/>
-					<Item Name="mkSetExposureGainOffset.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkSetExposureGainOffset.vi"/>
-					<Item Name="mkSetMode.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkSetMode.vi"/>
-					<Item Name="mkSetROIs.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkSetROIs.vi"/>
-					<Item Name="mkShowSettingsDialog.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkShowSettingsDialog.vi"/>
-					<Item Name="SimplerFastCMOSTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/SimplerFastCMOSTest.vi"/>
-					<Item Name="TrackingTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/TrackingTest.vi"/>
+					<Item Name="Interface" Type="Folder">
+						<Item Name="CIAdjustBeadPos.vi" Type="VI" URL="../Modules/FastCMOS.llb/CIAdjustBeadPos.vi"/>
+						<Item Name="CIClose.vi" Type="VI" URL="../Modules/FastCMOS.llb/CIClose.vi"/>
+						<Item Name="CIInit.vi" Type="VI" URL="../Modules/FastCMOS.llb/CIInit.vi"/>
+						<Item Name="CISaveLoadSettings.vi" Type="VI" URL="../Modules/FastCMOS.llb/CISaveLoadSettings.vi"/>
+						<Item Name="CISettingsEditor.vi" Type="VI" URL="../Modules/FastCMOS.llb/CISettingsEditor.vi"/>
+						<Item Name="CIGrab.vi" Type="VI" URL="../Modules/FastCMOS.llb/CIGrab.vi"/>
+					</Item>
+					<Item Name="Internal" Type="Folder">
+						<Item Name="mkCameraMain.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkCameraMain.vi"/>
+						<Item Name="CameraConfig.ctl" Type="VI" URL="../Modules/FastCMOS.llb/CameraConfig.ctl"/>
+						<Item Name="GrabToFrameQueue.vi" Type="VI" URL="../Modules/FastCMOS.llb/GrabToFrameQueue.vi"/>
+						<Item Name="GrabToTracker.vi" Type="VI" URL="../Modules/FastCMOS.llb/GrabToTracker.vi"/>
+						<Item Name="mkAdjustROIPositions.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkAdjustROIPositions.vi"/>
+						<Item Name="mkConfigure.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkConfigure.vi"/>
+						<Item Name="mkConfigureBufferList.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkConfigureBufferList.vi"/>
+						<Item Name="mkGetROIs.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkGetROIs.vi"/>
+						<Item Name="mkGetSetCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkGetSetCamera.vi"/>
+						<Item Name="mkGetSetFramerate.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkGetSetFramerate.vi"/>
+						<Item Name="mkGetSetInFrameCounter.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkGetSetInFrameCounter.vi"/>
+						<Item Name="mkSendSerialCmd.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkSendSerialCmd.vi"/>
+						<Item Name="mkSetExposureGainOffset.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkSetExposureGainOffset.vi"/>
+						<Item Name="mkSetMode.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkSetMode.vi"/>
+						<Item Name="mkSetROIs.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkSetROIs.vi"/>
+						<Item Name="mkShowSettingsDialog.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkShowSettingsDialog.vi"/>
+						<Item Name="SimplerFastCMOSTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/SimplerFastCMOSTest.vi"/>
+						<Item Name="TrackingTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/TrackingTest.vi"/>
+					</Item>
 				</Item>
 			</Item>
 			<Item Name="PIMotorController" Type="Folder">
@@ -243,7 +239,11 @@
 			</Item>
 		</Item>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
+		<Item Name="mkCameraData.ctl" Type="VI" URL="../Modules/FastCMOS.llb/mkCameraData.ctl"/>
+		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
+		<Item Name="TrackingConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/TrackingConfigType.ctl"/>
+		<Item Name="VIRefInterfaceTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/VIRefInterfaceTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
@@ -383,6 +383,8 @@
 			<Item Name="Available interfaces.ctl" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Available interfaces.ctl"/>
 			<Item Name="Build command substring.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Build command substring.vi"/>
 			<Item Name="Build query command substring.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Build query command substring.vi"/>
+			<Item Name="CIGrabSession.vi" Type="VI" URL="../Modules/FastCMOS.llb/CIGrabSession.vi"/>
+			<Item Name="CISnapFrame.vi" Type="VI" URL="../Modules/FastCMOS.llb/CISnapFrame.vi"/>
 			<Item Name="Close connection if open.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Close connection if open.vi"/>
 			<Item Name="Combine axes arrays.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Combine axes arrays.vi"/>
 			<Item Name="Commanded axes connected?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Commanded axes connected?.vi"/>
@@ -410,6 +412,7 @@
 			<Item Name="Get lines from string.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Get lines from string.vi"/>
 			<Item Name="Get subnet.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Get subnet.vi"/>
 			<Item Name="GetSetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/GetSetMotorAxisValue.vi"/>
+			<Item Name="GetVIRefInterface.vi" Type="VI" URL="../Modules/FastCMOS.llb/GetVIRefInterface.vi"/>
 			<Item Name="Global Analog.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Analog control.llb/Global Analog.vi"/>
 			<Item Name="Global DaisyChain.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Global DaisyChain.vi"/>
 			<Item Name="Global1.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Global1.vi"/>
@@ -435,6 +438,13 @@
 			<Item Name="Motors_Mercury_init_D012_MD.vi" Type="VI" URL="../Setups/D012L/MotorsInit.llb/Motors_Mercury_init_D012_MD.vi"/>
 			<Item Name="MOV.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/MOV.vi"/>
 			<Item Name="MoveSingleAxis.vi" Type="VI" URL="../Modules/PIMotorController.llb/MoveSingleAxis.vi"/>
+			<Item Name="MsgQueue_GetQueueLengths.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_GetQueueLengths.vi"/>
+			<Item Name="MsgQueue_ListenerStatus.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_ListenerStatus.vi"/>
+			<Item Name="MsgQueue_ReadMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_ReadMsg.vi"/>
+			<Item Name="MsgQueue_RegisterListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_RegisterListener.vi"/>
+			<Item Name="MsgQueue_RemoveListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_RemoveListener.vi"/>
+			<Item Name="MsgQueue_SendMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_SendMsg.vi"/>
+			<Item Name="MsgQueue_WaitForListeners.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_WaitForListeners.vi"/>
 			<Item Name="nivision.dll" Type="Document" URL="nivision.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
@@ -458,7 +468,6 @@
 			<Item Name="Select values for chosen axes.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Select values for chosen axes.vi"/>
 			<Item Name="SelectBeads.vi" Type="VI" URL="../BeadTracker2.llb/SelectBeads.vi"/>
 			<Item Name="Set RON and return RON status.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Set RON and return RON status.vi"/>
-			<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 			<Item Name="STA?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Special command.llb/STA?.vi"/>
 			<Item Name="String with ASCII code conversion.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/String with ASCII code conversion.vi"/>
 			<Item Name="Substract axes array subset from axes array.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Substract axes array subset from axes array.vi"/>
