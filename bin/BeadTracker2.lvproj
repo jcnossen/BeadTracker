@@ -82,38 +82,41 @@
 				<Item Name="CIGrabParams.ctl" Type="VI" URL="../BeadTracker2.llb/CIGrabParams.ctl"/>
 				<Item Name="CIGrabControlMsg.ctl" Type="VI" URL="../BeadTracker2.llb/CIGrabControlMsg.ctl"/>
 				<Item Name="CIGrabControlMsgEnum.ctl" Type="VI" URL="../BeadTracker2.llb/CIGrabControlMsgEnum.ctl"/>
+				<Item Name="TrackingConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/TrackingConfigType.ctl"/>
 			</Item>
-			<Item Name="ApplyOffsetGainToDisplayImage.vi" Type="VI" URL="../BeadTracker2.llb/ApplyOffsetGainToDisplayImage.vi"/>
-			<Item Name="AskForCreateNewDir.vi" Type="VI" URL="../BeadTracker2.llb/AskForCreateNewDir.vi"/>
-			<Item Name="ClearResults.vi" Type="VI" URL="../BeadTracker2.llb/ClearResults.vi"/>
-			<Item Name="ClusterToValueList.vi" Type="VI" URL="../BeadTracker2.llb/ClusterToValueList.vi"/>
-			<Item Name="ComputeFisherMatrixFromLUT.vi" Type="VI" URL="../BeadTracker2.llb/ComputeFisherMatrixFromLUT.vi"/>
-			<Item Name="DeleteFileIfExisting.vi" Type="VI" URL="../BeadTracker2.llb/DeleteFileIfExisting.vi"/>
-			<Item Name="ExtractBeadROI.vi" Type="VI" URL="../BeadTracker2.llb/ExtractBeadROI.vi"/>
-			<Item Name="GenerateNewFilename.vi" Type="VI" URL="../BeadTracker2.llb/GenerateNewFilename.vi"/>
-			<Item Name="GenerateTracePlotData.vi" Type="VI" URL="../BeadTracker2.llb/GenerateTracePlotData.vi"/>
-			<Item Name="GetExperimentPaths.vi" Type="VI" URL="../BeadTracker2.llb/GetExperimentPaths.vi"/>
-			<Item Name="GetQueues.vi" Type="VI" URL="../BeadTracker2.llb/GetQueues.vi"/>
-			<Item Name="GlobalVariables.vi" Type="VI" URL="../BeadTracker2.llb/GlobalVariables.vi"/>
-			<Item Name="GrabSingleImage.vi" Type="VI" URL="../BeadTracker2.llb/GrabSingleImage.vi"/>
-			<Item Name="LimitMotorPos.vi" Type="VI" URL="../BeadTracker2.llb/LimitMotorPos.vi"/>
-			<Item Name="LoadGainCorrectionImages.vi" Type="VI" URL="../BeadTracker2.llb/LoadGainCorrectionImages.vi"/>
-			<Item Name="LogMsg.vi" Type="VI" URL="../BeadTracker2.llb/LogMsg.vi"/>
-			<Item Name="MotorUI.vi" Type="VI" URL="../BeadTracker2.llb/MotorUI.vi"/>
-			<Item Name="RestoreMainImageView.vi" Type="VI" URL="../BeadTracker2.llb/RestoreMainImageView.vi"/>
-			<Item Name="RunSaveImagesExperiment.vi" Type="VI" URL="../BeadTracker2.llb/RunSaveImagesExperiment.vi"/>
-			<Item Name="SaveExperimentInfo.vi" Type="VI" URL="../BeadTracker2.llb/SaveExperimentInfo.vi"/>
-			<Item Name="SendAxisMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendAxisMoveCmd.vi"/>
-			<Item Name="SendCameraCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendCameraCmd.vi"/>
-			<Item Name="SendMotorCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorCmd.vi"/>
-			<Item Name="StartImageAcquisition.vi" Type="VI" URL="../BeadTracker2.llb/StartImageAcquisition.vi"/>
-			<Item Name="StopImageAcquisition.vi" Type="VI" URL="../BeadTracker2.llb/StopImageAcquisition.vi"/>
-			<Item Name="StoreFrameInfo.vi" Type="VI" URL="../BeadTracker2.llb/StoreFrameInfo.vi"/>
-			<Item Name="TryLoadGainCorrectionImages.vi" Type="VI" URL="../BeadTracker2.llb/TryLoadGainCorrectionImages.vi"/>
-			<Item Name="VerifyMeasureConfig.vi" Type="VI" URL="../BeadTracker2.llb/VerifyMeasureConfig.vi"/>
-			<Item Name="WriteArrayAsImage.vi" Type="VI" URL="../BeadTracker2.llb/WriteArrayAsImage.vi"/>
-			<Item Name="WriteSectionFrame.vi" Type="VI" URL="../BeadTracker2.llb/WriteSectionFrame.vi"/>
-			<Item Name="GenericCameraConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/GenericCameraConfigType.ctl"/>
+			<Item Name="General" Type="Folder">
+				<Item Name="ApplyOffsetGainToDisplayImage.vi" Type="VI" URL="../BeadTracker2.llb/ApplyOffsetGainToDisplayImage.vi"/>
+				<Item Name="AskForCreateNewDir.vi" Type="VI" URL="../BeadTracker2.llb/AskForCreateNewDir.vi"/>
+				<Item Name="ClearResults.vi" Type="VI" URL="../BeadTracker2.llb/ClearResults.vi"/>
+				<Item Name="ClusterToValueList.vi" Type="VI" URL="../BeadTracker2.llb/ClusterToValueList.vi"/>
+				<Item Name="ComputeFisherMatrixFromLUT.vi" Type="VI" URL="../BeadTracker2.llb/ComputeFisherMatrixFromLUT.vi"/>
+				<Item Name="DeleteFileIfExisting.vi" Type="VI" URL="../BeadTracker2.llb/DeleteFileIfExisting.vi"/>
+				<Item Name="ExtractBeadROI.vi" Type="VI" URL="../BeadTracker2.llb/ExtractBeadROI.vi"/>
+				<Item Name="GenerateNewFilename.vi" Type="VI" URL="../BeadTracker2.llb/GenerateNewFilename.vi"/>
+				<Item Name="GenerateTracePlotData.vi" Type="VI" URL="../BeadTracker2.llb/GenerateTracePlotData.vi"/>
+				<Item Name="GetExperimentPaths.vi" Type="VI" URL="../BeadTracker2.llb/GetExperimentPaths.vi"/>
+				<Item Name="GetQueues.vi" Type="VI" URL="../BeadTracker2.llb/GetQueues.vi"/>
+				<Item Name="GlobalVariables.vi" Type="VI" URL="../BeadTracker2.llb/GlobalVariables.vi"/>
+				<Item Name="GrabSingleImage.vi" Type="VI" URL="../BeadTracker2.llb/GrabSingleImage.vi"/>
+				<Item Name="LimitMotorPos.vi" Type="VI" URL="../BeadTracker2.llb/LimitMotorPos.vi"/>
+				<Item Name="LoadGainCorrectionImages.vi" Type="VI" URL="../BeadTracker2.llb/LoadGainCorrectionImages.vi"/>
+				<Item Name="LogMsg.vi" Type="VI" URL="../BeadTracker2.llb/LogMsg.vi"/>
+				<Item Name="MotorUI.vi" Type="VI" URL="../BeadTracker2.llb/MotorUI.vi"/>
+				<Item Name="ToggleMainCameraView.vi" Type="VI" URL="../BeadTracker2.llb/ToggleMainCameraView.vi"/>
+				<Item Name="RunSaveImagesExperiment.vi" Type="VI" URL="../BeadTracker2.llb/RunSaveImagesExperiment.vi"/>
+				<Item Name="SaveExperimentInfo.vi" Type="VI" URL="../BeadTracker2.llb/SaveExperimentInfo.vi"/>
+				<Item Name="SendAxisMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendAxisMoveCmd.vi"/>
+				<Item Name="SendCameraCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendCameraCmd.vi"/>
+				<Item Name="SendMotorCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorCmd.vi"/>
+				<Item Name="StartImageAcquisition.vi" Type="VI" URL="../BeadTracker2.llb/StartImageAcquisition.vi"/>
+				<Item Name="StopImageAcquisition.vi" Type="VI" URL="../BeadTracker2.llb/StopImageAcquisition.vi"/>
+				<Item Name="StoreFrameInfo.vi" Type="VI" URL="../BeadTracker2.llb/StoreFrameInfo.vi"/>
+				<Item Name="TryLoadGainCorrectionImages.vi" Type="VI" URL="../BeadTracker2.llb/TryLoadGainCorrectionImages.vi"/>
+				<Item Name="VerifyMeasureConfig.vi" Type="VI" URL="../BeadTracker2.llb/VerifyMeasureConfig.vi"/>
+				<Item Name="WriteArrayAsImage.vi" Type="VI" URL="../BeadTracker2.llb/WriteArrayAsImage.vi"/>
+				<Item Name="WriteSectionFrame.vi" Type="VI" URL="../BeadTracker2.llb/WriteSectionFrame.vi"/>
+				<Item Name="GenericCameraConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/GenericCameraConfigType.ctl"/>
+			</Item>
 		</Item>
 		<Item Name="Modules" Type="Folder">
 			<Property Name="NI.SortType" Type="Int">3</Property>
@@ -157,7 +160,10 @@
 						<Item Name="mkShowSettingsDialog.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkShowSettingsDialog.vi"/>
 						<Item Name="SimplerFastCMOSTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/SimplerFastCMOSTest.vi"/>
 						<Item Name="TrackingTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/TrackingTest.vi"/>
+						<Item Name="mkCameraData.ctl" Type="VI" URL="../Modules/FastCMOS.llb/mkCameraData.ctl"/>
+						<Item Name="mkResetCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkResetCamera.vi"/>
 					</Item>
+					<Item Name="CI_Test.vi" Type="VI" URL="../Modules/FastCMOS.llb/CI_Test.vi"/>
 				</Item>
 			</Item>
 			<Item Name="PIMotorController" Type="Folder">
@@ -192,6 +198,7 @@
 				<Item Name="RMGetFrameCounters.vi" Type="VI" URL="../qtrk/QTrk.llb/RMGetFrameCounters.vi"/>
 				<Item Name="RMSetTracker.vi" Type="VI" URL="../qtrk/QTrk.llb/RMSetTracker.vi"/>
 				<Item Name="RMStoreFrameInfo.vi" Type="VI" URL="../qtrk/QTrk.llb/RMStoreFrameInfo.vi"/>
+				<Item Name="RMGetConfig.vi" Type="VI" URL="../qtrk/QTrk.llb/RMGetConfig.vi"/>
 			</Item>
 			<Item Name="QTrk" Type="Folder">
 				<Item Name="MakeStetsonWindow.vi" Type="VI" URL="../qtrk/QTrk.llb/MakeStetsonWindow.vi"/>
@@ -238,12 +245,13 @@
 				<Item Name="XYZf.ctl" Type="VI" URL="../qtrk/QTrk.llb/XYZf.ctl"/>
 			</Item>
 		</Item>
+		<Item Name="CameraInstance.ctl" Type="VI" URL="../BeadTracker2.llb/CameraInstance.ctl"/>
+		<Item Name="CreateCameraGrabQueues.vi" Type="VI" URL="../BeadTracker2.llb/CreateCameraGrabQueues.vi"/>
+		<Item Name="FastCMOSSimpleTest.vi" Type="VI" URL="../Modules/FastCMOSSimpleTest.vi"/>
+		<Item Name="MainCameraViewLoop.vi" Type="VI" URL="../BeadTracker2.llb/MainCameraViewLoop.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
-		<Item Name="mkCameraData.ctl" Type="VI" URL="../Modules/FastCMOS.llb/mkCameraData.ctl"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
-		<Item Name="TrackingConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/TrackingConfigType.ctl"/>
-		<Item Name="VIRefInterfaceTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/VIRefInterfaceTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
@@ -383,11 +391,12 @@
 			<Item Name="Available interfaces.ctl" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Available interfaces.ctl"/>
 			<Item Name="Build command substring.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Build command substring.vi"/>
 			<Item Name="Build query command substring.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Build query command substring.vi"/>
-			<Item Name="CIGrabSession.vi" Type="VI" URL="../Modules/FastCMOS.llb/CIGrabSession.vi"/>
+			<Item Name="CIGetSetConfig.vi" Type="VI" URL="../Modules/FastCMOS.llb/CIGetSetConfig.vi"/>
 			<Item Name="CISnapFrame.vi" Type="VI" URL="../Modules/FastCMOS.llb/CISnapFrame.vi"/>
 			<Item Name="Close connection if open.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Close connection if open.vi"/>
 			<Item Name="Combine axes arrays.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Combine axes arrays.vi"/>
 			<Item Name="Commanded axes connected?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Commanded axes connected?.vi"/>
+			<Item Name="ConnectToCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/ConnectToCamera.vi"/>
 			<Item Name="Controller names.ctl" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/Controller names.ctl"/>
 			<Item Name="CreateFileDirectory.vi" Type="VI" URL="../BeadTracker2.llb/CreateFileDirectory.vi"/>
 			<Item Name="CST?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Special command.llb/CST?.vi"/>
@@ -412,7 +421,6 @@
 			<Item Name="Get lines from string.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Get lines from string.vi"/>
 			<Item Name="Get subnet.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Get subnet.vi"/>
 			<Item Name="GetSetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/GetSetMotorAxisValue.vi"/>
-			<Item Name="GetVIRefInterface.vi" Type="VI" URL="../Modules/FastCMOS.llb/GetVIRefInterface.vi"/>
 			<Item Name="Global Analog.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Analog control.llb/Global Analog.vi"/>
 			<Item Name="Global DaisyChain.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Global DaisyChain.vi"/>
 			<Item Name="Global1.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Global1.vi"/>
@@ -479,6 +487,7 @@
 			<Item Name="TRS?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/TRS?.vi"/>
 			<Item Name="TWG?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/WaveGenerator.llb/TWG?.vi"/>
 			<Item Name="UserInterfaceEventType.ctl" Type="VI" URL="../BeadTracker2.llb/UserInterfaceEventType.ctl"/>
+			<Item Name="VIRefInterfaceTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/VIRefInterfaceTest.vi"/>
 			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Wait for answer of longlasting command.vi"/>
 			<Item Name="Wait for axes to stop.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Wait for axes to stop.vi"/>
 			<Item Name="Wait for controller ready.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Wait for controller ready.vi"/>
