@@ -156,6 +156,7 @@
 						<Item Name="mkResetCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkResetCamera.vi"/>
 					</Item>
 					<Item Name="CI_Test.vi" Type="VI" URL="../Modules/FastCMOS.llb/CI_Test.vi"/>
+					<Item Name="FastCMOS_EstimateOffsetGain.vi" Type="VI" URL="../Modules/FastCMOS_EstimateOffsetGain.vi"/>
 				</Item>
 				<Item Name="GenericIMAQCamera" Type="Folder">
 					<Item Name="CI_IMAQ_AdjustBeadPos.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/CI_IMAQ_AdjustBeadPos.vi"/>
@@ -263,7 +264,6 @@
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
-				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
 				<Item Name="BuildHelpPath.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/BuildHelpPath.vi"/>
 				<Item Name="Check if File or Folder Exists.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/libraryn.llb/Check if File or Folder Exists.vi"/>
 				<Item Name="Check Special Tags.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Check Special Tags.vi"/>
@@ -462,6 +462,7 @@
 			<Item Name="MsgQueue_GetQueueLengths.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_GetQueueLengths.vi"/>
 			<Item Name="MsgQueue_ListenerStatus.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_ListenerStatus.vi"/>
 			<Item Name="MsgQueue_ReadMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_ReadMsg.vi"/>
+			<Item Name="QTrkSetPixelCalibrationFactors.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkSetPixelCalibrationFactors.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
