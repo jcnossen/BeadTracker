@@ -124,17 +124,6 @@
 		<Item Name="Modules" Type="Folder">
 			<Property Name="NI.SortType" Type="Int">3</Property>
 			<Item Name="Cameras" Type="Folder">
-				<Item Name="DalsaCamera" Type="Folder">
-					<Item Name="DalsaGetCameraConfig.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaGetCameraConfig.vi"/>
-					<Item Name="DalsaModule.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaModule.vi"/>
-					<Item Name="DalsaSettings.ctl" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaSettings.ctl"/>
-					<Item Name="DalsaTest.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalsaTest.vi"/>
-					<Item Name="DalseSetCameraConfig.vi" Type="VI" URL="../Modules/DalsaCamera.llb/DalseSetCameraConfig.vi"/>
-					<Item Name="InitializeCamera.vi" Type="VI" URL="../Modules/DalsaCamera.llb/InitializeCamera.vi"/>
-					<Item Name="RunGrabSession.vi" Type="VI" URL="../Modules/DalsaCamera.llb/RunGrabSession.vi"/>
-					<Item Name="SerialCmd.vi" Type="VI" URL="../Modules/DalsaCamera.llb/SerialCmd.vi"/>
-					<Item Name="ShowSettingsDialog.vi" Type="VI" URL="../Modules/DalsaCamera.llb/ShowSettingsDialog.vi"/>
-				</Item>
 				<Item Name="FastCMOS" Type="Folder">
 					<Item Name="Interface" Type="Folder">
 						<Item Name="CIAdjustBeadPos.vi" Type="VI" URL="../Modules/FastCMOS.llb/CIAdjustBeadPos.vi"/>
@@ -167,6 +156,27 @@
 						<Item Name="mkResetCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkResetCamera.vi"/>
 					</Item>
 					<Item Name="CI_Test.vi" Type="VI" URL="../Modules/FastCMOS.llb/CI_Test.vi"/>
+				</Item>
+				<Item Name="GenericIMAQCamera" Type="Folder">
+					<Item Name="CI_IMAQ_AdjustBeadPos.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/CI_IMAQ_AdjustBeadPos.vi"/>
+					<Item Name="CI_IMAQ_Close.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/CI_IMAQ_Close.vi"/>
+					<Item Name="CI_IMAQ_GetSetConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/CI_IMAQ_GetSetConfig.vi"/>
+					<Item Name="CI_IMAQ_Grab.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/CI_IMAQ_Grab.vi"/>
+					<Item Name="CI_IMAQ_SaveLoadSettings.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/CI_IMAQ_SaveLoadSettings.vi"/>
+					<Item Name="CI_IMAQ_SettingsEditor.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/CI_IMAQ_SettingsEditor.vi"/>
+					<Item Name="DalsaGetCameraConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/DalsaGetCameraConfig.vi"/>
+					<Item Name="DalsaModule.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/DalsaModule.vi"/>
+					<Item Name="DalsaTest.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/DalsaTest.vi"/>
+					<Item Name="DalseSetCameraConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/DalseSetCameraConfig.vi"/>
+					<Item Name="GenericIMAQCameraInstance.ctl" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQCameraInstance.ctl"/>
+					<Item Name="GenericIMAQGetConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQGetConfig.vi"/>
+					<Item Name="GenericIMAQGetInterface.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQGetInterface.vi"/>
+					<Item Name="GenericIMAQHardwareConfig.ctl" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQHardwareConfig.ctl"/>
+					<Item Name="Global_GenericIMAQCamera_HardwareConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/Global_GenericIMAQCamera_HardwareConfig.vi"/>
+					<Item Name="IMAQSetupBufferList.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/IMAQSetupBufferList.vi"/>
+					<Item Name="RunGrabSession.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/RunGrabSession.vi"/>
+					<Item Name="SerialCmd.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/SerialCmd.vi"/>
+					<Item Name="ShowSettingsDialog.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/ShowSettingsDialog.vi"/>
 				</Item>
 			</Item>
 			<Item Name="PIMotorController" Type="Folder">
@@ -248,7 +258,6 @@
 				<Item Name="XYZf.ctl" Type="VI" URL="../qtrk/QTrk.llb/XYZf.ctl"/>
 			</Item>
 		</Item>
-		<Item Name="FastCMOSSimpleTest.vi" Type="VI" URL="../Modules/FastCMOSSimpleTest.vi"/>
 		<Item Name="MainUI.vi" Type="VI" URL="../BeadTracker2.llb/MainUI.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
@@ -281,16 +290,13 @@
 				<Item Name="GetRTHostConnectedProp.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/GetRTHostConnectedProp.vi"/>
 				<Item Name="Image Type" Type="VI" URL="/&lt;vilib&gt;/vision/Image Controls.llb/Image Type"/>
 				<Item Name="IMAQ ArrayToImage" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ ArrayToImage"/>
-				<Item Name="IMAQ Attribute.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqhl.llb/IMAQ Attribute.vi"/>
 				<Item Name="IMAQ Close.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqhl.llb/IMAQ Close.vi"/>
 				<Item Name="IMAQ Configure Buffer.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Configure Buffer.vi"/>
 				<Item Name="IMAQ Configure List.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Configure List.vi"/>
 				<Item Name="IMAQ Copy" Type="VI" URL="/&lt;vilib&gt;/vision/Management.llb/IMAQ Copy"/>
 				<Item Name="IMAQ Create" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ Create"/>
 				<Item Name="IMAQ Dispose" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ Dispose"/>
-				<Item Name="IMAQ Extract Buffer Old Style.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/IMAQ Extract Buffer Old Style.vi"/>
 				<Item Name="IMAQ Extract Buffer.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Extract Buffer.vi"/>
-				<Item Name="IMAQ Get Camera Attribute.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqhl.llb/IMAQ Get Camera Attribute.vi"/>
 				<Item Name="IMAQ GetImagePixelPtr" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ GetImagePixelPtr"/>
 				<Item Name="IMAQ GetImageSize" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ GetImageSize"/>
 				<Item Name="IMAQ Image.ctl" Type="VI" URL="/&lt;vilib&gt;/vision/Image Controls.llb/IMAQ Image.ctl"/>
@@ -298,7 +304,6 @@
 				<Item Name="IMAQ Init.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqhl.llb/IMAQ Init.vi"/>
 				<Item Name="IMAQ Serial Read.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Serial Read.vi"/>
 				<Item Name="IMAQ Serial Write.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Serial Write.vi"/>
-				<Item Name="IMAQ Set Camera Attribute.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqhl.llb/IMAQ Set Camera Attribute.vi"/>
 				<Item Name="IMAQ SetImageSize" Type="VI" URL="/&lt;vilib&gt;/vision/Basics.llb/IMAQ SetImageSize"/>
 				<Item Name="IMAQ Start.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Start.vi"/>
 				<Item Name="IMAQ Status.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqll.llb/IMAQ Status.vi"/>
@@ -310,28 +315,6 @@
 				<Item Name="IMAQ Write JPEG2000 File 2" Type="VI" URL="/&lt;vilib&gt;/vision/Files.llb/IMAQ Write JPEG2000 File 2"/>
 				<Item Name="IMAQ Write PNG File 2" Type="VI" URL="/&lt;vilib&gt;/vision/Files.llb/IMAQ Write PNG File 2"/>
 				<Item Name="IMAQ Write TIFF File 2" Type="VI" URL="/&lt;vilib&gt;/vision/Files.llb/IMAQ Write TIFF File 2"/>
-				<Item Name="IMAQRegisterSession.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/IMAQRegisterSession.vi"/>
-				<Item Name="IMAQUnregisterSession.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/IMAQUnregisterSession.vi"/>
-				<Item Name="imgBufferElement.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgBufferElement.vi"/>
-				<Item Name="imgClose.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgClose.vi"/>
-				<Item Name="imgCreateBufList.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgCreateBufList.vi"/>
-				<Item Name="imgDisposeBufList.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgDisposeBufList.vi"/>
-				<Item Name="imgEnsureEqualBorders.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgEnsureEqualBorders.vi"/>
-				<Item Name="imgGetBufList.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgGetBufList.vi"/>
-				<Item Name="imgInterfaceOpen.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgInterfaceOpen.vi"/>
-				<Item Name="imgIsNewStyleInterface.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgIsNewStyleInterface.vi"/>
-				<Item Name="imgMemLock.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgMemLock.vi"/>
-				<Item Name="imgSessionAcquire.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionAcquire.vi"/>
-				<Item Name="imgSessionAttribute.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionAttribute.vi"/>
-				<Item Name="imgSessionConfigure.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionConfigure.vi"/>
-				<Item Name="imgSessionExamineBuffer.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionExamineBuffer.vi"/>
-				<Item Name="imgSessionOpen.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionOpen.vi"/>
-				<Item Name="imgSessionReleaseBuffer.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionReleaseBuffer.vi"/>
-				<Item Name="imgSessionStatus.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionStatus.vi"/>
-				<Item Name="imgSessionStopAcquisition.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionStopAcquisition.vi"/>
-				<Item Name="imgSetRoi.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSetRoi.vi"/>
-				<Item Name="imgUpdateErrorCluster.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgUpdateErrorCluster.vi"/>
-				<Item Name="imgWaitForIMAQOccurrence.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgWaitForIMAQOccurrence.vi"/>
 				<Item Name="Longest Line Length in Pixels.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Longest Line Length in Pixels.vi"/>
 				<Item Name="LVBoundsTypeDef.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/miscctls.llb/LVBoundsTypeDef.ctl"/>
 				<Item Name="LVPointDoubleTypeDef.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/miscctls.llb/LVPointDoubleTypeDef.ctl"/>
@@ -350,11 +333,9 @@
 				<Item Name="Read From Spreadsheet File.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Read From Spreadsheet File.vi"/>
 				<Item Name="Read Lines From File.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Read Lines From File.vi"/>
 				<Item Name="Search and Replace Pattern.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Search and Replace Pattern.vi"/>
-				<Item Name="SessionLookUp.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/SessionLookUp.vi"/>
 				<Item Name="Set Bold Text.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Set Bold Text.vi"/>
 				<Item Name="Set String Value.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Set String Value.vi"/>
 				<Item Name="subFile Dialog.vi" Type="VI" URL="/&lt;vilib&gt;/express/express input/FileDialogBlock.llb/subFile Dialog.vi"/>
-				<Item Name="System Exec.vi" Type="VI" URL="/&lt;vilib&gt;/Platform/system.llb/System Exec.vi"/>
 				<Item Name="TagReturnType.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/TagReturnType.ctl"/>
 				<Item Name="Three Button Dialog CORE.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Three Button Dialog CORE.vi"/>
 				<Item Name="Three Button Dialog.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Three Button Dialog.vi"/>
@@ -370,89 +351,48 @@
 				<Item Name="Write To Spreadsheet File (I64).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Write To Spreadsheet File (I64).vi"/>
 				<Item Name="Write To Spreadsheet File (string).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Write To Spreadsheet File (string).vi"/>
 				<Item Name="Write To Spreadsheet File.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Write To Spreadsheet File.vi"/>
+				<Item Name="Serial Port Init.vi" Type="VI" URL="/&lt;vilib&gt;/Instr/serial.llb/Serial Port Init.vi"/>
+				<Item Name="Open Serial Driver.vi" Type="VI" URL="/&lt;vilib&gt;/Instr/_sersup.llb/Open Serial Driver.vi"/>
+				<Item Name="serpConfig.vi" Type="VI" URL="/&lt;vilib&gt;/Instr/serial.llb/serpConfig.vi"/>
+				<Item Name="Bytes At Serial Port.vi" Type="VI" URL="/&lt;vilib&gt;/Instr/serial.llb/Bytes At Serial Port.vi"/>
+				<Item Name="Serial Port Read.vi" Type="VI" URL="/&lt;vilib&gt;/Instr/serial.llb/Serial Port Read.vi"/>
+				<Item Name="Serial Port Write.vi" Type="VI" URL="/&lt;vilib&gt;/Instr/serial.llb/Serial Port Write.vi"/>
+				<Item Name="SessionLookUp.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/SessionLookUp.vi"/>
+				<Item Name="imgUpdateErrorCluster.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgUpdateErrorCluster.vi"/>
+				<Item Name="imgInterfaceOpen.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgInterfaceOpen.vi"/>
+				<Item Name="imgSessionOpen.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionOpen.vi"/>
+				<Item Name="IMAQRegisterSession.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/IMAQRegisterSession.vi"/>
+				<Item Name="imgClose.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgClose.vi"/>
+				<Item Name="IMAQUnregisterSession.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/IMAQUnregisterSession.vi"/>
+				<Item Name="imgSessionStatus.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionStatus.vi"/>
+				<Item Name="imgSessionStopAcquisition.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionStopAcquisition.vi"/>
+				<Item Name="imgEnsureEqualBorders.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgEnsureEqualBorders.vi"/>
+				<Item Name="imgGetBufList.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgGetBufList.vi"/>
+				<Item Name="imgMemLock.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgMemLock.vi"/>
+				<Item Name="imgSessionConfigure.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionConfigure.vi"/>
+				<Item Name="imgSessionAcquire.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionAcquire.vi"/>
+				<Item Name="imgCreateBufList.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgCreateBufList.vi"/>
+				<Item Name="imgSetRoi.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSetRoi.vi"/>
+				<Item Name="imgSessionAttribute.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionAttribute.vi"/>
+				<Item Name="imgBufferElement.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgBufferElement.vi"/>
+				<Item Name="imgDisposeBufList.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgDisposeBufList.vi"/>
+				<Item Name="imgIsNewStyleInterface.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgIsNewStyleInterface.vi"/>
+				<Item Name="IMAQ Extract Buffer Old Style.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/IMAQ Extract Buffer Old Style.vi"/>
+				<Item Name="imgSessionReleaseBuffer.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionReleaseBuffer.vi"/>
+				<Item Name="imgSessionExamineBuffer.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgSessionExamineBuffer.vi"/>
+				<Item Name="imgWaitForIMAQOccurrence.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/DLLCalls.llb/imgWaitForIMAQOccurrence.vi"/>
+				<Item Name="IMAQ Attribute.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqhl.llb/IMAQ Attribute.vi"/>
+				<Item Name="IMAQ Get Camera Attribute.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqhl.llb/IMAQ Get Camera Attribute.vi"/>
+				<Item Name="IMAQ Set Camera Attribute.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqhl.llb/IMAQ Set Camera Attribute.vi"/>
 			</Item>
-			<Item Name="#5.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Special command.llb/#5.vi"/>
-			<Item Name="#5_old.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Old commands.llb/#5_old.vi"/>
-			<Item Name="#7.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Special command.llb/#7.vi"/>
-			<Item Name="#9.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/WaveGenerator.llb/#9.vi"/>
-			<Item Name="#24.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Special command.llb/#24.vi"/>
-			<Item Name="*IDN?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/*IDN?.vi"/>
-			<Item Name="Analog FGlobal.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Analog control.llb/Analog FGlobal.vi"/>
-			<Item Name="Analog Functions.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Analog control.llb/Analog Functions.vi"/>
-			<Item Name="Analog Receive String.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Analog control.llb/Analog Receive String.vi"/>
-			<Item Name="Assign booleans from string to axes.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Assign booleans from string to axes.vi"/>
-			<Item Name="Assign NaN for chosen axes.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Assign NaN for chosen axes.vi"/>
-			<Item Name="Assign values from string to axes.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Assign values from string to axes.vi"/>
-			<Item Name="ATZ.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/ATZ.vi"/>
-			<Item Name="ATZ?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/ATZ?.vi"/>
-			<Item Name="Available Analog Commands.ctl" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Analog control.llb/Available Analog Commands.ctl"/>
-			<Item Name="Available DLL interfaces.ctl" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Available DLL interfaces.ctl"/>
-			<Item Name="Available DLLs.ctl" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Available DLLs.ctl"/>
-			<Item Name="Available interfaces.ctl" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Available interfaces.ctl"/>
-			<Item Name="Build command substring.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Build command substring.vi"/>
-			<Item Name="Build query command substring.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Build query command substring.vi"/>
 			<Item Name="CIGetSetConfig.vi" Type="VI" URL="../Modules/FastCMOS.llb/CIGetSetConfig.vi"/>
-			<Item Name="CISnapFrame.vi" Type="VI" URL="../Modules/FastCMOS.llb/CISnapFrame.vi"/>
-			<Item Name="Close connection if open.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Close connection if open.vi"/>
-			<Item Name="Combine axes arrays.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Combine axes arrays.vi"/>
-			<Item Name="Commanded axes connected?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Commanded axes connected?.vi"/>
-			<Item Name="ConnectToCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/ConnectToCamera.vi"/>
-			<Item Name="Controller names.ctl" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/Controller names.ctl"/>
 			<Item Name="CreateFileDirectory.vi" Type="VI" URL="../BeadTracker2.llb/CreateFileDirectory.vi"/>
-			<Item Name="CST?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Special command.llb/CST?.vi"/>
-			<Item Name="Cut out additional spaces.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Cut out additional spaces.vi"/>
-			<Item Name="D012L_Motors.vi" Type="VI" URL="../Setups/D012L/D012L_Motors.vi"/>
-			<Item Name="Define axes to command from boolean array.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Define axes to command from boolean array.vi"/>
-			<Item Name="Define connected axes.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/Define connected axes.vi"/>
-			<Item Name="Define connected systems (Array).vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/Define connected systems (Array).vi"/>
-			<Item Name="E712_Configuration_Setup.vi" Type="VI" URL="../Setups/D012L/MotorsInit.llb/E712_Configuration_Setup.vi"/>
-			<Item Name="ERR?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/ERR?.vi"/>
-			<Item Name="Find host address.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Find host address.vi"/>
-			<Item Name="FNL.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/FNL.vi"/>
-			<Item Name="FPL.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/FPL.vi"/>
-			<Item Name="FRF.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/FRF.vi"/>
-			<Item Name="FRF?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/FRF?.vi"/>
-			<Item Name="GCSTranslateError.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/GCSTranslateError.vi"/>
-			<Item Name="GCSTranslator DLL Functions.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/GCSTranslator DLL Functions.vi"/>
-			<Item Name="GCSTranslator.dll" Type="Document" URL="../Setups/D012L/PI Drivers/Low Level/GCSTranslator.dll"/>
-			<Item Name="General wait for movement to stop.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/General wait for movement to stop.vi"/>
-			<Item Name="Get all axes.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Get all axes.vi"/>
-			<Item Name="Get arrays without blanks.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Get arrays without blanks.vi"/>
-			<Item Name="Get lines from string.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Get lines from string.vi"/>
-			<Item Name="Get subnet.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Get subnet.vi"/>
 			<Item Name="GetSetMotorAxisValue.vi" Type="VI" URL="../BeadTracker2.llb/GetSetMotorAxisValue.vi"/>
-			<Item Name="Global Analog.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Analog control.llb/Global Analog.vi"/>
-			<Item Name="Global DaisyChain.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Global DaisyChain.vi"/>
-			<Item Name="Global1.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Global1.vi"/>
-			<Item Name="Global2 (Array).vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/Global2 (Array).vi"/>
-			<Item Name="HLP?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/HLP?.vi"/>
-			<Item Name="imaq.dll" Type="Document" URL="imaq.dll">
-				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
-			</Item>
-			<Item Name="Initialize Global DaisyChain.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Initialize Global DaisyChain.vi"/>
-			<Item Name="Initialize Global1.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Initialize Global1.vi"/>
-			<Item Name="Initialize Global2.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/Initialize Global2.vi"/>
-			<Item Name="Is DaisyChain open.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Is DaisyChain open.vi"/>
 			<Item Name="kernel32.dll" Type="Document" URL="kernel32.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
-			<Item Name="LIM?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/LIM?.vi"/>
 			<Item Name="LogCheckError.vi" Type="VI" URL="../BeadTracker2.llb/LogCheckError.vi"/>
-			<Item Name="Longlasting one-axis command.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Longlasting one-axis command.vi"/>
-			<Item Name="lvanlys.dll" Type="Document" URL="/C/Program Files/National Instruments/LabVIEW 2011/resource/lvanlys.dll"/>
-			<Item Name="Mercury_GCS_Configuration_Setup.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Mercury_GCS_Configuration_Setup.vi"/>
-			<Item Name="Motors_init_all_D020.vi" Type="VI" URL="../Setups/D012L/MotorsInit.llb/Motors_init_all_D020.vi"/>
-			<Item Name="Motors_Init_E712_D020.vi" Type="VI" URL="../Setups/D012L/MotorsInit.llb/Motors_Init_E712_D020.vi"/>
-			<Item Name="Motors_Mercury_init_D012_MD.vi" Type="VI" URL="../Setups/D012L/MotorsInit.llb/Motors_Mercury_init_D012_MD.vi"/>
-			<Item Name="MOV.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/MOV.vi"/>
 			<Item Name="MoveSingleAxis.vi" Type="VI" URL="../Modules/PIMotorController.llb/MoveSingleAxis.vi"/>
-			<Item Name="MsgQueue_GetQueueLengths.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_GetQueueLengths.vi"/>
-			<Item Name="MsgQueue_ListenerStatus.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_ListenerStatus.vi"/>
-			<Item Name="MsgQueue_ReadMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_ReadMsg.vi"/>
-			<Item Name="MsgQueue_RegisterListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_RegisterListener.vi"/>
-			<Item Name="MsgQueue_RemoveListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_RemoveListener.vi"/>
-			<Item Name="MsgQueue_SendMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_SendMsg.vi"/>
-			<Item Name="MsgQueue_WaitForListeners.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_WaitForListeners.vi"/>
 			<Item Name="nivision.dll" Type="Document" URL="nivision.dll">
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
@@ -460,41 +400,68 @@
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
 			<Item Name="NotifyUI.vi" Type="VI" URL="../BeadTracker2.llb/NotifyUI.vi"/>
-			<Item Name="ONT?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/ONT?.vi"/>
-			<Item Name="PI Open Interface of one system.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/PI Open Interface of one system.vi"/>
-			<Item Name="PI Receive String.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/PI Receive String.vi"/>
-			<Item Name="PI Send String.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/PI Send String.vi"/>
-			<Item Name="PI VISA Receive Characters.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/PI VISA Receive Characters.vi"/>
-			<Item Name="POS?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/POS?.vi"/>
-			<Item Name="Return space.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Return space.vi"/>
-			<Item Name="RON.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/RON.vi"/>
-			<Item Name="RON?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/RON?.vi"/>
-			<Item Name="SAI?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/SAI?.vi"/>
-			<Item Name="Select DaisyChain device.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Select DaisyChain device.vi"/>
-			<Item Name="Select host address.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Select host address.vi"/>
-			<Item Name="Select USB device.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Select USB device.vi"/>
-			<Item Name="Select values for chosen axes.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Select values for chosen axes.vi"/>
 			<Item Name="SelectBeads.vi" Type="VI" URL="../BeadTracker2.llb/SelectBeads.vi"/>
-			<Item Name="Set RON and return RON status.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Set RON and return RON status.vi"/>
-			<Item Name="STA?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Special command.llb/STA?.vi"/>
-			<Item Name="String with ASCII code conversion.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/String with ASCII code conversion.vi"/>
-			<Item Name="Substract axes array subset from axes array.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Substract axes array subset from axes array.vi"/>
-			<Item Name="SVO.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/SVO.vi"/>
-			<Item Name="SVO?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/General command.llb/SVO?.vi"/>
-			<Item Name="Termination character.ctl" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Communication.llb/Termination character.ctl"/>
-			<Item Name="TMN?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/TMN?.vi"/>
-			<Item Name="TMX?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/TMX?.vi"/>
-			<Item Name="TRS?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/TRS?.vi"/>
-			<Item Name="TWG?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/WaveGenerator.llb/TWG?.vi"/>
 			<Item Name="UserInterfaceEventType.ctl" Type="VI" URL="../BeadTracker2.llb/UserInterfaceEventType.ctl"/>
 			<Item Name="VIRefInterfaceTest.vi" Type="VI" URL="../Modules/FastCMOS.llb/VIRefInterfaceTest.vi"/>
-			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Wait for answer of longlasting command.vi"/>
-			<Item Name="Wait for axes to stop.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Wait for axes to stop.vi"/>
-			<Item Name="Wait for controller ready.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Wait for controller ready.vi"/>
-			<Item Name="Wait for hexapod system axes to stop.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Old commands.llb/Wait for hexapod system axes to stop.vi"/>
-			<Item Name="WGO.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/WaveGenerator.llb/WGO.vi"/>
 			<Item Name="SendCameraCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendCameraCmd.vi"/>
 			<Item Name="StopImageAcquisition.vi" Type="VI" URL="../BeadTracker2.llb/StopImageAcquisition.vi"/>
+			<Item Name="lvanlys.dll" Type="Document" URL="/C/Program Files (x86)/National Instruments/LabVIEW 2011/resource/lvanlys.dll"/>
+			<Item Name="MotorMain.vi" Type="VI" URL="../Setups/D012R/MotorMain.vi"/>
+			<Item Name="C843_E665_Configuration_Self.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/C843_E665_Configuration_Self.vi"/>
+			<Item Name="PI Open Interface.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/PI Open Interface.vi"/>
+			<Item Name="Global1.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Global1.vi"/>
+			<Item Name="GCSTranslator DLL Functions.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/GCSTranslator DLL Functions.vi"/>
+			<Item Name="GCSTranslator.dll" Type="Document" URL="../Setups/D012R/GCSTranslator.dll"/>
+			<Item Name="Close connection if open.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Close connection if open.vi"/>
+			<Item Name="PI Send String.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/PI Send String.vi"/>
+			<Item Name="PI Receive String.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/PI Receive String.vi"/>
+			<Item Name="PI ReceiveNCharacters RS232.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/PI ReceiveNCharacters RS232.vi"/>
+			<Item Name="PI ReceiveString GPIB.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/PI ReceiveString GPIB.vi"/>
+			<Item Name="Define connected axes.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Define connected axes.vi"/>
+			<Item Name="Global2.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Global2.vi"/>
+			<Item Name="Controller names.ctl" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Controller names.ctl"/>
+			<Item Name="SAI?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/SAI?.vi"/>
+			<Item Name="CST.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/CST.vi"/>
+			<Item Name="Commanded axes connected?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Commanded axes connected?.vi"/>
+			<Item Name="Commanded stage name available?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Commanded stage name available?.vi"/>
+			<Item Name="VST?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/VST?.vi"/>
+			<Item Name="Get lines from string.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Get lines from string.vi"/>
+			<Item Name="ERR?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/ERR?.vi"/>
+			<Item Name="INI.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/INI.vi"/>
+			<Item Name="Build query command substring.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Build query command substring.vi"/>
+			<Item Name="*IDN?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/*IDN?.vi"/>
+			<Item Name="POS?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/POS?.vi"/>
+			<Item Name="Assign values from string to axes.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Assign values from string to axes.vi"/>
+			<Item Name="Split num query command.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Split num query command.vi"/>
+			<Item Name="MOV?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/MOV?.vi"/>
+			<Item Name="VOL?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/VOL?.vi"/>
+			<Item Name="SVA?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/SVA?.vi"/>
+			<Item Name="BDR.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/BDR.vi"/>
+			<Item Name="SVO.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/SVO.vi"/>
+			<Item Name="Build command substring.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Build command substring.vi"/>
+			<Item Name="MPL.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/MPL.vi"/>
+			<Item Name="Get all axes.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Get all axes.vi"/>
+			<Item Name="Global2 (Array).vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Global2 (Array).vi"/>
+			<Item Name="Longlasting one-axis command.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Longlasting one-axis command.vi"/>
+			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/Wait for answer of longlasting command.vi"/>
+			<Item Name="#7.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/#7.vi"/>
+			<Item Name="FNL.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/FNL.vi"/>
+			<Item Name="FPL.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/FPL.vi"/>
+			<Item Name="TMX?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/TMX?.vi"/>
+			<Item Name="VEL?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/VEL?.vi"/>
+			<Item Name="VEL.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/VEL.vi"/>
+			<Item Name="MOV.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/MOV.vi"/>
+			<Item Name="imaq.dll" Type="Document" URL="imaq.dll">
+				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
+			</Item>
+			<Item Name="DalsaSettings.ctl" Type="VI" URL="../Modules/GenericIMAQCamera.llb/DalsaSettings.ctl"/>
+			<Item Name="MsgQueue_RegisterListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_RegisterListener.vi"/>
+			<Item Name="MsgQueue_RemoveListener.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_RemoveListener.vi"/>
+			<Item Name="MsgQueue_WaitForListeners.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_WaitForListeners.vi"/>
+			<Item Name="MsgQueue_SendMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_SendMsg.vi"/>
+			<Item Name="MsgQueue_GetQueueLengths.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_GetQueueLengths.vi"/>
+			<Item Name="MsgQueue_ListenerStatus.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_ListenerStatus.vi"/>
+			<Item Name="MsgQueue_ReadMsg.vi" Type="VI" URL="../MessageQueue.llb/MsgQueue_ReadMsg.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
