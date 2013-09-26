@@ -167,6 +167,7 @@
 						<Item Name="mkResetCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkResetCamera.vi"/>
 					</Item>
 					<Item Name="CI_Test.vi" Type="VI" URL="../Modules/FastCMOS.llb/CI_Test.vi"/>
+					<Item Name="FastCMOS_EstimateOffsetGain.vi" Type="VI" URL="../Modules/FastCMOS_EstimateOffsetGain.vi"/>
 				</Item>
 			</Item>
 			<Item Name="PIMotorController" Type="Folder">
@@ -254,7 +255,6 @@
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
-				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
 				<Item Name="BuildHelpPath.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/BuildHelpPath.vi"/>
 				<Item Name="Check if File or Folder Exists.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/libraryn.llb/Check if File or Folder Exists.vi"/>
 				<Item Name="Check Special Tags.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Check Special Tags.vi"/>
