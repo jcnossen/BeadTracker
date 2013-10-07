@@ -49,14 +49,21 @@ function [beadx, beady, beadz, timestamps, frameinfo, axisnames] = qtrk_read_bin
         
         xyz = fread(fid, nbeads * 3, 'single');
         
-        beadx(k, :) = xyz( (0:nbeads-1) * 3 + 1 );
-        beady(k, :) = xyz( (0:nbeads-1) * 3 + 2 );
-        beadz(k, :) = xyz( (0:nbeads-1) * 3 + 3 );
+		% Read all beads
+        bx = xyz( (0:nbeads-1) * 3 + 1 );
+        by = xyz( (0:nbeads-1) * 3 + 2 );
+        bz = xyz( (0:nbeads-1) * 3 + 3 );
+
+		% Take the subset of beads that we want
+        beadx(k, :) = bx (beads);
+        beady(k, :) = by (beads);
+        beadz(k, :) = bz (beads);
         
+		% Subtract refbead if set
         if refbead >= 0
-            beadx(k, :) = beadx(k,:) - beadx(k, refbead);
-            beady(k, :) = beady(k,:) - beady(k, refbead);
-            beadz(k, :) = beadz(k,:) - beadz(k, refbead);
+            beadx(k, :) = beadx(k,:) - bx(refbead);
+            beady(k, :) = beady(k,:) - by(refbead);
+            beadz(k, :) = beadz(k,:) - bz(refbead);
         end
         
         lastFrame=f;

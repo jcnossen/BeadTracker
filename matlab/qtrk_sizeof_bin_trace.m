@@ -23,8 +23,8 @@ function [nframes, nbeads, ninfocol, colnames, data_offset] = qtrk_sizeof_bin_tr
 end
 
 function s = read_zero_term_string(fid)
-    s= [];
-    while 1
+    s= char;
+    while ~feof(fid)
         ch = fread(fid, 1, 'int8');
         if ch == 0, break, end
         s = [s ch];
