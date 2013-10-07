@@ -1,0 +1,14 @@
+
+Format of the binary trace files
+
+INT32 numbeads
+INT32 ninfo    ( number of motor position / frame information columns )
+INT32 offset in file of position data (use fseek to get there)
+C String [ninfo]        ( label of each frame info )
+
+Then for each frame
+
+    INT32 Frame index
+    DOUBLE Timestamp (ms)
+    SINGLE[ninfo]           (Array of motorpos / Frame info data)
+    SINGLE[numbeads*3]      (Array of bead positions)
