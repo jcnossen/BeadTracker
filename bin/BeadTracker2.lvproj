@@ -79,7 +79,7 @@
 				<Item Name="QueueListType.ctl" Type="VI" URL="../BeadTracker2.llb/QueueListType.ctl"/>
 				<Item Name="XYf.ctl" Type="VI" URL="../BeadTracker2.llb/XYf.ctl"/>
 				<Item Name="MotorCmd_MoveToLimit.ctl" Type="VI" URL="../BeadTracker2.llb/MotorCmd_MoveToLimit.ctl"/>
-				<Item Name="CameraInterface.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CameraInterface.ctl"/>
+				<Item Name="CameraInterface.ctl" Type="VI" URL="../BeadTracker2.llb/CameraInterface.ctl"/>
 				<Item Name="CIGrabParams.ctl" Type="VI" URL="../BeadTracker2.llb/CIGrabParams.ctl"/>
 				<Item Name="CIGrabControlMsg.ctl" Type="VI" URL="../BeadTracker2.llb/CIGrabControlMsg.ctl"/>
 				<Item Name="CIGrabControlMsgEnum.ctl" Type="VI" URL="../BeadTracker2.llb/CIGrabControlMsgEnum.ctl"/>
@@ -155,7 +155,6 @@
 						<Item Name="mkCameraData.ctl" Type="VI" URL="../Modules/FastCMOS.llb/mkCameraData.ctl"/>
 						<Item Name="mkResetCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkResetCamera.vi"/>
 					</Item>
-					<Item Name="ConnectToCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/ConnectToCamera.vi"/>
 					<Item Name="CI_Test.vi" Type="VI" URL="../Modules/FastCMOS.llb/CI_Test.vi"/>
 					<Item Name="FastCMOS_EstimateOffsetGain.vi" Type="VI" URL="../Modules/FastCMOS_EstimateOffsetGain.vi"/>
 				</Item>
@@ -167,23 +166,18 @@
 					<Item Name="CI_IMAQ_SaveLoadSettings.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/CI_IMAQ_SaveLoadSettings.vi"/>
 					<Item Name="CI_IMAQ_SettingsEditor.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/CI_IMAQ_SettingsEditor.vi"/>
 					<Item Name="DalsaGetCameraConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/DalsaGetCameraConfig.vi"/>
-					<Item Name="GenericIMAQSetConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQSetConfig.vi"/>
+					<Item Name="DalsaModule.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/DalsaModule.vi"/>
+					<Item Name="DalsaTest.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/DalsaTest.vi"/>
+					<Item Name="DalseSetCameraConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/DalseSetCameraConfig.vi"/>
 					<Item Name="GenericIMAQCameraInstance.ctl" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQCameraInstance.ctl"/>
 					<Item Name="GenericIMAQGetConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQGetConfig.vi"/>
 					<Item Name="GenericIMAQGetInterface.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQGetInterface.vi"/>
 					<Item Name="GenericIMAQHardwareConfig.ctl" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQHardwareConfig.ctl"/>
 					<Item Name="Global_GenericIMAQCamera_HardwareConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/Global_GenericIMAQCamera_HardwareConfig.vi"/>
 					<Item Name="IMAQSetupBufferList.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/IMAQSetupBufferList.vi"/>
+					<Item Name="RunGrabSession.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/RunGrabSession.vi"/>
 					<Item Name="SerialCmd.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/SerialCmd.vi"/>
 					<Item Name="ShowSettingsDialog.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/ShowSettingsDialog.vi"/>
-				</Item>
-				<Item Name="CameraInterface" Type="Folder">
-					<Item Name="CIGrabType.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CIGrabType.ctl"/>
-					<Item Name="CICloseType.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CICloseType.ctl"/>
-					<Item Name="CIAdjustBeadPos.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CIAdjustBeadPos.ctl"/>
-					<Item Name="CISettingsDlg.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CISettingsDlg.ctl"/>
-					<Item Name="CISaveLoadSettings.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CISaveLoadSettings.ctl"/>
-					<Item Name="CIGetSetGenericConfig.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CIGetSetGenericConfig.ctl"/>
 				</Item>
 			</Item>
 			<Item Name="PIMotorController" Type="Folder">
@@ -410,11 +404,8 @@
 				<Property Name="NI.PreserveRelativePath" Type="Bool">true</Property>
 			</Item>
 			<Item Name="QTrkSetPixelCalibrationFactors.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkSetPixelCalibrationFactors.vi"/>
-			<Item Name="QTrkSetLocalizationMode.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkSetLocalizationMode.vi"/>
-			<Item Name="CheckZLUTDimensions.vi" Type="VI" URL="../BeadTracker2.llb/CheckZLUTDimensions.vi"/>
 			<Item Name="lvanlys.dll" Type="Document" URL="/C/Program Files/National Instruments/LabVIEW 2011/resource/lvanlys.dll"/>
-			<Item Name="QTrkQueueFramePtr.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkQueueFramePtr.vi"/>
-			<Item Name="QTrkReadTimestampFromFramePtr.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkReadTimestampFromFramePtr.vi"/>
+			<Item Name="GenericIMAQSettings.ctl" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQSettings.ctl"/>
 			<Item Name="D012L_Motors.vi" Type="VI" URL="../Setups/D012L/D012L_Motors.vi"/>
 			<Item Name="Motors_init_all_D020.vi" Type="VI" URL="../Setups/D012L/MotorsInit.llb/Motors_init_all_D020.vi"/>
 			<Item Name="Motors_Mercury_init_D012_MD.vi" Type="VI" URL="../Setups/D012L/MotorsInit.llb/Motors_Mercury_init_D012_MD.vi"/>
@@ -506,6 +497,19 @@
 			<Item Name="Longlasting one-axis command.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Longlasting one-axis command.vi"/>
 			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Wait for answer of longlasting command.vi"/>
 			<Item Name="ATZ?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/ATZ?.vi"/>
+			<Item Name="ConnectToCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/ConnectToCamera.vi"/>
+			<Item Name="CameraInterface.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CameraInterface.ctl"/>
+			<Item Name="CICloseType.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CICloseType.ctl"/>
+			<Item Name="CIGetSetGenericConfig.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CIGetSetGenericConfig.ctl"/>
+			<Item Name="CIGrabType.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CIGrabType.ctl"/>
+			<Item Name="CISettingsDlg.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CISettingsDlg.ctl"/>
+			<Item Name="CIAdjustBeadPos.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CIAdjustBeadPos.ctl"/>
+			<Item Name="CISaveLoadSettings.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CISaveLoadSettings.ctl"/>
+			<Item Name="QTrkSetLocalizationMode.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkSetLocalizationMode.vi"/>
+			<Item Name="QTrkQueueFramePtr.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkQueueFramePtr.vi"/>
+			<Item Name="QTrkReadTimestampFromFramePtr.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkReadTimestampFromFramePtr.vi"/>
+			<Item Name="GenericIMAQSetConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQSetConfig.vi"/>
+			<Item Name="CheckZLUTDimensions.vi" Type="VI" URL="../BeadTracker2.llb/CheckZLUTDimensions.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
