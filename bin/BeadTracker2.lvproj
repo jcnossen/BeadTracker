@@ -504,10 +504,11 @@
 			<Item Name="CIAdjustBeadPos.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CIAdjustBeadPos.ctl"/>
 			<Item Name="CISaveLoadSettings.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CISaveLoadSettings.ctl"/>
 			<Item Name="QTrkSetLocalizationMode.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkSetLocalizationMode.vi"/>
-			<Item Name="QTrkQueueFramePtr.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkQueueFramePtr.vi"/>
+			<Item Name="QTrkQueueFramePtr.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkQueueFramePtr.vi"/>
 			<Item Name="QTrkReadTimestampFromFramePtr.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkReadTimestampFromFramePtr.vi"/>
 			<Item Name="GenericIMAQSetConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQSetConfig.vi"/>
 			<Item Name="CheckZLUTDimensions.vi" Type="VI" URL="../BeadTracker2.llb/CheckZLUTDimensions.vi"/>
+			<Item Name="QTrkQueueFramePtr.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkQueueFramePtr.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
