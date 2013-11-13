@@ -508,7 +508,6 @@
 			<Item Name="QTrkReadTimestampFromFramePtr.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkReadTimestampFromFramePtr.vi"/>
 			<Item Name="GenericIMAQSetConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQSetConfig.vi"/>
 			<Item Name="CheckZLUTDimensions.vi" Type="VI" URL="../BeadTracker2.llb/CheckZLUTDimensions.vi"/>
-			<Item Name="QTrkQueueFramePtr.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkQueueFramePtr.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
