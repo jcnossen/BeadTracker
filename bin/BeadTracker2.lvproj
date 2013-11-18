@@ -79,7 +79,6 @@
 				<Item Name="QueueListType.ctl" Type="VI" URL="../BeadTracker2.llb/QueueListType.ctl"/>
 				<Item Name="XYf.ctl" Type="VI" URL="../BeadTracker2.llb/XYf.ctl"/>
 				<Item Name="MotorCmd_MoveToLimit.ctl" Type="VI" URL="../BeadTracker2.llb/MotorCmd_MoveToLimit.ctl"/>
-				<Item Name="CameraInterface.ctl" Type="VI" URL="../BeadTracker2.llb/CameraInterface.ctl"/>
 				<Item Name="CIGrabParams.ctl" Type="VI" URL="../BeadTracker2.llb/CIGrabParams.ctl"/>
 				<Item Name="CIGrabControlMsg.ctl" Type="VI" URL="../BeadTracker2.llb/CIGrabControlMsg.ctl"/>
 				<Item Name="CIGrabControlMsgEnum.ctl" Type="VI" URL="../BeadTracker2.llb/CIGrabControlMsgEnum.ctl"/>
@@ -263,6 +262,8 @@
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="FastCMOSTestTrackerModule.vi" Type="VI" URL="../Modules/FastCMOS.llb/FastCMOSTestTrackerModule.vi"/>
+		<Item Name="GrabToTrackerAndQueue.vi" Type="VI" URL="../Modules/FastCMOS.llb/GrabToTrackerAndQueue.vi"/>
+		<Item Name="SaveLoadMotorConfig.vi" Type="VI" URL="../BeadTracker2.llb/SaveLoadMotorConfig.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="BuildHelpPath.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/BuildHelpPath.vi"/>
@@ -497,7 +498,6 @@
 			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Wait for answer of longlasting command.vi"/>
 			<Item Name="ATZ?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/ATZ?.vi"/>
 			<Item Name="ConnectToCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/ConnectToCamera.vi"/>
-			<Item Name="CameraInterface.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CameraInterface.ctl"/>
 			<Item Name="CICloseType.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CICloseType.ctl"/>
 			<Item Name="CIGetSetGenericConfig.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CIGetSetGenericConfig.ctl"/>
 			<Item Name="CIGrabType.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CIGrabType.ctl"/>
@@ -509,6 +509,7 @@
 			<Item Name="QTrkReadTimestampFromFramePtr.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkReadTimestampFromFramePtr.vi"/>
 			<Item Name="GenericIMAQSetConfig.vi" Type="VI" URL="../Modules/GenericIMAQCamera.llb/GenericIMAQSetConfig.vi"/>
 			<Item Name="CheckZLUTDimensions.vi" Type="VI" URL="../BeadTracker2.llb/CheckZLUTDimensions.vi"/>
+			<Item Name="CameraInterface.ctl" Type="VI" URL="../Modules/CameraInterface.llb/CameraInterface.ctl"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
