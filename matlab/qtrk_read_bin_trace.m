@@ -1,10 +1,12 @@
 function [beadx, beady, beadz, timestamps, frameinfo, axisnames] = qtrk_read_bin_trace(filename, frames, beads, refbead)
 % Read XYZ traces from a binary trace output produced by TweezerTracker
-% [beadx, beady, beadz, timestamps] = qtrk_read_bin_trace(filename, frames, beads, refbead)
+% [beadx, beady, beadz, timestamps, frameinfo, axisnames] =  ...
+%    qtrk_read_bin_trace(filename, frames, beads, refbead)
 %
 % Example: qtrk_read_bin_trace('test.bin', 20:100);  % reads frame 20 to 100 for all beads from test.bin
 %
 % beadx,beady,beadz: XYZ data, beads are mapped to columns, frames are mapped to rows
+% frames: list of frame numbers, or -1 for all frames
 % beads: List of beads (1-based indexing)
 % refbead: Index of reference bead (-1 to disable reference bead subtraction)
     if nargin<4
@@ -21,6 +23,10 @@ function [beadx, beady, beadz, timestamps, frameinfo, axisnames] = qtrk_read_bin
     end
     
     if nargin<2
+        frames=1:f_nframes;
+    end
+    
+    if isscalar(frames) && frames < 0
         frames=1:f_nframes;
     end
    
