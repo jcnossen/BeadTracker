@@ -1,0 +1,53 @@
+#pragma rtGlobals=1		// Use modern global access method.
+
+function read_bin_file()
+
+	variable refNum // file refnum
+	//Open/R/P=path refNum as fileName
+	Open/R refNum
+	
+	FStatus refNum
+	variable fileLength
+	fileLength = V_logEOF
+		
+	variable numBeads,numMotorCol, positionOfData
+	FBinRead /U/F=3 refNum,numBeads
+	FBinRead /U/F=3 refNum,numMotorCol
+	FBinRead /U/F=3 refNum,positionOfData
+	
+	print "numBeads: ",numBeads
+	print "motorInfoColumns: ",numMotorCol
+
+	variable bytesPerFrame = 4 + 8 + numMotorCol * 4 + numBeads * 3*4
+	variable numFrames = (fileLength - positionOfData) / bytesPerFrame
+	
+	printf "numFrames: %d, data position: %d\n",numFrames, positionOfData
+	FSetPos refNum, positionOfData
+	
+	variable fr
+	for(fr=0;fr<numFrames;fr+=1)
+		variable bead,framenum,timestamp
+		
+		FBinRead /U/F=3 refNum, framenum
+		FBinRead /F=5 refNum, timestamp
+		
+		variable motorcol
+		for(motorcol=0;motorcol<numMotorCol;motorcol+=1)
+			variable axispos
+			FBinRead /F=4 refNum, axispos
+			// save axis pos in some array here 
+		endfor
+		
+		for(bead=0;bead<numBeads;bead+=1)
+			variable xpos,ypos,zpos
+			FBinRead /F=4 refNum, xpos
+			FBinRead /F=4 refNum, ypos
+			FBinRead /F=4 refNum, zpos
+			// save bead pos in some array here
+		endfor
+	endfor
+
+	Close refNum
+	
+	print "end of function"
+end
