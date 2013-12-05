@@ -158,7 +158,6 @@
 					<Item Name="FastCMOS_EstimateOffsetGain.vi" Type="VI" URL="../Modules/FastCMOS_EstimateOffsetGain.vi"/>
 					<Item Name="FastCMOSTestTrackerModule.vi" Type="VI" URL="../Modules/FastCMOS.llb/FastCMOSTestTrackerModule.vi"/>
 					<Item Name="GrabToTrackerAndQueue(LostFramesSupport).vi" Type="VI" URL="../Modules/FastCMOS.llb/GrabToTrackerAndQueue(LostFramesSupport).vi"/>
-					<Item Name="GrabNoLostFrames.vi" Type="VI" URL="../../../../labview/TweezerTracker/bin/Modules/FastCMOS.llb/GrabNoLostFrames.vi"/>
 					<Item Name="GrabToTrackerFastLoop.vi" Type="VI" URL="../Modules/FastCMOS.llb/GrabToTrackerFastLoop.vi"/>
 				</Item>
 				<Item Name="GenericIMAQCamera" Type="Folder">
@@ -247,6 +246,7 @@
 				<Item Name="QTrkQueueImageU16.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkQueueImageU16.vi"/>
 				<Item Name="QTrkReadJPEGFile.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkReadJPEGFile.vi"/>
 				<Item Name="QTrkReadTimestamp.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkReadTimestamp.vi"/>
+				<Item Name="QTrkBuildLUTPlaneFromFrame.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkBuildLUTPlaneFromFrame.vi"/>
 				<Item Name="QTrkSelectDLLDialog.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkSelectDLLDialog.vi"/>
 				<Item Name="QTrkSetPixelGainOffset.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkSetPixelGainOffset.vi"/>
 				<Item Name="QTrkSettings.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkSettings.ctl"/>
@@ -506,6 +506,8 @@
 			<Item Name="Wait for answer of longlasting command.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Support.llb/Wait for answer of longlasting command.vi"/>
 			<Item Name="ATZ?.vi" Type="VI" URL="../Setups/D012L/PI Drivers/Low Level/Limits.llb/ATZ?.vi"/>
 			<Item Name="ConnectToCamera.vi" Type="VI" URL="../Modules/FastCMOS.llb/ConnectToCamera.vi"/>
+			<Item Name="QTrkBuildLUTPlane.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkBuildLUTPlane.vi"/>
+			<Item Name="QTrkFinalizeLUT.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkFinalizeLUT.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
