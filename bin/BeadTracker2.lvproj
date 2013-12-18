@@ -218,7 +218,7 @@
 				<Item Name="QTrkCheckForDLL.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkCheckForDLL.vi"/>
 				<Item Name="QTrkClearResults.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkClearResults.vi"/>
 				<Item Name="QTrkComputedSettings.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkComputedSettings.ctl"/>
-				<Item Name="QTrkComputeLocalizeType.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkComputeLocalizeType.vi"/>
+				<Item Name="QTrkComputeLocalizeType.vi" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkComputeLocalizeType.vi"/>
 				<Item Name="QTrkComputeLUTFisherMatrix.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkComputeLUTFisherMatrix.vi"/>
 				<Item Name="QTrkCreate.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkCreate.vi"/>
 				<Item Name="QTrkCUDA_QueryDevices.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkCUDA_QueryDevices.vi"/>
@@ -240,7 +240,7 @@
 				<Item Name="QTrkIsIdle.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkIsIdle.vi"/>
 				<Item Name="QTrkLocalizationJob.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkLocalizationJob.ctl"/>
 				<Item Name="QTrkLocalizationResult.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkLocalizationResult.ctl"/>
-				<Item Name="QTrkLocalizationType.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkLocalizationType.ctl"/>
+				<Item Name="QTrkLocalizationType.ctl" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkLocalizationType.ctl"/>
 				<Item Name="QTrkPixelDataType.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkPixelDataType.ctl"/>
 				<Item Name="QTrkQueueFrame.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkQueueFrame.vi"/>
 				<Item Name="QTrkQueueImageU8.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkQueueImageU8.vi"/>
@@ -253,7 +253,7 @@
 				<Item Name="QTrkSetZLUT.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkSetZLUT.vi"/>
 				<Item Name="QTrkSpeedTest.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkSpeedTest.vi"/>
 				<Item Name="QTrkWaitForResults.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkWaitForResults.vi"/>
-				<Item Name="QTrkZCommandType.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkZCommandType.ctl"/>
+				<Item Name="QTrkZCommandType.ctl" Type="VI" URL="../../qtrk/lv/QTrk.llb/QTrkZCommandType.ctl"/>
 				<Item Name="XYZf.ctl" Type="VI" URL="../qtrk/QTrk.llb/XYZf.ctl"/>
 			</Item>
 		</Item>
@@ -377,6 +377,12 @@
 				<Item Name="IMAQ Get Camera Attribute.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqhl.llb/IMAQ Get Camera Attribute.vi"/>
 				<Item Name="IMAQ Set Camera Attribute.vi" Type="VI" URL="/&lt;vilib&gt;/vision/driver/imaqhl.llb/IMAQ Set Camera Attribute.vi"/>
 				<Item Name="System Exec.vi" Type="VI" URL="/&lt;vilib&gt;/Platform/system.llb/System Exec.vi"/>
+				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
+				<Item Name="IMAQ ReadFile" Type="VI" URL="/&lt;vilib&gt;/vision/Files.llb/IMAQ ReadFile"/>
+				<Item Name="IMAQ Clear Overlay" Type="VI" URL="/&lt;vilib&gt;/vision/Overlay.llb/IMAQ Clear Overlay"/>
+				<Item Name="IMAQ Overlay Rectangle" Type="VI" URL="/&lt;vilib&gt;/vision/Overlay.llb/IMAQ Overlay Rectangle"/>
+				<Item Name="Color to RGB.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/colorconv.llb/Color to RGB.vi"/>
+				<Item Name="LVPoint32TypeDef.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/miscctls.llb/LVPoint32TypeDef.ctl"/>
 			</Item>
 			<Item Name="CIGetSetConfig.vi" Type="VI" URL="../Modules/FastCMOS.llb/CIGetSetConfig.vi"/>
 			<Item Name="CreateFileDirectory.vi" Type="VI" URL="../BeadTracker2.llb/CreateFileDirectory.vi"/>
@@ -510,6 +516,15 @@
 			<Item Name="QTrkBuildLUTPlaneFromFrame.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkBuildLUTPlaneFromFrame.vi"/>
 			<Item Name="QTrkBuildLUTPlane.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkBuildLUTPlane.vi"/>
 			<Item Name="QTrkFinalizeLUT.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkFinalizeLUT.vi"/>
+			<Item Name="FinderDlg.vi" Type="VI" URL="../AutoBeadFinderQTrk.llb/FinderDlg.vi"/>
+			<Item Name="DrawUI_Image.vi" Type="VI" URL="../AutoBeadFinderQTrk.llb/DrawUI_Image.vi"/>
+			<Item Name="QTrkFindBeads.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkFindBeads.vi"/>
+			<Item Name="RemoveClosestBead.vi" Type="VI" URL="../AutoBeadFinderQTrk.llb/RemoveClosestBead.vi"/>
+			<Item Name="ComputeLocalCOM.vi" Type="VI" URL="../AutoBeadFinderQTrk.llb/ComputeLocalCOM.vi"/>
+			<Item Name="Compute2DArrayCOM.vi" Type="VI" URL="../AutoBeadFinderQTrk.llb/Compute2DArrayCOM.vi"/>
+			<Item Name="QTrkLocalizationType.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkLocalizationType.ctl"/>
+			<Item Name="QTrkZCommandType.ctl" Type="VI" URL="../qtrk/QTrk.llb/QTrkZCommandType.ctl"/>
+			<Item Name="QTrkComputeLocalizeType.vi" Type="VI" URL="../qtrk/QTrk.llb/QTrkComputeLocalizeType.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
