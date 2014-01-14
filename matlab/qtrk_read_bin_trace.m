@@ -38,7 +38,7 @@ function [beadx, beady, beadz, timestamps, frameinfo, axisnames] = qtrk_read_bin
     
     fid = fopen(filename);
 
-    bytesPerFrame = 4 + 8 + f_ninfocol * 4 + nbeads * 3 * 4;
+    bytesPerFrame = 4 + 8 + f_ninfocol * 4 + nbeads * 4 * 4;
     lastFrame=-1;
     for k=1:length(frames)
         
@@ -54,6 +54,7 @@ function [beadx, beady, beadz, timestamps, frameinfo, axisnames] = qtrk_read_bin
         frameinfo(k, :) = fread(fid, [1 f_ninfocol], 'single');
         
         xyz = fread(fid, nbeads * 3, 'single');
+        errorvals = fread(fid, nbeads, 'uint32');
         
 		% Read all beads
         bx = xyz( (0:nbeads-1) * 3 + 1 );
