@@ -259,6 +259,8 @@
 		<Item Name="SimpleCameraTest.vi" Type="VI" URL="../SimpleCameraTest.vi"/>
 		<Item Name="SaveLoadMotorConfig.vi" Type="VI" URL="../BeadTracker2.llb/SaveLoadMotorConfig.vi"/>
 		<Item Name="mkROIsToString.vi" Type="VI" URL="../Modules/FastCMOS.llb/mkROIsToString.vi"/>
+		<Item Name="LUTPlane2PlaneDist.vi" Type="VI" URL="../BeadTracker2.llb/LUTPlane2PlaneDist.vi"/>
+		<Item Name="LUTInspectionDlg.vi" Type="VI" URL="../BeadTracker2.llb/LUTInspectionDlg.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="BuildHelpPath.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/BuildHelpPath.vi"/>
@@ -481,6 +483,9 @@
 			<Item Name="VEL?.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/VEL?.vi"/>
 			<Item Name="VEL.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/VEL.vi"/>
 			<Item Name="MOV.vi" Type="VI" URL="../Setups/D012R/PI Stage Control.llb/MOV.vi"/>
+			<Item Name="Falcon2Config.vi" Type="VI" URL="../Modules/Falcon2Config.vi"/>
+			<Item Name="AutoDiscardBeads.vi" Type="VI" URL="../BeadTracker2.llb/AutoDiscardBeads.vi"/>
+			<Item Name="ComputeBeadValidity.vi" Type="VI" URL="../BeadTracker2.llb/ComputeBeadValidity.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
