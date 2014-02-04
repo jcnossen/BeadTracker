@@ -1,4 +1,4 @@
-function [nframes, nbeads, ninfocol, colnames, data_offset] = qtrk_sizeof_bin_trace(filename)
+function [nframes, nbeads, ninfocol, colnames, data_offset] = qtrk_sizeof_bin_trace(filename, oldver)
     fid = fopen(filename,'r', 'ieee-le'); % little endian byte order
     if fid<0,
         fprintf('can ''t open file %s', filename);
@@ -6,13 +6,18 @@ function [nframes, nbeads, ninfocol, colnames, data_offset] = qtrk_sizeof_bin_tr
         return
     end
     
-    version = int32(fread(fid, 1, 'int32'));
-    expected_version = 2;
+    if nargin<2, oldver=0; end;
     
-    if version ~= expected_version
-        fprintf('File has unknown version (%d), expecting version %d\n', version, expected_version);
+    if ~oldver
+        version = int32(fread(fid, 1, 'int32'));
+        expected_version = 2;
+        if version ~= expected_version
+            fprintf('File has unknown version (%d), expecting version %d\n', version, expected_version);
+        end
+    else
+        version = 0;
     end
-    
+
     nbeads = int32(fread(fid, 1, 'int32'));
     ninfocol = int32(fread(fid, 1, 'int32'));
     data_offset = int32(fread(fid, 1, 'int32'));
@@ -24,7 +29,7 @@ function [nframes, nbeads, ninfocol, colnames, data_offset] = qtrk_sizeof_bin_tr
     % figure out the size of this file and compute number of frames from it
     fseek(fid, 0, 'eof');
     file_size = ftell(fid);
-    bytesPerFrame = 4 + 8 + ninfocol * 4 + nbeads * 4 * 4;
+    bytesPerFrame = 4 + 8 + ninfocol * 4 + nbeads * 4 * ( (oldver==0) * 4 + (oldver~=0) * 3 );
     nframes = int32((file_size - data_offset) / bytesPerFrame);
     fclose(fid);
 end

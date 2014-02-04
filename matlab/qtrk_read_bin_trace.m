@@ -1,4 +1,4 @@
-function [beadx, beady, beadz, timestamps, frameinfo, axisnames] = qtrk_read_bin_trace(filename, frames, beads, refbead)
+function [beadx, beady, beadz, timestamps, frameinfo, axisnames] = qtrk_read_bin_trace(filename, frames, beads, refbead, oldver)
 % Read XYZ traces from a binary trace output produced by TweezerTracker
 % [beadx, beady, beadz, timestamps, frameinfo, axisnames] =  ...
 %    qtrk_read_bin_trace(filename, frames, beads, refbead)
@@ -13,7 +13,11 @@ function [beadx, beady, beadz, timestamps, frameinfo, axisnames] = qtrk_read_bin
         refbead=-1; % no reference bead subtraction
     end
     
-    [f_nframes, nbeads, f_ninfocol, axisnames, data_offset] = qtrk_sizeof_bin_trace(filename);
+    if nargin<5
+        oldver=0;
+    end
+    
+    [f_nframes, nbeads, f_ninfocol, axisnames, data_offset] = qtrk_sizeof_bin_trace(filename, oldver);
     if f_nframes == 0, return, end %something went wrong
     
     fprintf('File %s has %d beads and %d frames.\n', filename, nbeads, f_nframes);
@@ -38,7 +42,7 @@ function [beadx, beady, beadz, timestamps, frameinfo, axisnames] = qtrk_read_bin
     
     fid = fopen(filename);
 
-    bytesPerFrame = 4 + 8 + f_ninfocol * 4 + nbeads * 4 * 4;
+    bytesPerFrame = 4 + 8 + f_ninfocol * 4 + nbeads * 4 * ( (oldver==0) * 4 + (oldver~=0) * 3 );
     lastFrame=-1;
     for k=1:length(frames)
         
@@ -54,7 +58,7 @@ function [beadx, beady, beadz, timestamps, frameinfo, axisnames] = qtrk_read_bin
         frameinfo(k, :) = fread(fid, [1 f_ninfocol], 'single');
         
         xyz = fread(fid, nbeads * 3, 'single');
-        errorvals = fread(fid, nbeads, 'uint32');
+        if ~oldver, errorvals = fread(fid, nbeads, 'uint32'); end;
         
 		% Read all beads
         bx = xyz( (0:nbeads-1) * 3 + 1 );
