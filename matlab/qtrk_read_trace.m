@@ -17,6 +17,11 @@ function [beadx, beady, beadz, timestamps, frameinfo, axisnames] = qtrk_read_tra
         oldver=0;
     end
     
+    cachename = sprintf('%s_f%d_b%d_r%d.mat', filename, length(frames), length(beads), refbead(1));
+%    if (exist(cachename, 'file'))
+ %       d=load(cachename);
+    
+    
     [~,~,ext]=fileparts(filename);
     if strcmp(ext,'.txt')
         [beadx,beady,beadz,timestamps,frameinfo] = qtrk_read_text_trace(filename, frames, beads, refbead);
@@ -24,4 +29,6 @@ function [beadx, beady, beadz, timestamps, frameinfo, axisnames] = qtrk_read_tra
     else
         [beadx,beady,beadz,timestamps,frameinfo,axisnames] = qtrk_read_bin_trace(filename,frames, beads, refbead, oldver);
     end
+    
+    
 end
