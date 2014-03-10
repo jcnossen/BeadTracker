@@ -85,13 +85,12 @@
 				<Item Name="TrackingConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/TrackingConfigType.ctl"/>
 			</Item>
 			<Item Name="General" Type="Folder">
-				<Item Name="ApplyOffsetGainToDisplayImage.vi" Type="VI" URL="../BeadTracker2.llb/ApplyOffsetGainToDisplayImage.vi"/>
-				<Item Name="AskForCreateNewDir.vi" Type="VI" URL="../BeadTracker2.llb/AskForCreateNewDir.vi"/>
+				<Item Name="AskForCreateNewDir.vi" Type="VI" URL="../Main/AskForCreateNewDir.vi"/>
 				<Item Name="ClearResults.vi" Type="VI" URL="../BeadTracker2.llb/ClearResults.vi"/>
 				<Item Name="ClusterToValueList.vi" Type="VI" URL="../BeadTracker2.llb/ClusterToValueList.vi"/>
 				<Item Name="ComputeFisherMatrixFromLUT.vi" Type="VI" URL="../BeadTracker2.llb/ComputeFisherMatrixFromLUT.vi"/>
 				<Item Name="DeleteFileIfExisting.vi" Type="VI" URL="../BeadTracker2.llb/DeleteFileIfExisting.vi"/>
-				<Item Name="ExtractBeadROI.vi" Type="VI" URL="../BeadTracker2.llb/ExtractBeadROI.vi"/>
+				<Item Name="ExtractBeadROI.vi" Type="VI" URL="../Main/ExtractBeadROI.vi"/>
 				<Item Name="GenerateNewFilename.vi" Type="VI" URL="../BeadTracker2.llb/GenerateNewFilename.vi"/>
 				<Item Name="GenerateTracePlotData.vi" Type="VI" URL="../BeadTracker2.llb/GenerateTracePlotData.vi"/>
 				<Item Name="GetExperimentPaths.vi" Type="VI" URL="../BeadTracker2.llb/GetExperimentPaths.vi"/>
@@ -104,14 +103,15 @@
 				<Item Name="RunSaveImagesExperiment.vi" Type="VI" URL="../BeadTracker2.llb/RunSaveImagesExperiment.vi"/>
 				<Item Name="SaveExperimentInfo.vi" Type="VI" URL="../BeadTracker2.llb/SaveExperimentInfo.vi"/>
 				<Item Name="SendAxisMoveCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendAxisMoveCmd.vi"/>
-				<Item Name="SendMotorCmd.vi" Type="VI" URL="../BeadTracker2.llb/SendMotorCmd.vi"/>
-				<Item Name="StoreFrameInfo.vi" Type="VI" URL="../BeadTracker2.llb/StoreFrameInfo.vi"/>
+				<Item Name="SendMotorCmd.vi" Type="VI" URL="../Main/SendMotorCmd.vi"/>
+				<Item Name="StoreFrameInfo.vi" Type="VI" URL="../Main/StoreFrameInfo.vi"/>
 				<Item Name="TryLoadGainCorrectionImages.vi" Type="VI" URL="../BeadTracker2.llb/TryLoadGainCorrectionImages.vi"/>
 				<Item Name="VerifyMeasureConfig.vi" Type="VI" URL="../BeadTracker2.llb/VerifyMeasureConfig.vi"/>
 				<Item Name="WriteArrayAsImage.vi" Type="VI" URL="../BeadTracker2.llb/WriteArrayAsImage.vi"/>
 				<Item Name="WriteSectionFrame.vi" Type="VI" URL="../BeadTracker2.llb/WriteSectionFrame.vi"/>
 			</Item>
 			<Item Name="Camera" Type="Folder">
+				<Item Name="ApplyOffsetGainToDisplayImage.vi" Type="VI" URL="../Main/Camera/ApplyOffsetGainToDisplayImage.vi"/>
 				<Item Name="GrabSingleImage.vi" Type="VI" URL="../BeadTracker2.llb/GrabSingleImage.vi"/>
 				<Item Name="ToggleMainCameraView.vi" Type="VI" URL="../BeadTracker2.llb/ToggleMainCameraView.vi"/>
 				<Item Name="GenericCameraConfigType.ctl" Type="VI" URL="../BeadTracker2.llb/GenericCameraConfigType.ctl"/>
