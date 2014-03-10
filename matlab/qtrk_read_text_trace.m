@@ -1,6 +1,6 @@
 function [beadx,beady,beadz,timestamps,frameinfo] = qtrk_read_text_trace(filename, frames, beads, refbead)
     d=dlmread(filename);
-    
+        
     [path,name]=fileparts(filename);
     
     motorfile = [path name '_motors.txt'];
@@ -8,6 +8,8 @@ function [beadx,beady,beadz,timestamps,frameinfo] = qtrk_read_text_trace(filenam
     
     nframes=size(d,1);
     nbeads = (size(d,2)-2)/3;
+    
+    fprintf('%s has %d beads and %d frames\n', filename, nbeads,nframes);
     
     if nargin<4
         refbead=-1;

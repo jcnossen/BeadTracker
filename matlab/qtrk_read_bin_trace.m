@@ -20,7 +20,7 @@ function [beadx, beady, beadz, timestamps, frameinfo, axisnames] = qtrk_read_bin
     [f_nframes, nbeads, f_ninfocol, axisnames, data_offset] = qtrk_sizeof_bin_trace(filename, oldver);
     if f_nframes == 0, return, end %something went wrong
     
-    fprintf('File %s has %d beads and %d frames.\n', filename, nbeads, f_nframes);
+    fprintf('%s has %d beads and %d frames.\n', filename, nbeads, f_nframes);
     
     if nargin<3
         beads = 1:nbeads; % load all beads
