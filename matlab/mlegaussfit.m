@@ -1,28 +1,36 @@
 % MATLAB implementation test
-function function_wrapper = mlegaussfit()
+function functions = mlegaussfit()
 
-    wrapper = {};
-    wrapper.test = @test;
+    if nargin ==0 
+        test();
+    end
+    
+    functions.test = @test;
+    functions.fit = @fitgauss;
+    
 end
 
-
-function [ Pestimate ] = fitgauss(smpimg, P, iterations)
-
+function estimate = fitgauss(smpimg, initial, iterations)
+    
     width =  size(smpimg,2);
     height =size(smpimg,1);
-    
+
+    if nargin<3
+        posx = initial(1);
+        posy = initial(2);
+    else 
+        posx = width/2;
+        posy = height/2;
+    end
+    sigma = initial(3);
+
     mean_img = mean(smpimg(:));
 	I0 = mean_img*0.5*numel(smpimg);
 	bg = mean_img*0.5;
-    
-    sigma = P(3);
 
 	r1oSq2Sigma = 1.0 / (sqrt(2) * sigma);
 	r1oSq2PiSigma = 1.0 / (sqrt(2*pi) * sigma);
 	r1oSq2PiSigma3 = 1.0 / (sqrt(2*pi) * sigma^2);
-
-    posx = P(1);
-    posy = P(2);
     
     [X,Y] = meshgrid(0:width-1,0:height-1);
 
@@ -61,7 +69,7 @@ function [ Pestimate ] = fitgauss(smpimg, P, iterations)
 		bg = bg - sumel(dL_dIbg) / sumel(dL2_dIbg);
     end
     
-    Pestimate = [ posx posy sigma I0 bg ];
+    estimate = [ posx posy sigma I0 bg ];
 end
 
 function Ifisher = compute_fisher(imgsize, P)
@@ -109,86 +117,47 @@ end
 
 
 
+function Ifisher = compute_fisher_numerical(imgsize, P)
+    sample = @(par) makesample(imgsize, par);
 
-
-function Pestimate = fitgaussloop(smpimg, P, iterations)
-
-    width =  size(smpimg,2);
-    height =size(smpimg,1);
+    mu = sample ( P );
+    d=0.001;
+    dmu_dx = (sample(P + [ d 0 0 0 0 ]) - sample(P - [ d 0 0 0 0 ]))/(2*d);
+    dmu_dy = (sample(P + [ 0 d 0 0 0 ]) - sample(P - [ 0 d 0 0 0 ]))/(2*d);
+    dmu_dI0 = (sample(P + [ 0 0 0 d 0 ]) - sample(P - [ 0 0 0 d 0 ]))/(2*d);
+    %dmu_dbg = (sample(P + [ 0 0 0 0 d ]) - sample(P - [ 0 0 0 0 d ]))/(2*d);
     
-    mean_img = mean(smpimg(:));
-	I0 = mean_img*0.5*numel(smpimg);
-	bg = mean_img*0.5;
+    Ixx = sumel( dmu_dx .^2 ./ mu );
+    Iyy = sumel( dmu_dy .^2 ./ mu );
+    Ixy = sumel( dmu_dx .* dmu_dy ./ mu );
+    Ixi = sumel ( dmu_dx .* dmu_dI0 ./ mu );
+    Iyi = sumel ( dmu_dy .* dmu_dI0 ./ mu );
+    Ixbg = sumel ( dmu_dx ./ mu );
+    Iybg = sumel ( dmu_dy ./ mu );
+    Iii = sumel ( dmu_dI0 .^ 2 ./ mu );
+    Iibg = sumel ( dmu_dI0 ./ mu );
+    Ibgbg = sumel ( 1./mu.^2 );
     
-    sigma = P(3);
-
-	r1oSq2Sigma = 1.0 / (sqrt(2) * sigma);
-	r1oSq2PiSigma = 1.0 / (sqrt(2*pi) * sigma);
-	r1oSq2PiSigma3 = 1.0 / (sqrt(2*pi) * sigma^2);
-
-    posx = P(1);
-    posy = P(2);
-    
-	for i=1:iterations
-        
-		dL_dx = 0.0; 
-		dL_dy = 0.0; 
-		dL_dI0 = 0.0;
-		dL_dIbg = 0.0;
-		dL2_dx = 0.0;
-		dL2_dy = 0.0;
-		dL2_dI0 = 0.0;
-		dL2_dIbg = 0.0;
-
-		mu_sum = 0.0;
-				
-		for y=1:height
-			for x=1:width
-                Xexp0 = (x-posx + .5) * r1oSq2Sigma;
-                Yexp0 = (y-posy + .5) * r1oSq2Sigma;
-        
-				Xexp1 = (x-posx - .5) * r1oSq2Sigma;
-				Yexp1 = (y-posy - .5) * r1oSq2Sigma;
-				
-				DeltaX = 0.5 * erf(Xexp0) - 0.5 * erf(Xexp1);
-				DeltaY = 0.5 * erf(Yexp0) - 0.5 * erf(Yexp1);
-				mu = bg + I0 * DeltaX * DeltaY;
-				
-				dmu_dx = I0*r1oSq2PiSigma * ( exp(-Xexp1*Xexp1) - exp(-Xexp0*Xexp0)) * DeltaY;
-
-				dmu_dy = I0*r1oSq2PiSigma * ( exp(-Yexp1*Yexp1) - exp(-Yexp0*Yexp0)) * DeltaX;
-				dmu_dI0 = DeltaX*DeltaY;
-				dmu_dIbg = 1;
-        
-				smp = smpimg(y,x);
-				f = smp / mu - 1;
-				dL_dx = dL_dx + dmu_dx * f;
-				dL_dy = dL_dy + dmu_dy * f;
-				dL_dI0 = dL_dI0 + dmu_dI0 * f;
-				dL_dIbg = dL_dIbg + dmu_dIbg * f;
-
-				d2mu_dx = I0*r1oSq2PiSigma3 * ( (x - posx - .5) * exp (-Xexp1*Xexp1) - (x - posx + .5) * exp(-Xexp0*Xexp0) ) * DeltaY;
-				d2mu_dy = I0*r1oSq2PiSigma3 * ( (y - posy - .5) * exp (-Yexp1*Yexp1) - (y - posy + .5) * exp(-Yexp0*Yexp0) ) * DeltaX;
-				dL2_dx = dL2_dx + d2mu_dx * f - dmu_dx*dmu_dx * smp / (mu*mu);
-				dL2_dy = dL2_dy + d2mu_dy * f - dmu_dy*dmu_dy * smp / (mu*mu);
-				dL2_dI0 = dL2_dI0 -dmu_dI0*dmu_dI0 * smp / (mu*mu);
-				dL2_dIbg = dL2_dIbg -smp / (mu*mu);
-
-				mu_sum = mu_sum + mu;
-            end
-        end
-        
-		mean_mu = mu_sum / (width*height);
-		posx = posx - dL_dx / dL2_dx;
-		posy = posy - dL_dy / dL2_dy;
-		I0 = I0 - dL_dI0 / dL2_dI0;
-		bg = bg - dL_dIbg / dL2_dIbg;
-    end
-    
-    Pestimate = [ posx posy sigma I0 bg ];
+    Ifisher = [ Ixx Ixy Ixi Ixbg ; Ixy Iyy Iyi Iybg ; Ixi Iyi Iii Iibg ; Ixbg Iybg Iyi Ibgbg ];
 end
 
-function [img, imgcv] = makesample(Size, P)
+
+
+function img = makesample(Size, P)
+    [Y,X] = ndgrid (0:Size(1)-1, 0:Size(2)-1);
+    
+    % Read parameters
+    Sx = P(1); Sy = P(2); Sigma = P(3); I0 = P(4); Ibg = P(5);
+    
+    % Expected values
+    edenom = 1 / sqrt(2*Sigma^2);
+    DeltaX = 0.5 * erf( (X-Sx + .5) * edenom ) - 0.5 * erf((X-Sx - .5) * edenom);
+    DeltaY = 0.5 * erf( (Y-Sy + .5) * edenom ) - 0.5 * erf((Y-Sy - .5) * edenom);
+    img = Ibg + I0 * DeltaX .* DeltaY;
+end
+
+
+function imgcv = makesamplecv(Size, P)
     [Y,X] = ndgrid (0:Size(1)-1, 0:Size(2)-1);
     
     % Read parameters
@@ -197,12 +166,6 @@ function [img, imgcv] = makesample(Size, P)
     % Center value:
     imgcv = Ibg + I0 * exp ( - ((X-Sx).^2+(Y-Sy).^2) / (2*Sigma^2) ) / (2*pi*Sigma^2);
     imgcv = poissrnd(imgcv);
-    
-    % Expected values
-    edenom = 1 / sqrt(2*Sigma^2);
-    DeltaX = 0.5 * erf( (X-Sx + .5) * edenom ) - 0.5 * erf((X-Sx - .5) * edenom);
-    DeltaY = 0.5 * erf( (Y-Sy + .5) * edenom ) - 0.5 * erf((Y-Sy - .5) * edenom);
-    img = Ibg + I0 * DeltaX .* DeltaY;
 end
 
 
@@ -226,10 +189,11 @@ function test()
     Pcenter = [ W/2 H/2 4 10000 100 ];  %
  
     % Localize
-    N = 200;
+    N = 20;
     iterations = 10;
     
     Ifisher = zeros(4);
+    Ifisher_n = Ifisher;
     err = zeros(N,5);
     
     for k = 1 : N
@@ -246,13 +210,17 @@ function test()
         fprintf('X:%f, Y:%f, I0:%f, Ibg:%f\n',err(k,1),err(k,2),err(k,4),err(k,5));
         
         Ifisher = Ifisher + compute_fisher(size(smp), Pinitial);
+        Ifisher_n = Ifisher_n + compute_fisher_numerical(size(smp), Pinitial);
+        
     end
 
     fprintf('Tracking std: x=%f, y=%f, I0=%f\n', std(err(:,1)), std(err(:,2)), std(err(:,4)));
     
-    Ifisher = Ifisher ./ N;
-    variance = inv(Ifisher);
+    variance = inv(Ifisher ./ N);
+    variance_n = inv(Ifisher_n ./ N);
 
     fprintf('Fisher std: x=%f, y=%f, I0=%f\n', sqrt(variance(1,1)), sqrt(variance(2,2)),sqrt(variance(3,3)));
+    fprintf('Numeric Fisher std: x=%f, y=%f, I0=%f\n', sqrt(variance_n(1,1)), sqrt(variance_n(2,2)),sqrt(variance_n(3,3)));
+    
 end
 
