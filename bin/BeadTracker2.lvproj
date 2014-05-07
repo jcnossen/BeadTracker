@@ -325,7 +325,6 @@
 			<Item Name="mkSetExposureGainOffset.vi" Type="VI" URL="../Modules/MikrotronCamera/mkSetExposureGainOffset.vi"/>
 			<Item Name="mkConfigureBufferList.vi" Type="VI" URL="../Modules/MikrotronCamera/mkConfigureBufferList.vi"/>
 			<Item Name="GrabToTrackerAndQueue(LostFramesSupport).vi" Type="VI" URL="../Modules/MikrotronCamera/GrabToTrackerAndQueue(LostFramesSupport).vi"/>
-			<Item Name="GrabToTrackerFastLoop.vi" Type="VI" URL="../Modules/MikrotronCamera/GrabToTrackerFastLoop.vi"/>
 			<Item Name="CIAdjustBeadPos.vi" Type="VI" URL="../Modules/MikrotronCamera/CIAdjustBeadPos.vi"/>
 			<Item Name="mkAdjustROIPositions.vi" Type="VI" URL="../Modules/MikrotronCamera/mkAdjustROIPositions.vi"/>
 			<Item Name="CISettingsEditor.vi" Type="VI" URL="../Modules/MikrotronCamera/CISettingsEditor.vi"/>
@@ -334,6 +333,7 @@
 			<Item Name="mkSetMode.vi" Type="VI" URL="../Modules/MikrotronCamera/mkSetMode.vi"/>
 			<Item Name="mkResetCamera.vi" Type="VI" URL="../Modules/MikrotronCamera/mkResetCamera.vi"/>
 			<Item Name="FastCMOSTestTrackerModule.vi" Type="VI" URL="../Modules/FastCMOS.llb/FastCMOSTestTrackerModule.vi"/>
+			<Item Name="GrabToTrackerOnly.vi" Type="VI" URL="../Modules/MikrotronCamera/GrabToTrackerOnly.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
