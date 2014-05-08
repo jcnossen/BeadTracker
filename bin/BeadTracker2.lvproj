@@ -39,7 +39,6 @@
 		</Item>
 		<Item Name="BeadTrackerMain.vi" Type="VI" URL="../BeadTrackerMain.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
-		<Item Name="IMAQLinearInterp.vi" Type="VI" URL="../Modules/MikrotronCamera/BackgroundGrabDialog/IMAQLinearInterp.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="BuildHelpPath.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/BuildHelpPath.vi"/>
@@ -335,6 +334,7 @@
 			<Item Name="mkResetCamera.vi" Type="VI" URL="../Modules/MikrotronCamera/mkResetCamera.vi"/>
 			<Item Name="FastCMOSTestTrackerModule.vi" Type="VI" URL="../Modules/FastCMOS.llb/FastCMOSTestTrackerModule.vi"/>
 			<Item Name="GrabToTrackerOnly.vi" Type="VI" URL="../Modules/MikrotronCamera/GrabToTrackerOnly.vi"/>
+			<Item Name="GrabBackground.vi" Type="VI" URL="../Modules/BackgroundGrabDialog/GrabBackground.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
