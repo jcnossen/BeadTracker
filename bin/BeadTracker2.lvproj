@@ -39,6 +39,7 @@
 		</Item>
 		<Item Name="BeadTrackerMain.vi" Type="VI" URL="../BeadTrackerMain.vi"/>
 		<Item Name="SetupConfiguration.vi" Type="VI" URL="../SetupConfiguration.vi"/>
+		<Item Name="IMAQLinearInterp.vi" Type="VI" URL="../Modules/MikrotronCamera/BackgroundGrabDialog/IMAQLinearInterp.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="BuildHelpPath.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/BuildHelpPath.vi"/>
