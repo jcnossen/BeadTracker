@@ -2,6 +2,8 @@
 %   "Fast, single-molecule localization that achieves theoretically
 %   minimum uncertainty" CS Smith, N Joseph, B Rieger, KA Lidke - Nature methods, 2010
 %
+% Implementation by Jelmer Cnossen
+%
 % Function handles for the various functions will be returned if you call
 % this file.
 %
