@@ -12,5 +12,5 @@ I tried my best to make a decent design, but spaghetti wires and chaos still ens
 Labview should not be used for anything that requires more than 2 days of work.
 
 For questions:
-jordi.(remove this)wassenburg@(remove this)gmail.com
+j.(remove this)cnossen@(remove this)gmail.com
 
